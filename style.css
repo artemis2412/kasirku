@@ -568,3 +568,57 @@ header small {
     background: #eaf4ed;
   }
   }
+
+/* NAVIGASI BAWAH HP - LEBIH NYAMAN */
+@media (max-width: 650px) {
+  #bottom {
+    height: 78px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  #bottom::-webkit-scrollbar {
+    display: none;
+  }
+
+  #bottom .navbtn {
+    flex: 0 0 76px;
+    min-width: 76px;
+    min-height: 60px;
+    padding: 7px 4px;
+    border-radius: 13px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  #bottom .navbtn span:first-child {
+    font-size: 21px;
+    line-height: 1.2;
+  }
+
+  #bottom .navbtn span:last-child {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  #bottom .navbtn.active {
+    color: var(--green);
+    background: #eaf4ed;
+  }
+
+  #view {
+    padding-bottom: 110px;
+  }
+}
