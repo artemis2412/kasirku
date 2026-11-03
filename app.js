@@ -754,39 +754,82 @@ function tablesPage() {
 function otherPage(page) {
 
   if (page === "Dapur") {
-    const active = orders.filter(o =>
-      o.status !== "Selesai" &&
-      o.status !== "Dibatalkan"
-    );
+  const active = orders.filter(o =>
+    o.status !== "Selesai" &&
+    o.status !== "Dibatalkan"
+  );
 
-    return `${styles()}
-      <h2>Dapur</h2>
-      <p class="v3-muted">
-        Pesanan yang sedang berjalan.
-      </p>
+  return `${styles()}
+    <h2>Dapur</h2>
+    <p class="v3-muted">
+      Pesanan yang sedang berjalan.
+    </p>
 
-      ${active.length
-        ? active.map(o => `
-          <div class="v3-panel">
+    ${active.length
+      ? active.map(o => `
+        <div class="v3-panel">
+          <div class="v3-head">
             <b>${safe(o.number)}</b>
-            <p>
-              ${safe(o.type)}
-              ${o.table ? " · Meja " + safe(o.table) : ""}
-            </p>
+            <span class="v3-pill">
+              ${safe(o.status)}
+            </span>
+          </div>
 
+          <p>
+            ${safe(o.type)}
+            ${o.table ? " · Meja " + safe(o.table) : ""}
+          </p>
+
+          <p>
             ${(o.items || []).map(x =>
               `${safe(x.name)} × ${x.qty}`
             ).join(", ")}
-          </div>
-        `).join("")
-        : `<div class="v3-empty">Belum ada pesanan aktif.</div>`
-      }
-    `;
-  }
+          </p>
 
-  if (page === "Laporan") {
-    return `${styles()}
-      <h2>Laporan Penjualan</h2>
+          <div class="v3-actions">
+            ${o.status === "Menunggu" ? `
+              <button class="v3-btn"
+                data-action="kitchen-process"
+                data-id="${o.id}">
+                Mulai Proses
+              </button>
+            ` : ""}
+
+            ${o.status === "Diproses" ? `
+              <button class="v3-btn"
+                data-action="kitchen-ready"
+                data-id="${o.id}">
+                Pesanan Siap
+              </button>
+            ` : ""}
+
+            ${o.status === "Siap" ? `
+              <span class="v3-pill">
+                Siap diantar
+              </span>
+            ` : ""}
+          </div>
+        </div>
+      `).join("")
+      : `<div class="v3-empty">
+          Belum ada pesanan aktif.
+        </div>`
+    }
+  `;
+}
+
+  
+if (page === "Laporan") {
+  return `${styles()}
+    <div class="v3-wrap">
+      <div class="v3-head">
+        <div>
+          <h2>Laporan Penjualan</h2>
+          <div class="v3-muted">
+            Ringkasan transaksi hari ini
+          </div>
+        </div>
+      </div>
 
       <div class="v3-panel">
         <div class="v3-muted">
@@ -796,64 +839,35 @@ function otherPage(page) {
         <h2>${money(todaySales())}</h2>
 
         <p>
-          ${todayOrders().filter(o =>
-            o.paymentStatus === "Lunas"
+          ${todayOrders().filter(
+            o => o.paymentStatus === "Lunas"
           ).length} transaksi lunas
         </p>
       </div>
-    `;
-  }
 
-  return `${styles()}
-    <h2>Pengaturan</h2>
+      <div class="v3-panel">
+        <div class="v3-muted">
+          Total pesanan hari ini
+        </div>
 
-    <div class="v3-panel">
-  <div class="v3-head">
-    <b>${safe(o.number)}</b>
-    <span class="v3-pill">
-      ${safe(o.status)}
-    </span>
-  </div>
+        <h2>${todayOrders().length}</h2>
+        <p>Pesanan tercatat hari ini</p>
+      </div>
 
-  <p>
-    ${safe(o.type)}
-    ${o.table ? " · Meja " + safe(o.table) : ""}
-  </p>
+      <div class="v3-panel">
+        <div class="v3-muted">
+          Pesanan belum lunas
+        </div>
 
-  <p>
-    ${(o.items || []).map(x =>
-      `${safe(x.name)} × ${x.qty}`
-    ).join(", ")}
-  </p>
-
-  <div class="v3-actions">
-    ${o.status === "Menunggu" ? `
-      <button class="v3-btn"
-        data-action="kitchen-process"
-        data-id="${o.id}">
-        Mulai Proses
-      </button>
-    ` : ""}
-
-    ${o.status === "Diproses" ? `
-      <button class="v3-btn"
-        data-action="kitchen-ready"
-        data-id="${o.id}">
-        Pesanan Siap
-      </button>
-    ` : ""}
-
-    ${o.status === "Siap" ? `
-      <span class="v3-pill">
-        Siap diantar
-      </span>
-    ` : ""}
-  </div>
-</div>
+        <h2>${todayOrders().filter(
+          o => o.paymentStatus !== "Lunas"
+        ).length}</h2>
+      </div>
+    </div>
   `;
 }
 
-
+  
 /* =========================
    CADANGAN DATA
 ========================= */
