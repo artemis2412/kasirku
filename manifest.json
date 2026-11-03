@@ -1,0 +1,10 @@
+{
+  "name": "KASIRKU - Kasir Toko",
+  "short_name": "KASIRKU",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f6fb",
+  "theme_color": "#172554",
+  "description": "Prototipe aplikasi kasir toko kelontong",
+  "icons": []
+}
