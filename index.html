@@ -1,67 +1,40 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#14251f">
-  <meta name="description" content="KASIRKU - Sistem kasir warung makan dan cafe">
-
+  <meta name="description" content="KASIRKU - Sistem kasir warung dan cafe">
   <link rel="manifest" href="./manifest.json">
   <link rel="stylesheet" href="./style.css">
-
-  <title>KASIRKU V3</title>
+  <title>KASIRKU V4</title>
 </head>
-
 <body>
-
   <aside id="sidebar">
-    <div class="brand">
-      KASIRKU
-      <small>WARUNG & CAFE</small>
-    </div>
-
-    <p class="muted">CABANG AKTIF</p>
-
-    <button id="branch">
-      Cabang Utama　⌄
-    </button>
-
-    <nav id="nav"></nav>
-
-    <p class="foot">
-      ● Mode lokal · Siap digunakan
-    </p>
+    <div class="brand">KASIRKU<small>WARUNG &amp; CAFE</small></div>
+    <div class="branch-label">CABANG AKTIF</div>
+    <div class="branch-name">Cabang Utama</div>
+    <nav id="nav" aria-label="Navigasi utama"></nav>
+    <div class="sidebar-foot">● Mode lokal</div>
   </aside>
-
   <main>
-
-    <header>
-      <button id="menu">☰</button>
-
-      <div>
-        <small>SISTEM KASIR</small>
-        <h1 id="title">Dashboard</h1>
-      </div>
-
-      <span id="date"></span>
+    <header class="topbar">
+      <button id="menu-toggle" class="menu-toggle" aria-label="Buka menu">☰</button>
+      <div><div class="eyebrow">SISTEM KASIR</div><h1 id="page-title">Dashboard</h1></div>
+      <time id="today-date"></time>
     </header>
-
-    <section id="view"></section>
-
-    <footer id="bottom"></footer>
-
+    <section id="view" aria-live="polite">
+      <div class="loading">Memuat KASIRKU…</div>
+    </section>
+    <nav id="bottom-nav" aria-label="Navigasi bawah"></nav>
   </main>
-
   <script src="./app.js"></script>
-
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js");
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
       });
     }
   </script>
-
 </body>
 </html>
