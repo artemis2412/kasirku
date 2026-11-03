@@ -569,18 +569,20 @@ header small {
   }
   }
 
-/* NAVIGASI BAWAH HP - LEBIH NYAMAN */
+
+/* PERBAIKAN NAVIGASI BAWAH HP */
 @media (max-width: 650px) {
   #bottom {
-    height: 78px;
+    height: 82px !important;
+    min-height: 82px;
     display: flex;
-    justify-content: flex-start;
     align-items: center;
-    gap: 7px;
-    padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 6px 12px;
     overflow-x: auto;
     overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
     scrollbar-width: none;
   }
 
@@ -588,37 +590,26 @@ header small {
     display: none;
   }
 
-  #bottom .navbtn {
-    flex: 0 0 76px;
-    min-width: 76px;
-    min-height: 60px;
+  #bottom button {
+    flex: 0 0 82px;
+    min-width: 82px;
+    min-height: 64px;
     padding: 7px 4px;
-    border-radius: 13px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: 650;
-  }
-
-  #bottom .navbtn span:first-child {
-    font-size: 21px;
+    justify-content: center;
+    gap: 5px;
+    font-size: 13px;
     line-height: 1.2;
-  }
-
-  #bottom .navbtn span:last-child {
-    font-size: 12px;
     white-space: nowrap;
   }
 
-  #bottom .navbtn.active {
-    color: var(--green);
-    background: #eaf4ed;
+  #bottom button span {
+    font-size: 13px;
   }
 
-  #view {
-    padding-bottom: 110px;
+  #bottom button span:first-child {
+    font-size: 22px;
   }
 }
