@@ -64,3 +64,12 @@ main{margin-left:240px;min-width:0}.topbar{height:82px;background:#fff;border-bo
 
 .table-picker-wrap{grid-column:1/-1;display:grid;gap:10px;min-width:0}.table-picker{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.table-pick{min-width:0;min-height:82px;border:1px solid var(--line);border-radius:12px;background:#f0f8f2;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px}.table-pick.available{border-color:#cfe5d4}.table-pick.selected{background:#e0f1e4;border:2px solid #27804c;box-shadow:0 0 0 2px #27804c18}.table-pick.busy{background:#fff1e8;border-color:#f0d2ad;color:#a65d26;opacity:.8;cursor:not-allowed}.table-pick-number{font-size:20px;font-weight:850;line-height:1.1}.table-pick-name{font-size:10px;font-weight:700}.table-pick-status{font-size:10px;color:#548367}.table-pick.busy .table-pick-status{color:#b76a2a}.table-picker-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted)}.table-picker-legend span{display:flex;align-items:center;gap:5px}.table-picker-legend .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.table-picker-legend .legend-dot.free{background:#27804c}.table-picker-legend .legend-dot.busy{background:#d98536}
 @media(max-width:420px){.table-picker{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.table-pick{min-height:74px}}
+
+/* Perbaikan sentuhan dan scroll saat Mode Desktop di HP */
+@media(max-width:650px){
+  html{min-height:100%;overflow-x:auto;overscroll-behavior-x:contain}
+  body.desktop-mode{min-height:100vh;overflow-x:auto;overflow-y:auto;touch-action:pan-x pan-y pinch-zoom}
+  body.desktop-mode #sidebar{position:fixed;top:0;bottom:0;height:100dvh;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y pinch-zoom}
+  body.desktop-mode main{min-height:100vh;overflow:visible;touch-action:pan-x pan-y pinch-zoom}
+  body.desktop-mode #view{overflow:visible;touch-action:pan-x pan-y pinch-zoom}
+}
