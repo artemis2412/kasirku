@@ -610,4 +610,217 @@ function draw() {
         }
       }
 
-      if (action === "add-cart
+      if (action === "add-cart") {
+        const menu = menus.find(item => item.id === id && item.available);
+        if (menu) {
+          const existing = cart.find(item => item.id === id);
+          if (existing) existing.qty++;
+          else cart.push({
+            id: menu.id,
+            name: menu.name,
+            price: Number(menu.price),
+            qty: 1
+          });
+          draw();
+        }
+      }
+
+      if (action === "plus-cart" || action === "minus-cart") {
+        const item = cart.find(item => item.id === id);
+        if (item) {
+          item.qty += action === "plus-cart" ? 1 : -1;
+          if (item.qty <= 0) {
+            cart = cart.filter(item => item.id !== id);
+          }
+          draw();
+        }
+      }
+
+      if (action === "checkout") completeCheckout();
+    });
+  });
+
+  // Form menu
+  const menuFormElement = document.getElementById("menuForm");
+
+  if (menuFormElement) {
+    menuFormElement.addEventListener("submit", event => {
+      event.preventDefault();
+
+      const data = new FormData(menuFormElement);
+      const name = String(data.get("name")).trim();
+      const category = data.get("category");
+      const price = Number(data.get("price"));
+
+      if (!name || !Number.isFinite(price) || price < 0) {
+        alert("Periksa nama dan harga menu.");
+        return;
+      }
+
+      if (editingId === -1) {
+        menus.push({
+          id: Date.now(),
+          name,
+          category,
+          price,
+          available: true
+        });
+      } else {
+        const menu = menus.find(item => item.id === editingId);
+        if (menu) {
+          menu.name = name;
+          menu.category = category;
+          menu.price = price;
+        }
+      }
+
+      saveMenus();
+      editingId = null;
+      menuSearch = "";
+      menuCategory = "Semua";
+      draw();
+      alert("Menu berhasil disimpan.");
+    });
+  }
+
+  // Pencarian menu
+  const menuSearchElement = document.getElementById("menuSearch");
+  if (menuSearchElement) {
+    menuSearchElement.addEventListener("input", event => {
+      menuSearch = event.target.value;
+      const position = event.target.selectionStart;
+      draw();
+      const next = document.getElementById("menuSearch");
+      next.focus();
+      next.setSelectionRange(position, position);
+    });
+  }
+
+  // Kategori menu
+  document.querySelectorAll("[data-menu-category]").forEach(button => {
+    button.addEventListener("click", () => {
+      menuCategory = button.dataset.menuCategory;
+      draw();
+    });
+  });
+
+  // Pencarian kasir
+  const cashierSearchElement = document.getElementById("cashierSearch");
+  if (cashierSearchElement) {
+    cashierSearchElement.addEventListener("input", event => {
+      cashierSearch = event.target.value;
+      const position = event.target.selectionStart;
+      draw();
+      const next = document.getElementById("cashierSearch");
+      next.focus();
+      next.setSelectionRange(position, position);
+    });
+  }
+
+  // Kategori kasir
+  document.querySelectorAll("[data-cash-category]").forEach(button => {
+    button.addEventListener("click", () => {
+      cashierCategory = button.dataset.cashCategory;
+      draw();
+    });
+  });
+
+  // Jenis pesanan
+  document.querySelectorAll("[data-order-type]").forEach(button => {
+    button.addEventListener("click", () => {
+      orderType = button.dataset.orderType;
+      draw();
+    });
+  });
+
+  // Hitung kembalian langsung
+  const cashInput = document.getElementById("cashReceived");
+  if (cashInput) {
+    cashInput.addEventListener("input", () => {
+      const received = Number(cashInput.value);
+      const change = received - cartTotal();
+      const output = document.getElementById("changeAmount");
+      output.textContent = money(Math.max(0, change));
+    });
+  }
+}
+
+/* PROSES PEMBAYARAN */
+
+function completeCheckout() {
+  if (!cart.length) {
+    alert("Keranjang masih kosong.");
+    return;
+  }
+
+  const total = cartTotal();
+  const received = Number(document.getElementById("cashReceived")?.value || 0);
+  const table = document.getElementById("tableNumber")?.value.trim() || "";
+
+  if (orderType === "Dine In" && !table) {
+    alert("Masukkan nomor meja terlebih dahulu.");
+    return;
+  }
+
+  if (!Number.isFinite(received) || received < total) {
+    alert("Uang pembayaran belum mencukupi.");
+    return;
+  }
+
+  const now = new Date();
+  const date = now.toLocaleDateString("en-CA");
+  const time = now.toLocaleTimeString("id-ID", {
+    hour:"2-digit", minute:"2-digit"
+  });
+
+  const order = {
+    id: Date.now(),
+    number: "ORD-" + now.getTime().toString().slice(-6),
+    date,
+    time,
+    type: orderType,
+    table: orderType === "Dine In" ? table : "",
+    items: cart.map(item => ({...item})),
+    total,
+    received,
+    change: received - total
+  };
+
+  orders.push(order);
+  saveOrders();
+
+  cart = [];
+  orderType = "Dine In";
+  cashierSearch = "";
+  cashierCategory = "Semua";
+
+  alert(
+    "Transaksi berhasil disimpan!\n\n" +
+    "Total: " + money(total) + "\n" +
+    "Diterima: " + money(received) + "\n" +
+    "Kembalian: " + money(order.change)
+  );
+
+  current = "Pesanan";
+  draw();
+}
+
+/* TANGGAL DAN TOMBOL */
+
+document.getElementById("date").textContent =
+  new Intl.DateTimeFormat("id-ID", {
+    weekday:"short",
+    day:"numeric",
+    month:"short",
+    year:"numeric"
+  }).format(new Date());
+
+document.getElementById("menu").onclick = () => {
+  document.getElementById("sidebar").classList.toggle("open");
+};
+
+document.getElementById("branch").onclick = () => {
+  alert("Pengaturan cabang akan dibuat pada tahap berikutnya.");
+};
+
+draw();
