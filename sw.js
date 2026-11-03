@@ -1,5 +1,5 @@
 
-const CACHE_VERSION = "kasirku-v3";
+const CACHE_VERSION = "kasirku-v4";
 const APP_FILES = [
   "./",
   "./index.html",
