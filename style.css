@@ -59,3 +59,5 @@ main{margin-left:240px;min-width:0}.topbar{height:82px;background:#fff;border-bo
 
 /* Kartu meja klik langsung dan grafik pendapatan */
 .table-card-clickable{cursor:pointer;transition:transform .15s ease}.table-card-clickable:active{transform:scale(.985)}.table-card-clickable:focus-visible{outline:3px solid #198653;outline-offset:2px}.monthly-panel{display:grid;gap:12px}.monthly-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.monthly-head h3{margin:0 0 4px}.monthly-total{font-size:18px;font-weight:800;color:var(--green)}.monthly-chart{width:100%;overflow:hidden}.monthly-chart svg{display:block;width:100%;height:auto}.table-pay-btn{width:100%;margin-top:8px}@media(max-width:650px){.monthly-head{align-items:flex-start;flex-direction:column}.monthly-chart svg{min-width:560px}.monthly-chart{overflow-x:auto}}
+
+.table-card[data-action="table-detail"]{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}.table-card[data-action="table-detail"]:active{transform:scale(.985)}.table-card[data-action="table-detail"]:focus-visible{outline:3px solid #7aa98a;outline-offset:2px}
