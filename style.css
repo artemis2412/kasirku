@@ -193,3 +193,5 @@ main{margin-left:240px;min-width:0}.topbar{height:82px;background:#fff;border-bo
 .app-dialog-actions .btn-danger{background:#b9473d;border-color:#b9473d;color:#fff}
 @keyframes dialog-fade{from{opacity:0}to{opacity:1}}
 @media(max-width:480px){.app-dialog-backdrop{padding:16px}.app-dialog{padding:23px 18px 18px;border-radius:20px}.app-dialog-actions{display:grid;grid-template-columns:1fr 1fr}.app-dialog-actions .btn{width:100%;min-width:0}}
+
+.stock-unlimited-option{display:flex;align-items:center;gap:9px;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#f7faf7;font-weight:650}.stock-unlimited-option input{width:18px;height:18px;accent-color:var(--green)}#stock-quantity-wrap[hidden]{display:none}
