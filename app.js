@@ -17,6 +17,18 @@ const items = [
 let current = "Dashboard";
 let menus = readData("kasirku_menus", []);
 let orders = readData("kasirku_orders", []);
+let tables = readData(
+  "kasirku_tables",
+  Array.from({ length: 15 }, (_, i) => ({
+    id: i + 1,
+    name: `Meja ${String(i + 1).padStart(2, "0")}`,
+    status: "Kosong"
+  }))
+);
+
+function saveTables() {
+  localStorage.setItem("kasirku_tables", JSON.stringify(tables));
+}
 let cart = [];
 let orderType = "Dine In";
 let menuSearch = "";
