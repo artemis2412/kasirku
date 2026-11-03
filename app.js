@@ -491,7 +491,7 @@ function checkout() {
     return;
   }
 
-  const order = makeOrder("Selesai", "Lunas", null);
+  const order = makeOrder("Menunggu", "Lunas", null);
   order.received = received;
   order.change = received - total;
 
