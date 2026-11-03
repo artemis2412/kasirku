@@ -1,874 +1,1116 @@
-
-/* =====================================
-   KASIRKU V2 - DASHBOARD, MENU & KASIR
-===================================== */
+/* KASIRKU V3 - Warung & Cafe
+   Dashboard, Menu, Kasir, Pesanan, 15 Meja
+*/
 
 const items = [
-  ["Dashboard", "⌂"],
-  ["Kasir", "▣"],
-  ["Pesanan", "☷"],
-  ["Meja", "▦"],
-  ["Menu", "☕"],
-  ["Dapur", "♨"],
-  ["Laporan", "▤"],
-  ["Pengaturan", "⚙"]
+  ["Dashboard", "⌂"], ["Kasir", "▣"], ["Pesanan", "☷"],
+  ["Meja", "▦"], ["Menu", "☕"], ["Dapur", "♨"],
+  ["Laporan", "▤"], ["Pengaturan", "⚙"]
 ];
 
 let current = "Dashboard";
 let menus = readData("kasirku_menus", []);
 let orders = readData("kasirku_orders", []);
-let tables = readData(
-  "kasirku_tables",
-  Array.from({ length: 15 }, (_, i) => ({
-    id: i + 1,
-    name: `Meja ${String(i + 1).padStart(2, "0")}`,
-    status: "Kosong"
-  }))
-);
-
-function saveTables() {
-  localStorage.setItem("kasirku_tables", JSON.stringify(tables));
-}
+let tables = readData("kasirku_tables", null);
 let cart = [];
 let orderType = "Dine In";
+let selectedTable = 1;
 let menuSearch = "";
-let menuCategory = "Semua";
-let cashierCategory = "Semua";
 let cashierSearch = "";
+let menuCategory = "Semua";
+let showMenuForm = false;
+let editingMenuId = null;
 
 function readData(key, fallback) {
   try {
-    const data = JSON.parse(localStorage.getItem(key));
-    return Array.isArray(data) ? data : fallback;
-  } catch {
-    return fallback;
-  }
+    const value = JSON.parse(localStorage.getItem(key));
+    return value === null ? fallback : value;
+  } catch (e) { return fallback; }
 }
 
-function saveMenus() {
-  localStorage.setItem("kasirku_menus", JSON.stringify(menus));
+function saveData(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
-function saveOrders() {
-  localStorage.setItem("kasirku_orders", JSON.stringify(orders));
+function makeTables() {
+  return Array.from({ length: 15 }, (_, i) => ({
+    id: i + 1,
+    name: `Meja ${String(i + 1).padStart(2, "0")}`
+  }));
 }
 
-function money(value) {
+if (!Array.isArray(menus)) menus = [];
+if (!Array.isArray(orders)) orders = [];
+
+if (!Array.isArray(tables) || !tables.length) {
+  tables = makeTables();
+  saveData("kasirku_tables", tables);
+}
+
+function money(n) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0
-  }).format(value || 0);
+  }).format(Number(n) || 0);
 }
 
 function safe(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
     '"': "&quot;",
-    "'": "&#039;"
-  })[char]);
+    "'": "&#39;"
+  })[c]);
+}
+
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
 function todayOrders() {
-  const today = new Date().toLocaleDateString("en-CA");
-  return orders.filter(order => order.date === today);
+  return orders.filter(o => o.date === today());
 }
 
 function todaySales() {
-  return todayOrders().reduce((sum, order) => sum + order.total, 0);
+  return todayOrders()
+    .filter(o => o.paymentStatus === "Lunas")
+    .reduce((sum, o) => sum + Number(o.total || 0), 0);
 }
 
-/* NAVIGASI */
+function activeOrder(tableId) {
+  return orders.find(o =>
+    o.type === "Dine In" &&
+    Number(o.tableId) === Number(tableId) &&
+    o.paymentStatus !== "Lunas" &&
+    o.status !== "Dibatalkan"
+  );
+}
+
+function styles() {
+  return `<style>
+  .v3-wrap{display:grid;gap:14px}
+  .v3-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .v3-panel,.v3-card{background:#fff;border:1px solid #e1e9e3;border-radius:14px;padding:14px;min-width:0}
+  .v3-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .v3-two{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;align-items:start}
+  .v3-btn{border:0;border-radius:9px;padding:10px 13px;background:#168451;color:#fff;font-weight:700}
+  .v3-btn.alt{background:#edf4ef;color:#28533c;border:1px solid #d7e5da}
+  .v3-btn.red{background:#fff0ef;color:#b33b32}
+  .v3-btn:disabled{opacity:.45}
+  .v3-input,.v3-select{width:100%;padding:11px;border:1px solid #dce5de;border-radius:9px;background:white;color:#20352a;font:inherit}
+  .v3-muted{color:#718078;font-size:12px}
+  .v3-price{color:#168451;font-weight:800}
+  .v3-line{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #edf1ed}
+  .v3-pill{display:inline-block;border-radius:30px;padding:5px 9px;font-size:11px;font-weight:800;background:#e7f5eb;color:#168451}
+  .v3-pill.busy{background:#fff0d9;color:#9b6417}
+  .v3-pill.wait{background:#eaf2ff;color:#315f9c}
+  .v3-table{border:1px solid #dfe9e1;border-radius:13px;padding:13px;background:#f5faf6}
+  .v3-table.occupied{background:#fff6e9;border-color:#f0d7b4}
+  .v3-table strong{display:block;margin:8px 0;font-size:16px}
+  .v3-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .v3-empty{padding:24px;text-align:center;color:#718078;border:1px dashed #cbd9ce;border-radius:12px}
+  .v3-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .v3-field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}
+  .v3-field.full{grid-column:1/-1}
+  .v3-qty{display:flex;align-items:center;gap:7px}
+  .v3-qty button{border:1px solid #dce5de;background:#fff;border-radius:7px;padding:4px 9px}
+  @media(max-width:800px){.v3-two{grid-template-columns:1fr}.v3-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:420px){.v3-form{grid-template-columns:1fr}}
+  </style>`;
+}
 
 function navButton(item) {
-  return `
-    <button class="navbtn ${current === item[0] ? "active" : ""}"
-      data-go="${item[0]}">
-      <span>${item[1]}</span>
-      <span>${item[0]}</span>
-    </button>
-  `;
+  return `<button class="navbtn ${current === item[0] ? "active" : ""}" data-go="${item[0]}">
+    <span>${item[1]}</span><span>${item[0]}</span>
+  </button>`;
 }
 
-/* DASHBOARD */
-
 function dashboard() {
-  const daily = todayOrders();
-  const available = menus.filter(menu => menu.available).length;
+  const occupied = tables.filter(t => activeOrder(t.id)).length;
 
-  return `
-    <div class="welcome">
-      <div class="welcome-copy">
-        <h2>Selamat datang di KASIRKU 👋</h2>
-        <p class="sub">Ringkasan aktivitas usaha hari ini.</p>
-        <button class="primary" data-go="Kasir">
-          ＋ Transaksi Baru
-        </button>
-      </div>
+  return `${styles()}
+  <div class="v3-wrap">
+    <div class="v3-panel">
+      <h2>Selamat datang di KASIRKU 👋</h2>
+      <p class="v3-muted">Ringkasan aktivitas warung & cafe hari ini.</p>
+      <button class="v3-btn" data-go="Kasir">＋ Transaksi Baru</button>
     </div>
 
     <div class="stats">
       <div class="card">
         <div class="label">Penjualan Hari Ini</div>
         <div class="value">${money(todaySales())}</div>
-        <div class="hint">Total transaksi hari ini</div>
+        <div class="hint">Transaksi lunas</div>
       </div>
-
       <div class="card">
-        <div class="label">Total Pesanan</div>
-        <div class="value">${daily.length}</div>
-        <div class="hint">Pesanan hari ini</div>
+        <div class="label">Pesanan Hari Ini</div>
+        <div class="value">${todayOrders().length}</div>
+        <div class="hint">Semua pesanan</div>
       </div>
-
       <div class="card">
         <div class="label">Meja Terisi</div>
-        <div class="value">-</div>
-        <div class="hint">Fitur meja belum aktif</div>
+        <div class="value">${occupied}/${tables.length}</div>
+        <div class="hint">Meja aktif</div>
       </div>
-
       <div class="card">
         <div class="label">Menu Tersedia</div>
-        <div class="value">${available}</div>
+        <div class="value">${menus.filter(m=>m.available!==false).length}</div>
         <div class="hint">${menus.length} menu terdaftar</div>
       </div>
     </div>
 
-    <h3 class="heading">Aktivitas penjualan · Hari ini</h3>
-
-    <div class="grid">
-      <div class="panel">
-        <div class="panel-title"><b>📊 Penjualan Hari Ini</b></div>
-        <div class="chart">
-          ${daily.length
-            ? `${daily.length} transaksi tercatat<br><b>${money(todaySales())}</b>`
-            : "Grafik akan tersedia setelah transaksi pertama."}
-        </div>
+    <div class="v3-two">
+      <div class="v3-panel">
+        <h3>Aktivitas Hari Ini</h3>
+        <div class="v3-line"><span>Penjualan lunas</span><b>${money(todaySales())}</b></div>
+        <div class="v3-line"><span>Jumlah pesanan</span><b>${todayOrders().length}</b></div>
       </div>
 
-      <div class="panel">
-        <div class="panel-title">
-          <b>▤ Pesanan Terbaru</b>
-          <span data-go="Pesanan">Lihat Semua →</span>
+      <div class="v3-panel">
+        <div class="v3-head">
+          <h3>Pesanan Terbaru</h3>
+          <button class="v3-btn alt" data-go="Pesanan">Lihat</button>
         </div>
-        <div class="empty-orders">
-          ${daily.length
-            ? daily.slice(-3).reverse().map(order => `
-              <div style="width:100%;padding:7px;border-bottom:1px solid #eee;text-align:left">
-                <b>${safe(order.number)}</b><br>
-                <small>${money(order.total)}</small>
-              </div>
-            `).join("")
-            : `<span class="big">▤</span><b>Belum ada pesanan</b>`}
-        </div>
+        ${orders.length
+          ? [...orders].slice(-4).reverse().map(o =>
+            `<div class="v3-line"><span>${safe(o.number)}</span><b>${money(o.total)}</b></div>`
+          ).join("")
+          : `<div class="v3-empty">Belum ada transaksi.</div>`
+        }
       </div>
-    </div>
-
-    <h3 class="quick-title">⚡ Akses Cepat</h3>
-
-    <div class="quickgrid">
-      <button class="quick" data-go="Kasir">
-        <span class="qicon">🧾</span>
-        <b>Kasir</b><small>Buat transaksi</small>
-      </button>
-      <button class="quick" data-go="Menu">
-        <span class="qicon">🍽️</span>
-        <b>Menu</b><small>Kelola makanan</small>
-      </button>
-      <button class="quick" data-go="Meja">
-        <span class="qicon">🪑</span>
-        <b>Meja</b><small>Atur meja pelanggan</small>
-      </button>
-      <button class="quick" data-go="Dapur">
-        <span class="qicon">👨‍🍳</span>
-        <b>Dapur</b><small>Pantau pesanan</small>
-      </button>
     </div>
 
     <div class="note">
-      Transaksi saat ini disimpan secara lokal di perangkat ini.
-      Sinkronisasi online dan antar-cabang belum aktif.
+      Data tersimpan di perangkat ini. Sinkronisasi online dan antar-cabang belum aktif.
     </div>
-  `;
+  </div>`;
 }
-
-/* STYLE TAMBAHAN MENU DAN KASIR */
-
-function featureStyles() {
-  return `
-    <style>
-      .feature-toolbar {
-        display:flex;gap:9px;flex-wrap:wrap;margin:15px 0;
-      }
-      .feature-input {
-        width:100%;padding:12px;border:1px solid #dce5de;
-        border-radius:10px;font:inherit;background:white;color:#20352a;
-      }
-      .feature-search {flex:1;min-width:160px}
-      .feature-btn {
-        background:#168451;color:white;border:0;border-radius:10px;
-        padding:11px 15px;font-weight:700;
-      }
-      .feature-cats {
-        display:flex;gap:8px;overflow-x:auto;margin:12px 0;
-        padding-bottom:7px;
-      }
-      .feature-cat {
-        flex-shrink:0;border:1px solid #dce5de;background:white;
-        color:#53665a;border-radius:30px;padding:9px 14px;
-      }
-      .feature-cat.active {
-        background:#e8f4ec;border-color:#168451;color:#168451;font-weight:700;
-      }
-      .feature-list {
-        display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;
-      }
-      .feature-item {
-        background:white;border:1px solid #e2eae4;border-radius:13px;
-        padding:14px;min-width:0;
-      }
-      .feature-item h3 {margin:5px 0;font-size:15px;overflow-wrap:anywhere}
-      .feature-price {font-size:16px;font-weight:800;color:#168451;margin:7px 0}
-      .feature-tag {
-        font-size:11px;background:#edf4ef;padding:5px 9px;
-        border-radius:20px;color:#52675a;display:inline-block;
-      }
-      .feature-actions {display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-      .feature-actions button {
-        border:1px solid #dce5de;background:white;border-radius:8px;
-        padding:8px 10px;font-size:12px;
-      }
-      .feature-form {
-        background:white;border:1px solid #dfe8e1;border-radius:14px;
-        padding:16px;margin:14px 0;
-      }
-      .feature-form label {display:block;font-size:13px;font-weight:650;margin:11px 0 5px}
-      .feature-empty {
-        grid-column:1/-1;background:white;padding:30px;text-align:center;
-        border:1px dashed #cbd9ce;border-radius:13px;color:#718078;
-      }
-      .cash-layout {
-        display:grid;grid-template-columns:minmax(0,1.2fr) minmax(280px,.8fr);
-        gap:14px;align-items:start;
-      }
-      .cash-panel {
-        background:white;border:1px solid #e2eae4;border-radius:15px;
-        padding:15px;min-width:0;
-      }
-      .cash-menu-grid {
-        display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;
-      }
-      .cash-menu {
-        border:1px solid #e1e9e3;background:#fff;border-radius:12px;
-        padding:12px;text-align:left;min-width:0;
-      }
-      .cash-menu:disabled {opacity:.45}
-      .cash-menu b {display:block;overflow-wrap:anywhere;margin:5px 0}
-      .cash-menu small {color:#168451;font-weight:750}
-      .cart-line {
-        display:flex;justify-content:space-between;align-items:center;
-        gap:8px;padding:11px 0;border-bottom:1px solid #edf1ed;
-      }
-      .cart-line-info {min-width:0}
-      .cart-line-info b {display:block;overflow-wrap:anywhere}
-      .cart-qty {display:flex;align-items:center;gap:7px;flex-shrink:0}
-      .cart-qty button {
-        width:29px;height:29px;border:1px solid #dce5de;background:white;
-        border-radius:8px;font-weight:800;
-      }
-      .cart-total {
-        display:flex;justify-content:space-between;font-weight:800;
-        font-size:18px;padding:14px 0;
-      }
-      .type-buttons {display:flex;gap:8px;margin:10px 0}
-      .type-buttons button {
-        flex:1;padding:11px 7px;border:1px solid #dce5de;
-        background:white;border-radius:10px;
-      }
-      .type-buttons button.active {
-        background:#e8f4ec;border-color:#168451;color:#168451;font-weight:750;
-      }
-      .cash-checkout {width:100%;padding:13px;margin-top:12px}
-      .order-card {
-        background:white;border:1px solid #e2eae4;border-radius:13px;
-        padding:14px;margin:10px 0;
-      }
-      .order-head {display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-      .order-card p {margin:6px 0;color:#68786e;font-size:13px}
-      @media(max-width:750px) {
-        .cash-layout {grid-template-columns:1fr}
-      }
-      @media(max-width:650px) {
-        .feature-list {grid-template-columns:1fr}
-        .cash-menu-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
-      }
-    </style>
-  `;
-}
-
-/* HALAMAN MENU */
-
-let editingId = null;
+/* =========================
+   MANAJEMEN MENU
+========================= */
 
 function menuForm() {
-  const menu = menus.find(item => item.id === editingId);
-  const name = menu ? menu.name : "";
-  const price = menu ? menu.price : "";
-  const category = menu ? menu.category : "Makanan";
+  const m = menus.find(x => String(x.id) === String(editingMenuId));
 
   return `
-    <form class="feature-form" id="menuForm">
-      <h3>${menu ? "Edit Menu" : "Tambah Menu Baru"}</h3>
-      <label>Nama Menu</label>
-      <input class="feature-input" name="name" value="${safe(name)}"
-        placeholder="Contoh: Nasi Goreng" required>
-      <label>Kategori</label>
-      <select class="feature-input" name="category">
-        ${["Makanan","Minuman","Snack","Lainnya"].map(cat =>
-          `<option ${category === cat ? "selected" : ""}>${cat}</option>`
-        ).join("")}
-      </select>
-      <label>Harga Jual (Rp)</label>
-      <input class="feature-input" name="price" type="number" min="0"
-        value="${price}" placeholder="15000" required>
-      <div class="feature-actions">
-        <button class="feature-btn" type="submit">Simpan Menu</button>
-        <button type="button" data-action="cancel-edit">Batal</button>
-      </div>
-    </form>
+    <div class="v3-panel">
+      <h3>${m ? "Edit Menu" : "Tambah Menu"}</h3>
+
+      <form id="menu-form" class="v3-form">
+        <div class="v3-field">
+          <label>Nama menu</label>
+          <input class="v3-input" name="name" required
+            value="${safe(m?.name || "")}">
+        </div>
+
+        <div class="v3-field">
+          <label>Kategori</label>
+          <input class="v3-input" name="category"
+            value="${safe(m?.category || "Makanan")}">
+        </div>
+
+        <div class="v3-field">
+          <label>Harga (Rp)</label>
+          <input class="v3-input" name="price"
+            type="number" min="0" required
+            value="${safe(m?.price ?? "")}">
+        </div>
+
+        <div class="v3-field">
+          <label>Status</label>
+          <select class="v3-select" name="available">
+            <option value="yes" ${m?.available !== false ? "selected" : ""}>Tersedia</option>
+            <option value="no" ${m?.available === false ? "selected" : ""}>Habis</option>
+          </select>
+        </div>
+
+        <div class="v3-field full v3-actions">
+          <button class="v3-btn">Simpan</button>
+          <button class="v3-btn alt" type="button" data-action="cancel-menu">Batal</button>
+        </div>
+      </form>
+    </div>
   `;
 }
 
 function menuPage() {
-  const categories = ["Semua","Makanan","Minuman","Snack","Lainnya"];
+  const cats = ["Semua", ...new Set(
+    menus.map(m => m.category || "Lainnya")
+  )];
 
-  const filtered = menus.filter(menu =>
-    menu.name.toLowerCase().includes(menuSearch.toLowerCase()) &&
-    (menuCategory === "Semua" || menu.category === menuCategory)
+  const filtered = menus.filter(m =>
+    (m.name || "").toLowerCase().includes(menuSearch.toLowerCase()) &&
+    (menuCategory === "Semua" ||
+      (m.category || "Lainnya") === menuCategory)
   );
 
-  return `
-    ${featureStyles()}
-    <div class="panel">
-      <div class="panel-title">
-        <b>🍽️ Kelola Menu</b><span>${menus.length} menu</span>
-      </div>
-      <p style="color:#75837a;font-size:13px">
-        Atur makanan dan minuman yang dijual.
-      </p>
-      <div class="feature-toolbar">
-        <div class="feature-search">
-          <input class="feature-input" id="menuSearch"
-            placeholder="Cari nama menu..." value="${safe(menuSearch)}">
+  return `${styles()}
+    <div class="v3-wrap">
+
+      <div class="v3-head">
+        <div>
+          <h2>Daftar Menu</h2>
+          <div class="v3-muted">${menus.length} menu</div>
         </div>
-        <button class="feature-btn" data-action="add-menu">＋ Tambah Menu</button>
-      </div>
-      <div class="feature-cats">
-        ${categories.map(cat => `
-          <button class="feature-cat ${menuCategory === cat ? "active" : ""}"
-            data-menu-category="${cat}">${cat}</button>
-        `).join("")}
-      </div>
-      <div id="menuFormArea">${editingId !== null ? menuForm() : ""}</div>
-      <div class="feature-list">
-        ${filtered.length ? filtered.map(menu => `
-          <div class="feature-item">
-            <span class="feature-tag">${safe(menu.category)}</span>
-            <h3>${safe(menu.name)}</h3>
-            <div class="feature-price">${money(menu.price)}</div>
-            <small style="color:${menu.available ? "#168451" : "#c03939"}">
-              ● ${menu.available ? "Tersedia" : "Habis"}
-            </small>
-            <div class="feature-actions">
-              <button data-action="edit-menu" data-id="${menu.id}">✏️ Edit</button>
-              <button data-action="toggle-menu" data-id="${menu.id}">
-                ${menu.available ? "Jadikan Habis" : "Aktifkan"}
-              </button>
-              <button data-action="delete-menu" data-id="${menu.id}">🗑 Hapus</button>
-            </div>
-          </div>
-        `).join("") : `
-          <div class="feature-empty">
-            <div style="font-size:32px">🍽️</div>
-            <b>Belum ada menu</b>
-            <p>Tambahkan menu pertama kamu.</p>
-          </div>
-        `}
-      </div>
-    </div>
-  `;
-}
-
-/* HALAMAN KASIR */
-
-function cartTotal() {
-  return cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-}
-
-function cashierPage() {
-  const categories = ["Semua","Makanan","Minuman","Snack","Lainnya"];
-
-  const availableMenus = menus.filter(menu =>
-    menu.available &&
-    menu.name.toLowerCase().includes(cashierSearch.toLowerCase()) &&
-    (cashierCategory === "Semua" || menu.category === cashierCategory)
-  );
-
-  return `
-    ${featureStyles()}
-    <div class="cash-layout">
-      <div class="cash-panel">
-        <div class="panel-title"><b>🍽️ Pilih Menu</b></div>
-        <input class="feature-input" id="cashierSearch"
-          placeholder="Cari makanan atau minuman..."
-          value="${safe(cashierSearch)}">
-        <div class="feature-cats">
-          ${categories.map(cat => `
-            <button class="feature-cat ${cashierCategory === cat ? "active" : ""}"
-              data-cash-category="${cat}">${cat}</button>
-          `).join("")}
-        </div>
-        <div class="cash-menu-grid">
-          ${availableMenus.length ? availableMenus.map(menu => `
-            <button class="cash-menu" data-action="add-cart" data-id="${menu.id}">
-              <span class="feature-tag">${safe(menu.category)}</span>
-              <b>${safe(menu.name)}</b>
-              <small>${money(menu.price)}</small>
-            </button>
-          `).join("") : `
-            <div class="feature-empty">
-              Belum ada menu tersedia.<br>
-              Tambahkan menu melalui halaman Menu.
-            </div>
-          `}
-        </div>
-      </div>
-
-      <div class="cash-panel">
-        <div class="panel-title">
-          <b>🛒 Keranjang Pesanan</b>
-          <span>${cart.reduce((sum,item) => sum + item.qty,0)} item</span>
-        </div>
-
-        ${cart.length ? cart.map(item => `
-          <div class="cart-line">
-            <div class="cart-line-info">
-              <b>${safe(item.name)}</b>
-              <small>${money(item.price)} × ${item.qty}</small>
-            </div>
-            <div class="cart-qty">
-              <button data-action="minus-cart" data-id="${item.id}">−</button>
-              <b>${item.qty}</b>
-              <button data-action="plus-cart" data-id="${item.id}">+</button>
-            </div>
-          </div>
-        `).join("") : `
-          <div class="feature-empty">Keranjang masih kosong.</div>
-        `}
-
-        <div class="cart-total">
-          <span>Total</span><span>${money(cartTotal())}</span>
-        </div>
-
-        <div style="font-weight:700">Jenis Pesanan</div>
-        <div class="type-buttons">
-          <button class="${orderType === "Dine In" ? "active" : ""}"
-            data-order-type="Dine In">🍽️ Makan di Tempat</button>
-          <button class="${orderType === "Takeaway" ? "active" : ""}"
-            data-order-type="Takeaway">🥡 Dibawa Pulang</button>
-        </div>
-
-        ${orderType === "Dine In" ? `
-          <label style="display:block;font-size:13px;margin:10px 0 5px">
-            Nomor Meja
-          </label>
-          <input class="feature-input" id="tableNumber"
-            placeholder="Contoh: 3">
-        ` : ""}
-
-        <label style="display:block;font-size:13px;margin:12px 0 5px">
-          Uang Diterima (Rp)
-        </label>
-        <input class="feature-input" id="cashReceived"
-          type="number" min="0" placeholder="Masukkan uang pembayaran">
-
-        <div style="margin-top:12px;color:#68786e;font-size:13px">
-          Kembalian:
-          <b id="changeAmount" style="color:#168451">${money(0)}</b>
-        </div>
-
-        <button class="feature-btn cash-checkout"
-          data-action="checkout" ${cart.length ? "" : "disabled"}>
-          ✓ Selesaikan Pembayaran
+        <button class="v3-btn" data-action="new-menu">
+          ＋ Tambah Menu
         </button>
       </div>
+
+      <input class="v3-input" id="menu-search"
+        placeholder="Cari menu..." value="${safe(menuSearch)}">
+
+      <div class="v3-actions">
+        ${cats.map(c => `
+          <button class="v3-btn ${menuCategory === c ? "" : "alt"}"
+            data-category="${safe(c)}">${safe(c)}</button>
+        `).join("")}
+      </div>
+
+      ${showMenuForm ? menuForm() : ""}
+
+      <div class="v3-grid">
+        ${filtered.length ? filtered.map(m => `
+          <div class="v3-card">
+            <span class="v3-pill ${m.available === false ? "busy" : ""}">
+              ${m.available === false ? "Habis" : "Tersedia"}
+            </span>
+
+            <h3>${safe(m.name)}</h3>
+            <div class="v3-muted">${safe(m.category || "Lainnya")}</div>
+            <div class="v3-price">${money(m.price)}</div>
+
+            <div class="v3-actions">
+              <button class="v3-btn alt"
+                data-action="edit-menu" data-id="${m.id}">Edit</button>
+
+              <button class="v3-btn alt"
+                data-action="toggle-menu" data-id="${m.id}">
+                ${m.available === false ? "Aktifkan" : "Habis"}
+              </button>
+
+              <button class="v3-btn red"
+                data-action="delete-menu" data-id="${m.id}">Hapus</button>
+            </div>
+          </div>
+        `).join("") : `
+          <div class="v3-empty" style="grid-column:1/-1">
+            Belum ada menu. Tekan Tambah Menu.
+          </div>
+        `}
+      </div>
     </div>
   `;
 }
 
-/* HALAMAN PESANAN */
+
+/* =========================
+   HALAMAN KASIR
+========================= */
+
+function cashierPage() {
+  const available = menus.filter(m =>
+    m.available !== false &&
+    (m.name || "").toLowerCase().includes(cashierSearch.toLowerCase())
+  );
+
+  const total = cart.reduce(
+    (sum, x) => sum + x.price * x.qty, 0
+  );
+
+  return `${styles()}
+    <div class="v3-wrap">
+      <h2>Kasir</h2>
+
+      <div class="v3-actions">
+        <button class="v3-btn ${orderType === "Dine In" ? "" : "alt"}"
+          data-action="dine">🍽️ Dine In</button>
+
+        <button class="v3-btn ${orderType === "Takeaway" ? "" : "alt"}"
+          data-action="take">🥡 Takeaway</button>
+
+        ${orderType === "Dine In" ? `
+          <select class="v3-select" id="selected-table"
+            style="max-width:180px">
+            ${tables.map(t => `
+              <option value="${t.id}"
+                ${Number(selectedTable) === Number(t.id) ? "selected" : ""}
+                ${activeOrder(t.id) ? "disabled" : ""}>
+                ${safe(t.name)}${activeOrder(t.id) ? " (Terisi)" : ""}
+              </option>
+            `).join("")}
+          </select>
+        ` : ""}
+      </div>
+
+      <div class="v3-two">
+
+        <div class="v3-panel">
+          <h3>Pilih Menu</h3>
+
+          <input class="v3-input" id="cashier-search"
+            placeholder="Cari makanan/minuman..."
+            value="${safe(cashierSearch)}">
+
+          <div class="v3-grid" style="margin-top:12px">
+            ${available.length ? available.map(m => `
+              <button class="v3-card" style="text-align:left"
+                data-action="add-cart" data-id="${m.id}">
+                <b>${safe(m.name)}</b>
+                <div class="v3-muted">${safe(m.category || "Lainnya")}</div>
+                <div class="v3-price">${money(m.price)}</div>
+                <span class="v3-muted">＋ Tambahkan</span>
+              </button>
+            `).join("") : `
+              <div class="v3-empty" style="grid-column:1/-1">
+                ${menus.length
+                  ? "Menu tidak ditemukan atau tidak tersedia."
+                  : "Tambahkan menu terlebih dahulu."}
+              </div>
+            `}
+          </div>
+        </div>
+
+        <div class="v3-panel">
+          <h3>🧺 Keranjang</h3>
+
+          ${cart.length ? cart.map(x => `
+            <div class="v3-line">
+              <div>
+                <b>${safe(x.name)}</b>
+                <div class="v3-muted">
+                  ${money(x.price)} × ${x.qty}
+                </div>
+              </div>
+
+              <div class="v3-qty">
+                <button data-action="minus" data-id="${x.id}">−</button>
+                <b>${x.qty}</b>
+                <button data-action="plus" data-id="${x.id}">＋</button>
+              </div>
+            </div>
+          `).join("") : `
+            <div class="v3-empty">Keranjang masih kosong.</div>
+          `}
+
+          <div class="v3-line">
+            <b>Total</b>
+            <b class="v3-price">${money(total)}</b>
+          </div>
+
+          <button class="v3-btn" style="width:100%;margin-top:12px"
+            data-action="checkout" ${cart.length ? "" : "disabled"}>
+            ${orderType === "Dine In"
+              ? "Kirim Pesanan ke Meja"
+              : "Bayar & Simpan"}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+
+/* =========================
+   PROSES KERANJANG
+========================= */
+
+function makeOrder(status, paymentStatus, tableId) {
+  const total = cart.reduce(
+    (sum, x) => sum + x.price * x.qty, 0
+  );
+
+  const d = new Date();
+
+  return {
+    id: Date.now(),
+    number: `KSR-${today().replaceAll("-", "")}-${String(orders.length + 1).padStart(3, "0")}`,
+    date: today(),
+    time: d.toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit"
+    }),
+    type: orderType,
+    table: tableId ? String(tableId) : "",
+    tableId: tableId,
+    items: cart.map(x => ({ ...x })),
+    total,
+    received: 0,
+    change: 0,
+    status,
+    paymentStatus
+  };
+}
+
+function checkout() {
+  if (!cart.length) return;
+
+  if (orderType === "Dine In") {
+    if (activeOrder(selectedTable)) {
+      alert("Meja sedang terisi. Pilih meja lain.");
+      return;
+    }
+
+    const t = tables.find(
+      x => Number(x.id) === Number(selectedTable)
+    );
+
+    if (!t) {
+      alert("Pilih meja terlebih dahulu.");
+      return;
+    }
+
+    orders.push(
+      makeOrder("Menunggu pembayaran", "Belum Lunas", selectedTable)
+    );
+
+    saveData("kasirku_orders", orders);
+    cart = [];
+    current = "Pesanan";
+
+    alert(`Pesanan dikirim ke ${t.name}. Pembayaran dilakukan saat pelanggan selesai.`);
+    draw();
+    return;
+  }
+
+  const total = cart.reduce(
+    (sum, x) => sum + x.price * x.qty, 0
+  );
+
+  const received = Number(prompt(
+    `Total ${money(total)}\nUang diterima (Rp):`,
+    String(total)
+  ));
+
+  if (!Number.isFinite(received) || received < total) {
+    alert("Uang diterima kurang atau tidak valid.");
+    return;
+  }
+
+  const order = makeOrder("Selesai", "Lunas", null);
+  order.received = received;
+  order.change = received - total;
+
+  orders.push(order);
+  saveData("kasirku_orders", orders);
+  cart = [];
+  current = "Pesanan";
+
+  alert(`Transaksi berhasil.\nKembalian: ${money(order.change)}`);
+  draw();
+}
+/* =========================
+   RIWAYAT PESANAN
+========================= */
 
 function ordersPage() {
-  return `
-    ${featureStyles()}
-    <div class="panel">
-      <div class="panel-title">
-        <b>▤ Riwayat Pesanan</b>
-        <span>${orders.length} transaksi</span>
-      </div>
-      ${orders.length ? [...orders].reverse().map(order => `
-        <div class="order-card">
-          <div class="order-head">
-            <b>${safe(order.number)}</b>
-            <b style="color:#168451">${money(order.total)}</b>
-          </div>
-          <p>${safe(order.date)} · ${safe(order.time)}</p>
-          <p>${safe(order.type)}${order.table ? " · Meja " + safe(order.table) : ""}</p>
-          <p>${order.items.map(item =>
-            `${safe(item.name)} × ${item.qty}`
-          ).join(", ")}</p>
-          <p>Uang diterima: ${money(order.received)} · Kembalian: ${money(order.change)}</p>
+  return `${styles()}
+    <div class="v3-wrap">
+      <div class="v3-head">
+        <div>
+          <h2>Riwayat Pesanan</h2>
+          <div class="v3-muted">${orders.length} pesanan</div>
         </div>
-      `).join("") : `
-        <div class="feature-empty">Belum ada transaksi tersimpan.</div>
+      </div>
+
+      ${orders.length ? [...orders].reverse().map(o => {
+        const unpaid =
+          o.paymentStatus !== "Lunas" &&
+          o.status !== "Dibatalkan";
+
+        return `
+          <div class="v3-panel">
+            <div class="v3-head">
+              <b>${safe(o.number)}</b>
+              <b>${money(o.total)}</b>
+            </div>
+
+            <div class="v3-muted">
+              ${safe(o.date)} · ${safe(o.time || "")}
+            </div>
+
+            <div class="v3-line">
+              <span>
+                ${safe(o.type)}
+                ${o.table ? " · Meja " + safe(o.table) : ""}
+              </span>
+
+              <span class="v3-pill ${unpaid ? "wait" : ""}">
+                ${unpaid ? "Belum Lunas" : safe(o.paymentStatus || "Lunas")}
+              </span>
+            </div>
+
+            <div class="v3-muted">
+              ${(o.items || []).map(x =>
+                `${safe(x.name)} × ${x.qty}`
+              ).join(", ")}
+            </div>
+
+            ${unpaid ? `
+              <div class="v3-actions">
+                <button class="v3-btn"
+                  data-action="pay" data-id="${o.id}">
+                  Proses Pembayaran
+                </button>
+
+                <button class="v3-btn red"
+                  data-action="cancel" data-id="${o.id}">
+                  Batalkan
+                </button>
+              </div>
+            ` : `
+              <div class="v3-muted">
+                Status: ${safe(o.status || "Selesai")}
+              </div>
+            `}
+          </div>
+        `;
+      }).join("") : `
+        <div class="v3-empty">Belum ada pesanan.</div>
       `}
     </div>
   `;
 }
 
-/* MANAJEMEN MEJA */
 
-function tablesPage() {
-  const savedTables = localStorage.getItem("kasirku_tables");
+/* =========================
+   PEMBAYARAN PESANAN
+========================= */
 
-  let tables = savedTables
-    ? JSON.parse(savedTables)
-    : Array.from({ length: 15 }, (_, i) => ({
-        id: i + 1,
-        name: `Meja ${String(i + 1).padStart(2, "0")}`,
-        status: "Kosong"
-      }));
-
-  localStorage.setItem("kasirku_tables", JSON.stringify(tables));
-
-  return `
-    <div class="panel">
-      <div class="panel-title">
-        <b>Manajemen Meja</b>
-        <span>15 meja tersedia</span>
-      </div>
-
-      <div class="table-grid">
-        ${tables.map(table => `
-          <div class="table-card">
-            <b>${safe(table.name)}</b>
-            <span class="table-status">${safe(table.status)}</span>
-          </div>
-        `).join("")}
-      </div>
-    </div>
-  `;
-}
-
-/* HALAMAN LAIN */
-
-const descriptions = {
-  Meja: "Pengaturan meja pelanggan akan kita bangun berikutnya.",
-  Dapur: "Tampilan pesanan untuk staf dapur akan kita bangun berikutnya.",
-  Laporan: "Laporan penjualan dan ringkasan usaha akan kita bangun berikutnya.",
-  Pengaturan: "Pengaturan usaha, cabang, dan pegawai akan kita bangun berikutnya."
-};
-
-/* RENDER */
-
-function draw() {
-  document.getElementById("title").textContent = current;
-  document.getElementById("nav").innerHTML = items.map(navButton).join("");
-  document.getElementById("bottom").innerHTML =
-    items.slice(0,6).map(navButton).join("");
-
-  const view = document.getElementById("view");
-
-  if (current === "Dashboard") view.innerHTML = dashboard();
-  else if (current === "Menu") view.innerHTML = menuPage();
-  else if (current === "Kasir") view.innerHTML = cashierPage();
-  else if (current === "Pesanan") view.innerHTML = ordersPage();
-  else if (current === "Meja")
-view.innerHTML = tablesPage();
-  else view.innerHTML = `
-    <div class="placeholder">
-      <h2>${current}</h2>
-      <p>${descriptions[current] || "Halaman dalam pengembangan."}</p>
-      <button class="primary" data-go="Dashboard">Kembali ke Dashboard</button>
-    </div>
-  `;
-
-  // Navigasi halaman
-  document.querySelectorAll("[data-go]").forEach(button => {
-    button.addEventListener("click", () => {
-      current = button.dataset.go;
-      draw();
-      document.getElementById("sidebar").classList.remove("open");
-    });
-  });
-
-  // Aksi umum
-  document.querySelectorAll("[data-action]").forEach(button => {
-    button.addEventListener("click", () => {
-      const action = button.dataset.action;
-      const id = Number(button.dataset.id);
-
-      if (action === "add-menu") {
-        editingId = -1;
-        draw();
-        document.getElementById("menuForm").scrollIntoView({
-          behavior:"smooth", block:"center"
-        });
-      }
-
-      if (action === "edit-menu") {
-        editingId = id;
-        draw();
-        document.getElementById("menuForm").scrollIntoView({
-          behavior:"smooth", block:"center"
-        });
-      }
-
-      if (action === "cancel-edit") {
-        editingId = null;
-        draw();
-      }
-
-      if (action === "toggle-menu") {
-        const menu = menus.find(item => item.id === id);
-        if (menu) {
-          menu.available = !menu.available;
-          saveMenus();
-          draw();
-        }
-      }
-
-      if (action === "delete-menu") {
-        const menu = menus.find(item => item.id === id);
-        if (menu && confirm(`Hapus menu "${menu.name}"?`)) {
-          menus = menus.filter(item => item.id !== id);
-          saveMenus();
-          draw();
-        }
-      }
-
-      if (action === "add-cart") {
-        const menu = menus.find(item => item.id === id && item.available);
-        if (menu) {
-          const existing = cart.find(item => item.id === id);
-          if (existing) existing.qty++;
-          else cart.push({
-            id: menu.id,
-            name: menu.name,
-            price: Number(menu.price),
-            qty: 1
-          });
-          draw();
-        }
-      }
-
-      if (action === "plus-cart" || action === "minus-cart") {
-        const item = cart.find(item => item.id === id);
-        if (item) {
-          item.qty += action === "plus-cart" ? 1 : -1;
-          if (item.qty <= 0) {
-            cart = cart.filter(item => item.id !== id);
-          }
-          draw();
-        }
-      }
-
-      if (action === "checkout") completeCheckout();
-    });
-  });
-
-  // Form menu
-  const menuFormElement = document.getElementById("menuForm");
-
-  if (menuFormElement) {
-    menuFormElement.addEventListener("submit", event => {
-      event.preventDefault();
-
-      const data = new FormData(menuFormElement);
-      const name = String(data.get("name")).trim();
-      const category = data.get("category");
-      const price = Number(data.get("price"));
-
-      if (!name || !Number.isFinite(price) || price < 0) {
-        alert("Periksa nama dan harga menu.");
-        return;
-      }
-
-      if (editingId === -1) {
-        menus.push({
-          id: Date.now(),
-          name,
-          category,
-          price,
-          available: true
-        });
-      } else {
-        const menu = menus.find(item => item.id === editingId);
-        if (menu) {
-          menu.name = name;
-          menu.category = category;
-          menu.price = price;
-        }
-      }
-
-      saveMenus();
-      editingId = null;
-      menuSearch = "";
-      menuCategory = "Semua";
-      draw();
-      alert("Menu berhasil disimpan.");
-    });
-  }
-
-  // Pencarian menu
-  const menuSearchElement = document.getElementById("menuSearch");
-  if (menuSearchElement) {
-    menuSearchElement.addEventListener("input", event => {
-      menuSearch = event.target.value;
-      const position = event.target.selectionStart;
-      draw();
-      const next = document.getElementById("menuSearch");
-      next.focus();
-      next.setSelectionRange(position, position);
-    });
-  }
-
-  // Kategori menu
-  document.querySelectorAll("[data-menu-category]").forEach(button => {
-    button.addEventListener("click", () => {
-      menuCategory = button.dataset.menuCategory;
-      draw();
-    });
-  });
-
-  // Pencarian kasir
-  const cashierSearchElement = document.getElementById("cashierSearch");
-  if (cashierSearchElement) {
-    cashierSearchElement.addEventListener("input", event => {
-      cashierSearch = event.target.value;
-      const position = event.target.selectionStart;
-      draw();
-      const next = document.getElementById("cashierSearch");
-      next.focus();
-      next.setSelectionRange(position, position);
-    });
-  }
-
-  // Kategori kasir
-  document.querySelectorAll("[data-cash-category]").forEach(button => {
-    button.addEventListener("click", () => {
-      cashierCategory = button.dataset.cashCategory;
-      draw();
-    });
-  });
-
-  // Jenis pesanan
-  document.querySelectorAll("[data-order-type]").forEach(button => {
-    button.addEventListener("click", () => {
-      orderType = button.dataset.orderType;
-      draw();
-    });
-  });
-
-  // Hitung kembalian langsung
-  const cashInput = document.getElementById("cashReceived");
-  if (cashInput) {
-    cashInput.addEventListener("input", () => {
-      const received = Number(cashInput.value);
-      const change = received - cartTotal();
-      const output = document.getElementById("changeAmount");
-      output.textContent = money(Math.max(0, change));
-    });
-  }
-}
-
-/* PROSES PEMBAYARAN */
-
-function completeCheckout() {
-  if (!cart.length) {
-    alert("Keranjang masih kosong.");
-    return;
-  }
-
-  const total = cartTotal();
-  const received = Number(document.getElementById("cashReceived")?.value || 0);
-  const table = document.getElementById("tableNumber")?.value.trim() || "";
-
-  if (orderType === "Dine In" && !table) {
-    alert("Masukkan nomor meja terlebih dahulu.");
-    return;
-  }
-
-  if (!Number.isFinite(received) || received < total) {
-    alert("Uang pembayaran belum mencukupi.");
-    return;
-  }
-
-  const now = new Date();
-  const date = now.toLocaleDateString("en-CA");
-  const time = now.toLocaleTimeString("id-ID", {
-    hour:"2-digit", minute:"2-digit"
-  });
-
-  const order = {
-    id: Date.now(),
-    number: "ORD-" + now.getTime().toString().slice(-6),
-    date,
-    time,
-    type: orderType,
-    table: orderType === "Dine In" ? table : "",
-    items: cart.map(item => ({...item})),
-    total,
-    received,
-    change: received - total
-  };
-
-  orders.push(order);
-  saveOrders();
-
-  cart = [];
-  orderType = "Dine In";
-  cashierSearch = "";
-  cashierCategory = "Semua";
-
-  alert(
-    "Transaksi berhasil disimpan!\n\n" +
-    "Total: " + money(total) + "\n" +
-    "Diterima: " + money(received) + "\n" +
-    "Kembalian: " + money(order.change)
+function payOrder(id) {
+  const order = orders.find(
+    x => String(x.id) === String(id)
   );
 
-  current = "Pesanan";
+  if (!order) return;
+
+  const received = Number(prompt(
+    `Tagihan ${money(order.total)}\nUang diterima (Rp):`,
+    String(order.total)
+  ));
+
+  if (!Number.isFinite(received) ||
+      received < Number(order.total)) {
+    alert("Uang diterima kurang atau tidak valid.");
+    return;
+  }
+
+  order.received = received;
+  order.change = received - order.total;
+  order.paymentStatus = "Lunas";
+  order.status = "Selesai";
+
+  saveData("kasirku_orders", orders);
+
+  alert(
+    `Pembayaran berhasil.\nKembalian: ${money(order.change)}`
+  );
+
   draw();
 }
 
-/* TANGGAL DAN TOMBOL */
 
-document.getElementById("date").textContent =
-  new Intl.DateTimeFormat("id-ID", {
-    weekday:"short",
-    day:"numeric",
-    month:"short",
-    year:"numeric"
-  }).format(new Date());
+/* =========================
+   MANAJEMEN MEJA
+========================= */
 
-document.getElementById("menu").onclick = () => {
-  document.getElementById("sidebar").classList.toggle("open");
-};
+function tablesPage() {
+  const occupied = tables.filter(
+    t => activeOrder(t.id)
+  ).length;
 
-document.getElementById("branch").onclick = () => {
-  alert("Pengaturan cabang akan dibuat pada tahap berikutnya.");
-};
+  return `${styles()}
+    <div class="v3-wrap">
 
+      <div class="v3-head">
+        <div>
+          <h2>Manajemen Meja</h2>
+          <div class="v3-muted">
+            Pantau 15 meja pelanggan
+          </div>
+        </div>
+
+        <span class="v3-pill">
+          ${tables.length} Meja
+        </span>
+      </div>
+
+      <div class="v3-actions">
+        <span class="v3-pill">
+          Kosong: ${tables.length - occupied}
+        </span>
+
+        <span class="v3-pill busy">
+          Terisi: ${occupied}
+        </span>
+      </div>
+
+      <div class="v3-grid">
+
+        ${tables.map(t => {
+          const order = activeOrder(t.id);
+
+          return `
+            <div class="v3-table ${order ? "occupied" : ""}">
+
+              <span class="v3-pill ${order ? "busy" : ""}">
+                ${order ? "Terisi" : "Kosong"}
+              </span>
+
+              <strong>${safe(t.name)}</strong>
+
+              ${order ? `
+                <div class="v3-muted">
+                  ${safe(order.number)}<br>
+                  ${money(order.total)}
+                </div>
+
+                <div class="v3-actions">
+                  <button class="v3-btn"
+                    data-action="pay"
+                    data-id="${order.id}">
+                    Bayar
+                  </button>
+
+                  <button class="v3-btn alt"
+                    data-go="Pesanan">
+                    Detail
+                  </button>
+                </div>
+              ` : `
+                <div class="v3-muted">
+                  Siap menerima pelanggan
+                </div>
+
+                <div class="v3-actions">
+                  <button class="v3-btn alt"
+                    data-action="choose-table"
+                    data-id="${t.id}">
+                    Pilih Meja
+                  </button>
+                </div>
+              `}
+            </div>
+          `;
+        }).join("")}
+
+      </div>
+
+      <div class="v3-muted">
+        Meja terisi setelah pesanan Dine In dikirim,
+        lalu kosong kembali setelah pembayaran selesai.
+      </div>
+
+    </div>
+  `;
+}
+
+
+/* =========================
+   DAPUR, LAPORAN, PENGATURAN
+========================= */
+
+function otherPage(page) {
+
+  if (page === "Dapur") {
+    const active = orders.filter(o =>
+      o.status !== "Selesai" &&
+      o.status !== "Dibatalkan"
+    );
+
+    return `${styles()}
+      <h2>Dapur</h2>
+      <p class="v3-muted">
+        Pesanan yang sedang berjalan.
+      </p>
+
+      ${active.length
+        ? active.map(o => `
+          <div class="v3-panel">
+            <b>${safe(o.number)}</b>
+            <p>
+              ${safe(o.type)}
+              ${o.table ? " · Meja " + safe(o.table) : ""}
+            </p>
+
+            ${(o.items || []).map(x =>
+              `${safe(x.name)} × ${x.qty}`
+            ).join(", ")}
+          </div>
+        `).join("")
+        : `<div class="v3-empty">Belum ada pesanan aktif.</div>`
+      }
+    `;
+  }
+
+  if (page === "Laporan") {
+    return `${styles()}
+      <h2>Laporan Penjualan</h2>
+
+      <div class="v3-panel">
+        <div class="v3-muted">
+          Penjualan lunas hari ini
+        </div>
+
+        <h2>${money(todaySales())}</h2>
+
+        <p>
+          ${todayOrders().filter(o =>
+            o.paymentStatus === "Lunas"
+          ).length} transaksi lunas
+        </p>
+      </div>
+    `;
+  }
+
+  return `${styles()}
+    <h2>Pengaturan</h2>
+
+    <div class="v3-panel">
+      <b>Penyimpanan lokal</b>
+
+      <p class="v3-muted">
+        Menu, pesanan, dan meja disimpan pada
+        browser/perangkat ini. Menghapus data situs
+        dapat menghapus data tersebut.
+      </p>
+
+      <button class="v3-btn" data-action="backup">
+        Unduh Cadangan JSON
+      </button>
+    </div>
+  `;
+}
+
+
+/* =========================
+   CADANGAN DATA
+========================= */
+
+function exportBackup() {
+  const backup = {
+    menus,
+    orders,
+    tables,
+    exportedAt: new Date().toISOString()
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(backup, null, 2)],
+    { type: "application/json" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = `kasirku-backup-${today()}.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+
+/* =========================
+   TOMBOL DAN AKSI
+========================= */
+
+function handleAction(action, id) {
+
+  if (action === "new-menu") {
+    showMenuForm = true;
+    editingMenuId = null;
+    draw();
+  }
+
+  if (action === "cancel-menu") {
+    showMenuForm = false;
+    editingMenuId = null;
+    draw();
+  }
+
+  if (action === "edit-menu") {
+    showMenuForm = true;
+    editingMenuId = id;
+    draw();
+  }
+
+  if (action === "delete-menu") {
+    if (confirm("Hapus menu ini?")) {
+      menus = menus.filter(
+        m => String(m.id) !== String(id)
+      );
+
+      saveData("kasirku_menus", menus);
+      draw();
+    }
+  }
+
+  if (action === "toggle-menu") {
+    const menu = menus.find(
+      m => String(m.id) === String(id)
+    );
+
+    if (menu) {
+      menu.available = menu.available === false;
+      saveData("kasirku_menus", menus);
+      draw();
+    }
+  }
+
+  if (action === "add-cart") {
+    const menu = menus.find(
+      m => String(m.id) === String(id)
+    );
+
+    if (menu && menu.available !== false) {
+      const existing = cart.find(
+        x => String(x.id) === String(id)
+      );
+
+      if (existing) {
+        existing.qty++;
+      } else {
+        cart.push({
+          id: menu.id,
+          name: menu.name,
+          price: Number(menu.price),
+          qty: 1
+        });
+      }
+
+      draw();
+    }
+  }
+
+  if (action === "plus" || action === "minus") {
+    const item = cart.find(
+      x => String(x.id) === String(id)
+    );
+
+    if (item) {
+      item.qty += action === "plus" ? 1 : -1;
+    }
+
+    cart = cart.filter(x => x.qty > 0);
+    draw();
+  }
+
+  if (action === "dine") {
+    orderType = "Dine In";
+    draw();
+  }
+
+  if (action === "take") {
+    orderType = "Takeaway";
+    draw();
+  }
+
+  if (action === "checkout") checkout();
+
+  if (action === "pay") payOrder(id);
+
+  if (action === "cancel") {
+    const order = orders.find(
+      x => String(x.id) === String(id)
+    );
+
+    if (order && confirm("Batalkan pesanan ini?")) {
+      order.status = "Dibatalkan";
+      order.paymentStatus = "Dibatalkan";
+
+      saveData("kasirku_orders", orders);
+      draw();
+    }
+  }
+
+  if (action === "choose-table") {
+    selectedTable = Number(id);
+    orderType = "Dine In";
+    current = "Kasir";
+    draw();
+  }
+
+  if (action === "backup") exportBackup();
+}
+
+
+/* =========================
+   SIMPAN FORM MENU
+========================= */
+
+function saveMenuForm(event) {
+  event.preventDefault();
+
+  const data = new FormData(event.target);
+
+  const record = {
+    id: editingMenuId
+      ? Number(editingMenuId)
+      : Date.now(),
+
+    name: String(data.get("name") || "").trim(),
+    category: String(data.get("category") || "Lainnya").trim(),
+    price: Number(data.get("price") || 0),
+    available: data.get("available") === "yes"
+  };
+
+  if (!record.name || record.price < 0) {
+    alert("Periksa nama dan harga menu.");
+    return;
+  }
+
+  if (editingMenuId) {
+    const index = menus.findIndex(
+      m => String(m.id) === String(editingMenuId)
+    );
+
+    if (index >= 0) menus[index] = record;
+  } else {
+    menus.push(record);
+  }
+
+  saveData("kasirku_menus", menus);
+
+  showMenuForm = false;
+  editingMenuId = null;
+
+  draw();
+}
+
+
+/* =========================
+   EVENT HALAMAN
+========================= */
+
+function bindViewEvents() {
+
+  document.querySelectorAll("[data-go]").forEach(button => {
+    button.addEventListener("click", () => {
+      current = button.dataset.go;
+
+      document.getElementById("sidebar")
+        ?.classList.remove("open");
+
+      draw();
+    });
+  });
+
+  document.querySelectorAll("[data-action]").forEach(button => {
+    button.addEventListener("click", () => {
+      handleAction(
+        button.dataset.action,
+        button.dataset.id
+      );
+    });
+  });
+
+  document.querySelectorAll("[data-category]").forEach(button => {
+    button.addEventListener("click", () => {
+      menuCategory = button.dataset.category;
+      draw();
+    });
+  });
+
+  document.getElementById("menu-form")
+    ?.addEventListener("submit", saveMenuForm);
+
+  document.getElementById("selected-table")
+    ?.addEventListener("change", event => {
+      selectedTable = Number(event.target.value);
+    });
+
+  document.getElementById("menu-search")
+    ?.addEventListener("input", event => {
+      menuSearch = event.target.value;
+      const position = event.target.selectionStart;
+      draw();
+
+      const input = document.getElementById("menu-search");
+      input?.focus();
+      input?.setSelectionRange(position, position);
+    });
+
+  document.getElementById("cashier-search")
+    ?.addEventListener("input", event => {
+      cashierSearch = event.target.value;
+      const position = event.target.selectionStart;
+      draw();
+
+      const input = document.getElementById("cashier-search");
+      input?.focus();
+      input?.setSelectionRange(position, position);
+    });
+}
+
+
+/* =========================
+   FUNGSI UTAMA
+========================= */
+
+function draw() {
+  const title = document.getElementById("title");
+  const nav = document.getElementById("nav");
+  const bottom = document.getElementById("bottom");
+  const view = document.getElementById("view");
+
+  if (!title || !nav || !bottom || !view) return;
+
+  title.textContent = current;
+
+  nav.innerHTML = items.map(navButton).join("");
+  bottom.innerHTML = items.slice(0, 6)
+    .map(navButton).join("");
+
+  if (current === "Dashboard") {
+    view.innerHTML = dashboard();
+  } else if (current === "Menu") {
+    view.innerHTML = menuPage();
+  } else if (current === "Kasir") {
+    view.innerHTML = cashierPage();
+  } else if (current === "Pesanan") {
+    view.innerHTML = ordersPage();
+  } else if (current === "Meja") {
+    view.innerHTML = tablesPage();
+  } else {
+    view.innerHTML = otherPage(current);
+  }
+
+  bindViewEvents();
+}
+
+
+/* =========================
+   TANGGAL DAN MENU SAMPING
+========================= */
+
+const dateElement = document.getElementById("date");
+
+if (dateElement) {
+  dateElement.textContent =
+    new Intl.DateTimeFormat("id-ID", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      year: "numeric"
+    }).format(new Date());
+}
+
+document.getElementById("menu")
+  ?.addEventListener("click", () => {
+    document.getElementById("sidebar")
+      ?.classList.toggle("open");
+  });
+
+document.getElementById("branch")
+  ?.addEventListener("click", () => {
+    alert("Pengaturan cabang akan tersedia pada tahap berikutnya.");
+  });
+
+
+/* MULAI APLIKASI */
 draw();
