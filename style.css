@@ -179,3 +179,17 @@ main{margin-left:240px;min-width:0}.topbar{height:82px;background:#fff;border-bo
 .category-manager-row .action-row{flex-wrap:nowrap}
 .category-manager-row .btn{min-height:38px;padding:8px 11px;font-size:12px}
 @media(max-width:480px){.category-manager-row{align-items:flex-start;flex-direction:column}.category-manager-row .action-row{width:100%}.category-manager-row .btn{flex:1}}
+
+/* Dialog dan notifikasi native KASIRKU */
+.app-dialog-backdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(12,28,21,.58);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:dialog-fade .15s ease-out}
+.app-dialog{width:min(100%,390px);padding:25px 22px 20px;border:1px solid #e2ebe4;border-radius:22px;background:#fff;box-shadow:0 22px 65px rgba(0,0,0,.22);display:grid;gap:12px;text-align:center;animation:payment-pop .18s ease-out}
+.app-dialog-mark{width:48px;height:48px;margin:0 auto;border-radius:50%;display:grid;place-items:center;background:#fff3e5;color:#a66b24;font-size:25px;font-weight:800}
+.app-dialog-mark.notice{background:#e9f6ed;color:#23834d}
+.app-dialog h3{margin:0;color:#20392b;font-size:20px}
+.app-dialog p{margin:0 0 4px;color:#65766b;font-size:14px;line-height:1.55;white-space:normal;overflow-wrap:anywhere}
+.app-dialog .field{width:100%;min-height:48px;text-align:left}
+.app-dialog-actions{display:flex;justify-content:center;gap:9px;margin-top:5px}
+.app-dialog-actions .btn{min-width:105px;min-height:44px}
+.app-dialog-actions .btn-danger{background:#b9473d;border-color:#b9473d;color:#fff}
+@keyframes dialog-fade{from{opacity:0}to{opacity:1}}
+@media(max-width:480px){.app-dialog-backdrop{padding:16px}.app-dialog{padding:23px 18px 18px;border-radius:20px}.app-dialog-actions{display:grid;grid-template-columns:1fr 1fr}.app-dialog-actions .btn{width:100%;min-width:0}}
