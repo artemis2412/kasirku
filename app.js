@@ -787,7 +787,7 @@ function otherPage(page) {
           </p>
 
           <div class="v3-actions">
-            ${o.status === "Menunggu" ? `
+            ${(o.status === "Menunggu" || o.status === "Menunggu pembayaran") ? `
               <button class="v3-btn"
                 data-action="kitchen-process"
                 data-id="${o.id}">
@@ -804,9 +804,7 @@ function otherPage(page) {
             ` : ""}
 
             ${o.status === "Siap" ? `
-              <span class="v3-pill">
-                Siap diantar
-              </span>
+              <button class="v3-btn" data-action="kitchen-finish" data-id="${o.id}">Tandai Selesai</button>
             ` : ""}
           </div>
         </div>
@@ -868,6 +866,26 @@ if (page === "Laporan") {
 }
 
   
+  if (page === "Pengaturan") {
+    return `${styles()}
+      <div class="v3-wrap">
+        <h2>Pengaturan</h2>
+        <div class="v3-panel">
+          <h3>Cadangan Data</h3>
+          <p class="v3-muted">Simpan salinan menu, pesanan, dan meja.</p>
+          <button class="v3-btn" data-action="backup">Unduh Cadangan Data</button>
+        </div>
+        <div class="v3-panel">
+          <h3>Penyimpanan</h3>
+          <p class="v3-muted">Data KASIRKU tersimpan di perangkat ini. Jangan hapus data situs atau penyimpanan browser agar transaksi tidak hilang.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `${styles()}<div class="v3-empty">Halaman tidak ditemukan.</div>`;
+}
+
 /* =========================
    CADANGAN DATA
 ========================= */
@@ -1020,7 +1038,8 @@ function handleAction(action, id) {
 
   if (
     action === "kitchen-process" ||
-    action === "kitchen-ready"
+    action === "kitchen-ready" ||
+    action === "kitchen-finish"
   ) {
     const order = orders.find(
       o => String(o.id) === String(id)
@@ -1028,15 +1047,14 @@ function handleAction(action, id) {
 
     if (order) {
       order.status =
-        action === "kitchen-process"
-          ? "Diproses"
-          : "Siap";
+        action === "kitchen-process" ? "Diproses" :
+        action === "kitchen-ready" ? "Siap" : "Selesai";
 
       saveData("kasirku_orders", orders);
       draw();
     }
   }
-
+}
 
 /* =========================
    SIMPAN FORM MENU
