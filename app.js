@@ -38,5 +38,6 @@ document.addEventListener("submit",e=>{if(e.target.id!=="menu-form")return;e.pre
 document.getElementById("menu-toggle").addEventListener("click",()=>document.getElementById("sidebar").classList.toggle("open"));
 document.getElementById("today-date").textContent=new Intl.DateTimeFormat("id-ID",{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date());
 window.addEventListener("error",e=>console.error("KASIRKU:",e.message));
-window.setInterval(()=>{if(current==="Meja"){document.querySelectorAll("[data-table-duration]").forEach(el=>{el.textContent=durationLabel(Number(el.dataset.start))})}},60000);\ntry{render()}catch(e){console.error(e);document.getElementById("view").innerHTML='<div class="panel"><h2>KASIRKU mengalami kendala</h2><p>Silakan kirim screenshot.</p></div>'}
+window.setInterval(()=>{if(current==="Meja"){document.querySelectorAll("[data-table-duration]").forEach(el=>{el.textContent=durationLabel(Number(el.dataset.start))})}},60000);
+try{render()}catch(e){console.error(e);document.getElementById("view").innerHTML='<div class="panel"><h2>KASIRKU mengalami kendala</h2><p>Silakan kirim screenshot.</p></div>'}
 })();
