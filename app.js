@@ -537,6 +537,40 @@ function ordersPage() {
   `;
 }
 
+/* MANAJEMEN MEJA */
+
+function tablesPage() {
+  const savedTables = localStorage.getItem("kasirku_tables");
+
+  let tables = savedTables
+    ? JSON.parse(savedTables)
+    : Array.from({ length: 15 }, (_, i) => ({
+        id: i + 1,
+        name: `Meja ${String(i + 1).padStart(2, "0")}`,
+        status: "Kosong"
+      }));
+
+  localStorage.setItem("kasirku_tables", JSON.stringify(tables));
+
+  return `
+    <div class="panel">
+      <div class="panel-title">
+        <b>Manajemen Meja</b>
+        <span>15 meja tersedia</span>
+      </div>
+
+      <div class="table-grid">
+        ${tables.map(table => `
+          <div class="table-card">
+            <b>${safe(table.name)}</b>
+            <span class="table-status">${safe(table.status)}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
 /* HALAMAN LAIN */
 
 const descriptions = {
