@@ -168,3 +168,14 @@ main{margin-left:240px;min-width:0}.topbar{height:82px;background:#fff;border-bo
  #view .cart-panel,
  #view .checkout-panel{scroll-margin-bottom:calc(150px + env(safe-area-inset-bottom))}
 }
+
+
+/* Pengelolaan kategori menu */
+.category-manage-trigger{margin-top:7px;min-height:38px;padding:8px 12px;font-size:12px}
+.category-manager{display:grid;gap:12px}
+.category-manager h3{margin:0}
+.category-manager-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.category-manager-row:last-child{border-bottom:0;padding-bottom:0}
+.category-manager-row .action-row{flex-wrap:nowrap}
+.category-manager-row .btn{min-height:38px;padding:8px 11px;font-size:12px}
+@media(max-width:480px){.category-manager-row{align-items:flex-start;flex-direction:column}.category-manager-row .action-row{width:100%}.category-manager-row .btn{flex:1}}
