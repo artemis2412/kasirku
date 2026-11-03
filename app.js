@@ -1,40 +1,62 @@
-const KEY='kasirku_v1_data';
-const seed={store:'Toko Saya',branch:'Cabang Utama',branches:['Cabang Utama','Cabang 2','Cabang 3'],products:[
-{id:'p1',name:'Mi instan goreng',barcode:'8998866200012',cost:2500,price:3000,stock:40,min:8,unit:'pcs'},
-{id:'p2',name:'Air mineral 600 ml',barcode:'8992761120014',cost:2000,price:3000,stock:30,min:8,unit:'botol'},
-{id:'p3',name:'Gula pasir 1 kg',barcode:'8991234567001',cost:15000,price:17000,stock:12,min:4,unit:'kg'},
-{id:'p4',name:'Minyak goreng 1 L',barcode:'8991234567002',cost:17000,price:19000,stock:10,min:4,unit:'liter'}
-],sales:[]};
-let db=load(),cart=[];
-function load(){try{return JSON.parse(localStorage.getItem(KEY))||structuredClone(seed)}catch{return structuredClone(seed)}}
-function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
-const rupiah=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
-const el=id=>document.getElementById(id);
-function toast(s){let t=el('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2100)}
-function go(id){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.go===id));if(id==='cashier')renderProducts()}
-document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
-el('branchBtn').onclick=()=>{let choice=prompt('Pilih cabang:\\n'+db.branches.map((x,i)=>`${i+1}. ${x}`).join('\\n'),String(db.branches.indexOf(db.branch)+1));let n=Number(choice)-1;if(Number.isInteger(n)&&db.branches[n]){db.branch=db.branches[n];save();toast('Cabang aktif: '+db.branch)}};
-function renderDashboard(){let today=new Date().toDateString(),s=db.sales.filter(x=>new Date(x.date).toDateString()===today);el('todayRevenue').textContent=rupiah(s.reduce((a,x)=>a+x.total,0));el('todayCount').textContent=s.length;el('productCount').textContent=db.products.length;el('lowStock').textContent=db.products.filter(p=>p.stock<=p.min).length;el('branchLabel').textContent=db.branch;let recent=[...db.sales].reverse().slice(0,3);el('recentSales').className='list-card'+(recent.length?'':' empty');el('recentSales').innerHTML=recent.length?recent.map(saleHTML).join(''):'Belum ada transaksi.'}
-function renderProducts(){let q=(el('productSearch').value||'').toLowerCase();let list=db.products.filter(p=>p.name.toLowerCase().includes(q)||p.barcode.includes(q));el('productGrid').innerHTML=list.map(p=>`<button class="product-card" data-add="${p.id}"><strong>${esc(p.name)}</strong><small>${esc(p.barcode||'Tanpa barcode')} • Stok ${p.stock} ${esc(p.unit)}</small><b>${rupiah(p.price)}</b></button>`).join('')||'<div class="empty">Barang tidak ditemukan.</div>';document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>addCart(b.dataset.add))}
-function addCart(id){let p=db.products.find(x=>x.id===id);if(!p)return;let c=cart.find(x=>x.id===id);if((c?.qty||0)>=p.stock){toast('Stok tidak mencukupi');return}if(c)c.qty++;else cart.push({id,qty:1});renderCart()}
-function renderCart(){el('cartItems').className='cart-items'+(cart.length?'':' empty');el('cartItems').innerHTML=cart.length?cart.map(c=>{let p=db.products.find(x=>x.id===c.id);return `<div class="cart-line"><div><strong>${esc(p.name)}</strong><small>${rupiah(p.price)} × ${c.qty}</small></div><div class="qty"><button data-dec="${c.id}">−</button><b>${c.qty}</b><button data-inc="${c.id}">＋</button></div></div>`}).join(''):'Belum ada barang dipilih.';el('cartTotal').textContent=rupiah(total());document.querySelectorAll('[data-dec]').forEach(b=>b.onclick=()=>changeQty(b.dataset.dec,-1));document.querySelectorAll('[data-inc]').forEach(b=>b.onclick=()=>changeQty(b.dataset.inc,1))}
-function changeQty(id,d){let c=cart.find(x=>x.id===id),p=db.products.find(x=>x.id===id);if(!c)return;c.qty+=d;if(c.qty<=0)cart=cart.filter(x=>x.id!==id);else if(c.qty>p.stock){c.qty=p.stock;toast('Stok tidak mencukupi')}renderCart()}
-function total(){return cart.reduce((a,c)=>a+c.qty*db.products.find(p=>p.id===c.id).price,0)}
-el('productSearch').addEventListener('input',renderProducts);el('clearCart').onclick=()=>{cart=[];renderCart()};
-el('checkoutBtn').onclick=()=>{if(!cart.length)return toast('Keranjang masih kosong');el('paymentTotal').textContent=rupiah(total());el('amountPaid').value=total();el('changeAmount').textContent=rupiah(0);el('paymentDialog').showModal()};
-el('amountPaid').addEventListener('input',()=>el('changeAmount').textContent=rupiah(Number(el('amountPaid').value)-total()));
-el('completeSale').onclick=e=>{e.preventDefault();let paid=Number(el('amountPaid').value),sum=total();if(paid<sum)return toast('Uang diterima kurang');let items=cart.map(c=>{let p=db.products.find(x=>x.id===c.id);return {name:p.name,barcode:p.barcode,qty:c.qty,unit:p.unit,cost:p.cost,price:p.price,line:c.qty*p.price}});items.forEach(i=>{let p=db.products.find(x=>x.name===i.name);p.stock-=i.qty});let sale={id:crypto.randomUUID(),invoice:'KK-'+Date.now(),branch:db.branch,date:new Date().toISOString(),items,total:sum,paid,change:paid-sum,method:el('payMethod').value};db.sales.push(sale);cart=[];el('paymentDialog').close();save();renderCart();toast('Transaksi berhasil disimpan')};
-el('addProductBtn').onclick=()=>openProduct();
-function openProduct(p){el('productForm').reset();el('editProductId').value=p?.id||'';el('productDialogTitle').textContent=p?'Edit barang':'Tambah barang';el('pName').value=p?.name||'';el('pBarcode').value=p?.barcode||'';el('pCost').value=p?.cost??'';el('pPrice').value=p?.price??'';el('pStock').value=p?.stock??0;el('pUnit').value=p?.unit||'pcs';el('pMin').value=p?.min??5;el('productDialog').showModal()}
-el('productForm').onsubmit=e=>{e.preventDefault();let id=el('editProductId').value,barcode=el('pBarcode').value.trim();if(barcode&&db.products.some(p=>p.barcode===barcode&&p.id!==id))return toast('Barcode sudah digunakan');let obj={id:id||crypto.randomUUID(),name:el('pName').value.trim(),barcode,cost:Number(el('pCost').value),price:Number(el('pPrice').value),stock:Number(el('pStock').value),unit:el('pUnit').value.trim(),min:Number(el('pMin').value)};if(id)db.products[db.products.findIndex(p=>p.id===id)]=obj;else db.products.push(obj);el('productDialog').close();save();toast('Barang tersimpan')};
-function renderInventory(){let q=el('inventorySearch').value.toLowerCase();let arr=db.products.filter(p=>p.name.toLowerCase().includes(q)||p.barcode.includes(q));el('inventoryList').innerHTML=arr.map(p=>`<div class="inventory-line"><div><strong>${esc(p.name)}</strong><small>${esc(p.barcode||'Tanpa barcode')} • Stok ${p.stock} ${esc(p.unit)} • Beli ${rupiah(p.cost)}</small></div><div style="text-align:right"><b>${rupiah(p.price)}</b><br><button class="text-btn" data-edit="${p.id}">Edit</button></div></div>`).join('')||'<div class="empty">Belum ada barang.</div>';document.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>openProduct(db.products.find(p=>p.id===b.dataset.edit)))}
-el('inventorySearch').oninput=renderInventory;
-function saleHTML(s){return `<div class="sale-line"><div><strong>${esc(s.invoice)}</strong><small>${new Date(s.date).toLocaleString('id-ID')} • ${esc(s.branch)}</small><small>${s.items.length} jenis barang • ${esc(s.method)}</small></div><b>${rupiah(s.total)}</b></div>`}
-function renderHistory(){el('historyList').className='list-card'+(db.sales.length?'':' empty');el('historyList').innerHTML=[...db.sales].reverse().map(s=>saleHTML(s)).join('')||'Belum ada transaksi.'}
-function renderAll(){renderDashboard();renderProducts();renderInventory();renderHistory()}
-el('saveSettings').onclick=()=>{db.store=el('storeName').value.trim()||'Toko Saya';let old=db.branch;db.branch=el('branchName').value.trim()||'Cabang Utama';if(!db.branches.includes(db.branch))db.branches.push(db.branch);save();toast('Pengaturan disimpan')};
-el('exportData').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-kasirku.json';a.click();URL.revokeObjectURL(a.href)};
-el('resetData').onclick=()=>{if(confirm('Hapus data lokal dan kembalikan data contoh?')){db=structuredClone(seed);cart=[];save();renderCart();toast('Data contoh dipulihkan')}};
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-el('storeName').value=db.store;el('branchName').value=db.branch;renderAll();renderCart();
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+const items = [
+  ["Dashboard", "⌂"],
+  ["Kasir", "▣"],
+  ["Pesanan", "☷"],
+  ["Meja", "▦"],
+  ["Menu", "☕"],
+  ["Dapur", "♨"],
+  ["Laporan", "▤"],
+  ["Pengaturan", "⚙"],
+];
+let current = "Dashboard";
+const money = (n) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(n);
+function button(x) {
+  return `<button class="navbtn ${current === x[0] ? "active" : ""}" data-go="${ x[0] }">${x[1]}　${x[0]}</button>`;
+}
+function draw() {
+  document.getElementById("title").textContent = current;
+  document.getElementById("nav").innerHTML = items.map(button).join("");
+  document.getElementById("bottom").innerHTML = items
+    .slice(0, 5)
+    .map(button)
+    .join("");
+  let html;
+  if (current === "Dashboard") {
+    html = `<div class="welcome"><div><h2>Selamat datang di KASIRKU 👋</h2><p class="sub">Ringkasan aktivitas usaha hari ini.</p></div><button class="primary" data-go="Kasir">＋ Transaksi Baru</button></div><div class="stats"><div class="card"><div class="label">Penjualan Hari Ini</div><div class="value">${money( 0 )}</div><div class="hint">Belum ada transaksi</div></div><div class="card"><div class="label">Total Pesanan</div><div class="value">0</div><div class="hint">Pesanan hari ini</div></div><div class="card"><div class="label">Meja Terisi</div><div class="value">0 / 0</div><div class="hint">Belum ada data meja</div></div><div class="card"><div class="label">Menu Tersedia</div><div class="value">0</div><div class="hint">Tambahkan menu pertama</div></div></div><h3 class="heading">Aktivitas penjualan · Hari ini</h3><div class="grid"><div class="panel"><b>Grafik penjualan</b><div class="chart">Grafik akan tampil setelah transaksi pertama dicatat.</div></div><div class="panel"><b>Akses cepat</b><div class="quickgrid"><button class="quick" data-go="Kasir">🧾<b>Buka Kasir</b><small>Buat transaksi</small></button><button class="quick" data-go="Menu">🍽️<b>Kelola Menu</b><small>Makanan & minuman</small></button><button class="quick" data-go="Meja">🪑<b>Atur Meja</b><small>Status meja</small></button><button class="quick" data-go="Dapur">👨‍🍳<b>Layar Dapur</b><small>Pantau pesanan</small></button></div></div></div><div class="note"><b>Catatan:</b> Ini kerangka dashboard. Data masih kosong; transaksi, database, akun pegawai, sinkronisasi cabang, dan printer belum diaktifkan.</div>`;
+  } else {
+    const d = {
+      Kasir: "Buat pesanan, pilih menu, dan proses pembayaran.",
+      Pesanan: "Pantau pesanan makan di tempat dan dibawa pulang.",
+      Meja: "Kelola meja kosong, terisi, dan menunggu pembayaran.",
+      Menu: "Kelola nama menu, kategori, harga, foto, dan ketersediaan.",
+      Dapur: "Pantau pesanan baru, sedang dibuat, dan siap disajikan.",
+      Laporan: "Lihat omzet, transaksi, dan performa setiap cabang.",
+      Pengaturan: "Atur profil usaha, cabang, pengguna, dan aplikasi.",
+    };
+    html = `<div class="placeholder"><h2>${current}</h2><p>${d[current]}</p><p>Bagian ini akan kita bangun pada tahap berikutnya.</p><button class="primary" data-go="Dashboard">Kembali ke Dashboard</button></div>`;
+  }
+  document.getElementById("view").innerHTML = html;
+  document.querySelectorAll("[data-go]").forEach(
+    (b) =>
+      (b.onclick = () => {
+        current = b.dataset.go;
+        draw();
+      })
+  );
+}
+document.getElementById("date").textContent = new Intl.DateTimeFormat("id-ID", {
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+}).format(new Date());
+document.getElementById("menu").onclick = () =>
+  document.getElementById("sidebar").classList.toggle("open");
+document.getElementById("branch").onclick = () =>
+  alert("Pengaturan cabang akan dibuat pada tahap berikutnya.");
+draw();
