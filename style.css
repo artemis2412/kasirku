@@ -138,3 +138,24 @@ main{margin-left:240px;min-width:0}.topbar{height:82px;background:#fff;border-bo
 @media(max-width:380px){
  #view .table-picker{grid-template-columns:repeat(4,minmax(0,62px));gap:7px}
 }
+
+/* Modal pembayaran KASIRKU */
+.payment-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(12,28,21,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.payment-modal{position:relative;width:min(100%,440px);padding:26px;border:1px solid #e5ece6;border-radius:22px;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.24);display:grid;gap:13px;animation:payment-pop .18s ease-out}
+@keyframes payment-pop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.payment-close{position:absolute;top:13px;right:15px;width:34px;height:34px;border:0;border-radius:50%;background:#f1f5f1;color:#52665a;font-size:24px;line-height:1}
+.payment-kicker{font-size:10px;font-weight:800;letter-spacing:1.6px;color:#658171}
+.payment-modal h3{margin:0 34px 3px 0;font-size:22px}
+.payment-due{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border-radius:13px;background:#eff6f0;color:#5b7062;font-size:13px}
+.payment-due strong{font-size:19px;color:var(--forest);white-space:nowrap}
+.payment-input-label{font-size:13px;font-weight:700;color:#344a3b;margin-top:3px}
+.payment-input-wrap{display:flex;align-items:center;gap:10px;padding:0 14px;border:1.5px solid #d8e4da;border-radius:12px;background:#fff;min-height:56px;color:#688071}
+.payment-input-wrap:focus-within{border-color:var(--green);box-shadow:0 0 0 3px #19865318}
+.payment-input-wrap>span{font-weight:800;font-size:16px}
+.payment-input-wrap input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font-family:inherit;font-weight:750;font-size:21px}
+.payment-change{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 2px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.payment-change strong{font-size:17px;color:var(--green)}
+.payment-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:4px}
+.payment-actions .btn{min-height:44px;padding:10px 16px}
+.payment-actions .btn:disabled{opacity:.42;cursor:not-allowed}
+@media(max-width:480px){.payment-overlay{align-items:flex-end;padding:12px}.payment-modal{width:100%;padding:23px 19px 18px;border-radius:22px 22px 16px 16px}.payment-modal h3{font-size:20px}.payment-actions{display:grid;grid-template-columns:.8fr 1.4fr}.payment-actions .btn{width:100%;padding:10px 9px;font-size:13px}}
