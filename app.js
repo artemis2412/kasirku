@@ -973,7 +973,25 @@ function handleAction(action, id) {
   }
 
   if (action === "backup") exportBackup();
-}
+
+  if (
+    action === "kitchen-process" ||
+    action === "kitchen-ready"
+  ) {
+    const order = orders.find(
+      o => String(o.id) === String(id)
+    );
+
+    if (order) {
+      order.status =
+        action === "kitchen-process"
+          ? "Diproses"
+          : "Siap";
+
+      saveData("kasirku_orders", orders);
+      draw();
+    }
+  }
 
 
 /* =========================
