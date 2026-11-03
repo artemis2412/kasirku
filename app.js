@@ -624,13 +624,61 @@ function tablesPage() {
   ).length;
 
   return `${styles()}
+
+    <style>
+      .table-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .table-tile {
+        border: 1px solid #dce9df;
+        background: #f0f8f2;
+        border-radius: 15px;
+        padding: 15px 10px;
+        text-align: center;
+        min-width: 0;
+      }
+
+      .table-tile.occupied {
+        background: #fff5e8;
+        border-color: #efd4aa;
+      }
+
+      .table-icon {
+        font-size: 28px;
+        margin: 5px 0;
+      }
+
+      .table-name {
+        font-size: 15px;
+        font-weight: 800;
+        margin: 5px 0;
+      }
+
+      .table-tile .v3-btn {
+        width: 100%;
+        margin-top: 10px;
+        padding: 8px 5px;
+        font-size: 12px;
+      }
+
+      @media(max-width: 420px) {
+        .table-grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 9px;
+        }
+      }
+    </style>
+
     <div class="v3-wrap">
 
       <div class="v3-head">
         <div>
           <h2>Manajemen Meja</h2>
           <div class="v3-muted">
-            Pantau 15 meja pelanggan
+            Pantau aktivitas meja pelanggan
           </div>
         </div>
 
@@ -649,62 +697,52 @@ function tablesPage() {
         </span>
       </div>
 
-      <div class="v3-grid">
+      <div class="table-grid">
 
         ${tables.map(t => {
           const order = activeOrder(t.id);
 
           return `
-            <div class="v3-table ${order ? "occupied" : ""}">
+            <div class="table-tile ${order ? "occupied" : ""}">
 
               <span class="v3-pill ${order ? "busy" : ""}">
                 ${order ? "Terisi" : "Kosong"}
               </span>
 
-              <strong>${safe(t.name)}</strong>
+              <div class="table-icon">🪑</div>
+
+              <div class="table-name">
+                ${safe(t.name)}
+              </div>
 
               ${order ? `
                 <div class="v3-muted">
-                  ${safe(order.number)}<br>
                   ${money(order.total)}
                 </div>
 
-                <div class="v3-actions">
-                  <button class="v3-btn"
-                    data-action="pay"
-                    data-id="${order.id}">
-                    Bayar
-                  </button>
+                <button class="v3-btn"
+                  data-action="pay"
+                  data-id="${order.id}">
+                  Bayar
+                </button>
 
-                  <button class="v3-btn alt"
-                    data-go="Pesanan">
-                    Detail
-                  </button>
-                </div>
               ` : `
                 <div class="v3-muted">
-                  Siap menerima pelanggan
+                  Siap digunakan
                 </div>
 
-                <div class="v3-actions">
-                  <button class="v3-btn alt"
-                    data-action="choose-table"
-                    data-id="${t.id}">
-                    Pilih Meja
-                  </button>
-                </div>
+                <button class="v3-btn alt"
+                  data-action="choose-table"
+                  data-id="${t.id}">
+                  Pilih Meja
+                </button>
               `}
+
             </div>
           `;
         }).join("")}
 
       </div>
-
-      <div class="v3-muted">
-        Meja terisi setelah pesanan Dine In dikirim,
-        lalu kosong kembali setelah pembayaran selesai.
-      </div>
-
     </div>
   `;
 }
