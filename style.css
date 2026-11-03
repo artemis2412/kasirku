@@ -159,3 +159,12 @@ main{margin-left:240px;min-width:0}.topbar{height:82px;background:#fff;border-bo
 .payment-actions .btn{min-height:44px;padding:10px 16px}
 .payment-actions .btn:disabled{opacity:.42;cursor:not-allowed}
 @media(max-width:480px){.payment-overlay{align-items:flex-end;padding:12px}.payment-modal{width:100%;padding:23px 19px 18px;border-radius:22px 22px 16px 16px}.payment-modal h3{font-size:20px}.payment-actions{display:grid;grid-template-columns:.8fr 1.4fr}.payment-actions .btn{width:100%;padding:10px 9px;font-size:13px}}
+
+
+/* Ruang aman agar tombol paling bawah tidak tertutup navigasi HP */
+@media(max-width:650px){
+ #view{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+ #view .cashier-cart,
+ #view .cart-panel,
+ #view .checkout-panel{scroll-margin-bottom:calc(150px + env(safe-area-inset-bottom))}
+}
