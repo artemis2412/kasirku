@@ -808,18 +808,48 @@ function otherPage(page) {
     <h2>Pengaturan</h2>
 
     <div class="v3-panel">
-      <b>Penyimpanan lokal</b>
+  <div class="v3-head">
+    <b>${safe(o.number)}</b>
+    <span class="v3-pill">
+      ${safe(o.status)}
+    </span>
+  </div>
 
-      <p class="v3-muted">
-        Menu, pesanan, dan meja disimpan pada
-        browser/perangkat ini. Menghapus data situs
-        dapat menghapus data tersebut.
-      </p>
+  <p>
+    ${safe(o.type)}
+    ${o.table ? " · Meja " + safe(o.table) : ""}
+  </p>
 
-      <button class="v3-btn" data-action="backup">
-        Unduh Cadangan JSON
+  <p>
+    ${(o.items || []).map(x =>
+      `${safe(x.name)} × ${x.qty}`
+    ).join(", ")}
+  </p>
+
+  <div class="v3-actions">
+    ${o.status === "Menunggu" ? `
+      <button class="v3-btn"
+        data-action="kitchen-process"
+        data-id="${o.id}">
+        Mulai Proses
       </button>
-    </div>
+    ` : ""}
+
+    ${o.status === "Diproses" ? `
+      <button class="v3-btn"
+        data-action="kitchen-ready"
+        data-id="${o.id}">
+        Pesanan Siap
+      </button>
+    ` : ""}
+
+    ${o.status === "Siap" ? `
+      <span class="v3-pill">
+        Siap diantar
+      </span>
+    ` : ""}
+  </div>
+</div>
   `;
 }
 
