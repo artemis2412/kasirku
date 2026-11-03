@@ -114,3 +114,27 @@ main{margin-left:240px;min-width:0}.topbar{height:82px;background:#fff;border-bo
 .order-filter.selected{background:var(--forest2);border-color:var(--forest2);color:#fff}
 .order-filter.selected span{background:#ffffff24;color:#fff}
 @media(max-width:650px){.order-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.order-filter{justify-content:space-between;padding:10px 12px}}
+
+
+/* Rapikan susunan kasir HP: gunakan lebar layar dan pusatkan pilihan meja */
+@media(max-width:650px){
+ #view .page-stack{gap:11px}
+ #view .page-heading{margin-bottom:0;align-items:center}
+ #view .page-heading .hint{max-width:100%}
+ #view .action-row{display:flex;align-items:center;gap:8px}
+ #view .action-row>.btn{flex:0 0 auto;min-height:44px;padding:9px 15px}
+ #view .table-picker-wrap{display:grid;flex:1 0 100%;width:100%;max-width:420px;margin:0 auto;gap:8px}
+ #view .table-picker-wrap>.hint{text-align:center}
+ #view .table-picker{width:100%;grid-template-columns:repeat(4,minmax(0,68px));justify-content:center;gap:8px}
+ #view .table-pick{width:100%;min-height:0;aspect-ratio:1/1;padding:4px}
+ #view .table-picker-legend{justify-content:center;gap:12px;font-size:11px}
+ #view .two-col{gap:10px}
+ #view .panel{padding:14px}
+ #view .panel h3{margin-bottom:9px}
+ #view #cash-search{min-height:46px}
+ #view .category-chips{justify-content:flex-start;gap:6px;padding:7px 0 9px}
+ #view .category-chips .chip{min-height:34px;padding:7px 11px}
+}
+@media(max-width:380px){
+ #view .table-picker{grid-template-columns:repeat(4,minmax(0,62px));gap:7px}
+}
