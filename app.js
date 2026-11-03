@@ -594,6 +594,8 @@ function draw() {
   else if (current === "Menu") view.innerHTML = menuPage();
   else if (current === "Kasir") view.innerHTML = cashierPage();
   else if (current === "Pesanan") view.innerHTML = ordersPage();
+  else if (current === "Meja")
+view.innerHTML = tablesPage();
   else view.innerHTML = `
     <div class="placeholder">
       <h2>${current}</h2>
