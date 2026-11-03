@@ -1,111 +1,67 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#172554">
-  <title>KASIRKU</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#14251f">
+  <meta name="description" content="KASIRKU - Sistem kasir warung makan dan cafe">
+
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css">
+
+  <title>KASIRKU V2</title>
 </head>
+
 <body>
-<header class="topbar">
-  <div><div class="brand">KASIRKU</div><small id="branchLabel">Cabang Utama</small></div>
-  <button class="icon-btn" id="branchBtn" aria-label="Pilih cabang">⌄</button>
-</header>
-<main>
-  <section id="dashboard" class="page active">
-    <div class="hello"><div><small>SELAMAT DATANG</small><h1>Ringkasan toko</h1></div><span class="pill offline">● Offline-ready</span></div>
-    <div class="stats">
-      <article class="stat"><small>Omzet hari ini</small><strong id="todayRevenue">Rp0</strong></article>
-      <article class="stat"><small>Transaksi hari ini</small><strong id="todayCount">0</strong></article>
-      <article class="stat"><small>Jumlah produk</small><strong id="productCount">0</strong></article>
-      <article class="stat"><small>Stok menipis</small><strong id="lowStock">0</strong></article>
+
+  <aside id="sidebar">
+    <div class="brand">
+      KASIRKU
+      <small>WARUNG & CAFE</small>
     </div>
-    <div class="section-head"><h2>Akses cepat</h2></div>
-    <div class="quick">
-      <button class="quick-card" data-go="cashier"><b>＋</b><span>Transaksi baru</span></button>
-      <button class="quick-card" data-go="products"><b>▦</b><span>Kelola barang</span></button>
-      <button class="quick-card" data-go="history"><b>◷</b><span>Riwayat transaksi</span></button>
-    </div>
-    <div class="section-head"><h2>Transaksi terbaru</h2><button class="text-btn" data-go="history">Lihat semua</button></div>
-    <div id="recentSales" class="list-card empty">Belum ada transaksi.</div>
-    <p class="notice">Data prototipe tersimpan di perangkat ini. Belum tersinkron ke cabang lain.</p>
-  </section>
 
-  <section id="cashier" class="page">
-    <div class="page-title"><small>POINT OF SALE</small><h1>Kasir</h1></div>
-    <input id="productSearch" class="search" placeholder="Cari nama atau scan/ketik barcode…" autocomplete="off">
-    <div id="productGrid" class="product-grid"></div>
-    <div class="cart-panel">
-      <div class="section-head"><h2>Keranjang</h2><button class="text-btn" id="clearCart">Kosongkan</button></div>
-      <div id="cartItems" class="cart-items empty">Belum ada barang dipilih.</div>
-      <div class="total-row"><span>Total</span><strong id="cartTotal">Rp0</strong></div>
-      <button class="primary full" id="checkoutBtn">Lanjut pembayaran</button>
-    </div>
-  </section>
+    <p class="muted">CABANG AKTIF</p>
 
-  <section id="products" class="page">
-    <div class="page-title"><small>INVENTARIS</small><h1>Daftar barang</h1></div>
-    <button class="primary full" id="addProductBtn">＋ Tambah barang</button>
-    <input id="inventorySearch" class="search" placeholder="Cari barang…">
-    <div id="inventoryList" class="list-card"></div>
-  </section>
+    <button id="branch">
+      Cabang Utama　⌄
+    </button>
 
-  <section id="history" class="page">
-    <div class="page-title"><small>CATATAN PENJUALAN</small><h1>Riwayat transaksi</h1></div>
-    <div id="historyList" class="list-card empty">Belum ada transaksi.</div>
-  </section>
+    <nav id="nav"></nav>
 
-  <section id="settings" class="page">
-    <div class="page-title"><small>PENGATURAN</small><h1>Pengaturan</h1></div>
-    <div class="list-card setting">
-      <label>Nama toko<input id="storeName" value="Toko Saya"></label>
-      <label>Nama cabang<input id="branchName" value="Cabang Utama"></label>
-      <button class="primary full" id="saveSettings">Simpan pengaturan</button>
-    </div>
-    <div class="list-card setting">
-      <h3>Data aplikasi</h3>
-      <p class="muted">Data disimpan lokal di browser HP ini. Hapus data browser dapat menghilangkan data toko.</p>
-      <button class="danger full" id="exportData">Ekspor cadangan JSON</button>
-      <button class="outline full" id="resetData">Reset data contoh</button>
-    </div>
-    <p class="notice">KASIRKU V1 • Prototipe lokal. Jangan gunakan sebagai satu-satunya pencatatan transaksi usaha sebelum fitur backup, keamanan, dan sinkronisasi cloud selesai diuji.</p>
-  </section>
-</main>
+    <p class="foot">
+      ● Mode lokal · Siap digunakan
+    </p>
+  </aside>
 
-<nav class="bottom-nav">
-  <button class="nav-item active" data-go="dashboard"><span>⌂</span>Beranda</button>
-  <button class="nav-item" data-go="cashier"><span>▣</span>Kasir</button>
-  <button class="nav-item" data-go="products"><span>▦</span>Barang</button>
-  <button class="nav-item" data-go="history"><span>◷</span>Riwayat</button>
-  <button class="nav-item" data-go="settings"><span>⚙</span>Setelan</button>
-</nav>
+  <main>
 
-<dialog id="productDialog">
-  <form method="dialog" id="productForm">
-    <div class="modal-head"><h2 id="productDialogTitle">Tambah barang</h2><button class="icon-btn" value="cancel">✕</button></div>
-    <input type="hidden" id="editProductId">
-    <label>Nama barang<input id="pName" required placeholder="Contoh: Mi instan goreng"></label>
-    <label>Barcode / kode<input id="pBarcode" placeholder="Bisa diketik atau dipindai nanti"></label>
-    <div class="two"><label>Harga beli<input id="pCost" type="number" min="0" required></label><label>Harga jual<input id="pPrice" type="number" min="0" required></label></div>
-    <div class="two"><label>Stok<input id="pStock" type="number" min="0" step="0.001" required></label><label>Satuan<input id="pUnit" value="pcs" required></label></div>
-    <label>Batas stok minimum<input id="pMin" type="number" min="0" step="0.001" value="5"></label>
-    <button class="primary full" id="saveProduct" value="default">Simpan barang</button>
-  </form>
-</dialog>
+    <header>
+      <button id="menu">☰</button>
 
-<dialog id="paymentDialog">
-  <form method="dialog" id="paymentForm">
-    <div class="modal-head"><h2>Pembayaran</h2><button class="icon-btn" value="cancel">✕</button></div>
-    <div class="pay-total"><small>Total belanja</small><strong id="paymentTotal">Rp0</strong></div>
-    <label>Metode pembayaran<select id="payMethod"><option value="Tunai">Tunai</option><option value="Transfer">Transfer</option></select></label>
-    <label>Uang diterima<input id="amountPaid" type="number" min="0" inputmode="numeric" required></label>
-    <div class="change-row"><span>Kembalian</span><strong id="changeAmount">Rp0</strong></div>
-    <button class="primary full" id="completeSale" value="default">Selesaikan transaksi</button>
-  </form>
-</dialog>
-<div id="toast" role="status"></div>
-<script src="app.js"></script>
+      <div>
+        <small>SISTEM KASIR</small>
+        <h1 id="title">Dashboard</h1>
+      </div>
+
+      <span id="date"></span>
+    </header>
+
+    <section id="view"></section>
+
+    <footer id="bottom"></footer>
+
+  </main>
+
+  <script src="./app.js"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js");
+      });
+    }
+  </script>
+
 </body>
 </html>
