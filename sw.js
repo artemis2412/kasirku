@@ -1,4 +1,4 @@
-const CACHE_VERSION="kasirku-v4-sales-report-2";
+const CACHE_VERSION="kasirku-v4-print-layouts-1";
 const APP_FILES=["./","./index.html","./style.css","./app.js","./manifest.json"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE_VERSION).then(cache=>cache.addAll(APP_FILES)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("kasirku-")&&k!==CACHE_VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
