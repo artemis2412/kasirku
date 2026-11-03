@@ -602,7 +602,6 @@ function payOrder(id) {
   order.received = received;
   order.change = received - order.total;
   order.paymentStatus = "Lunas";
-  order.status = "Selesai";
 
   saveData("kasirku_orders", orders);
 
