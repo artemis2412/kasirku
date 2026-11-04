@@ -1086,9 +1086,10 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 /* Report date filters and responsive sales chart */
 .report-filter-row{display:grid;grid-template-columns:minmax(150px,1fr) repeat(2,minmax(130px,.7fr));gap:10px;align-items:end}
 .report-filter-row label{display:grid;gap:6px;font-size:12px;color:var(--muted);font-weight:650}
-.report-chart{width:100%;overflow-x:auto;margin-top:12px}
-.report-chart svg{display:block;width:100%;min-width:320px;height:auto}
-@media(max-width:650px){.report-filter-row{grid-template-columns:1fr}.report-chart svg{min-width:520px}}
+.report-chart{width:100%;max-width:100%;overflow:hidden;margin-top:12px}
+.report-chart svg{display:block;width:100%;max-width:100%;min-width:0;height:auto;overflow:visible}
+.report-paper-label{display:grid;gap:6px;font-size:13px;font-weight:650;color:var(--ink)}
+@media(max-width:650px){.report-filter-row{grid-template-columns:1fr}}
 
 
 /* Printable report sheet; optional cash ledger remains a separate section */
@@ -1116,4 +1117,16 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
   body.report-print-mode #report-print-paper .report-print-summary>div{display:grid;gap:5px;border:1px solid #ccc;padding:9px;flex:1}
   body.report-print-mode #report-print-paper footer{text-align:center;margin-top:22px;font-size:9px;color:#555}
   @page{margin:8mm}
+}
+
+/* Report print layouts: A4 or compact thermal paper */
+@media print{
+ body.report-paper-a4 #report-print-paper{width:100%!important;padding:0!important;font-size:11px!important}
+ body.report-paper-58 #report-print-paper{width:54mm!important;padding:0!important;font-size:8px!important}
+ body.report-paper-80 #report-print-paper{width:76mm!important;padding:0!important;font-size:9px!important}
+ body.report-paper-58 #report-print-paper h1,body.report-paper-80 #report-print-paper h1{font-size:14px!important}
+ body.report-paper-58 #report-print-paper h2,body.report-paper-80 #report-print-paper h2{font-size:11px!important}
+ body.report-paper-58 #report-print-paper h3,body.report-paper-80 #report-print-paper h3{font-size:9px!important;margin:10px 0 5px!important}
+ body.report-paper-58 #report-print-paper .report-print-summary,body.report-paper-80 #report-print-paper .report-print-summary{display:grid!important;grid-template-columns:1fr!important;gap:4px!important}
+ body.report-paper-58 #report-print-paper th,body.report-paper-58 #report-print-paper td,body.report-paper-80 #report-print-paper th,body.report-paper-80 #report-print-paper td{padding:3px 2px!important;font-size:8px!important;overflow-wrap:anywhere}
 }
