@@ -51,9 +51,9 @@ layer.innerHTML = `
       <label class="kca-field">Kata sandi<input name="password" type="password" required minlength="8" autocomplete="current-password" placeholder="Minimal 8 karakter"></label>
       <button class="kca-primary" id="kca-submit" type="submit">Masuk</button>
       <button type="button" id="kca-forgot" style="display:block;margin:12px auto 0;border:0;background:none;color:#16734b;font:inherit;font-size:12px;font-weight:750">Lupa kata sandi?</button>
-      <div id="kca-otp-wrap" class="kca-hidden">
-        <label class="kca-field">Kode verifikasi email<input name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="Masukkan kode dari email"></label>
-        <button type="button" id="kca-verify" class="kca-primary">Verifikasi kode</button>
+      <div id="kca-recovery-wrap" class="kca-hidden">
+        <label class="kca-field">Kata sandi baru<input name="newPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter"></label>
+        <button type="button" id="kca-save-password" class="kca-primary">Simpan kata sandi baru</button>
       </div>
     </form>
     <p id="kca-message" class="kca-message" role="status" aria-live="polite"></p>
@@ -76,9 +76,9 @@ const nameWrap=layer.querySelector("#kca-name-wrap");
 const submit=layer.querySelector("#kca-submit");
 const message=layer.querySelector("#kca-message");
 const forgot=layer.querySelector("#kca-forgot");
-const otpWrap=layer.querySelector("#kca-otp-wrap");
-const verifyButton=layer.querySelector("#kca-verify");
-let mode="login",client=null,pendingEmail="",pendingRecovery=false;
+const recoveryWrap=layer.querySelector("#kca-recovery-wrap");
+const savePasswordButton=layer.querySelector("#kca-save-password");
+let mode="login",client=null,storeSetupInProgress=false;
 function say(text,type=""){message.textContent=text;message.className="kca-message "+type}
 layer.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",()=>{
   mode=btn.dataset.tab;
@@ -88,7 +88,7 @@ layer.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",(
   submit.textContent=mode==="login"?"Masuk":"Registrasi Sekarang";
   layer.querySelector("#kca-subtitle").textContent=mode==="login"?"Masuk ke akun tokomu":"Daftarkan Toko Anda";
   forgot.style.display=mode==="login"?"block":"none";
-  otpWrap.classList.add("kca-hidden");
+  recoveryWrap.classList.add("kca-hidden");
   say("");
 }));
 forgot.addEventListener("click",async()=>{
@@ -99,38 +99,43 @@ forgot.addEventListener("click",async()=>{
     if(!client){await loadSdk();client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});}
     const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname+"?cloud-auth-preview"});
     if(error) throw error;
-    pendingEmail=email; pendingRecovery=true;
-    otpWrap.classList.remove("kca-hidden");
-    say("Jika email terdaftar, kode pemulihan akan dikirim. Masukkan kode dari email.","success");
+    say("Jika email terdaftar, tautan pemulihan akan dikirim. Buka email ini dari perangkat yang sama, lalu buat kata sandi baru.","success");
   }catch(error){say(error.message||"Gagal mengirim kode pemulihan.","error");}
   finally{forgot.disabled=false;}
 });
-verifyButton.addEventListener("click",async()=>{
-  const token=String(form.elements.otp.value||"").trim();
-  if(!pendingEmail||!token){say("Masukkan kode verifikasi dari email.","error");return;}
-  verifyButton.disabled=true;
+savePasswordButton.addEventListener("click",async()=>{
+  const newPassword=String(form.elements.newPassword.value||"");
+  if(newPassword.length<8){say("Kata sandi baru minimal 8 karakter.","error");return;}
+  savePasswordButton.disabled=true;
   try{
-    const {data,error}=await client.auth.verifyOtp({email:pendingEmail,token,type:pendingRecovery?"recovery":"signup"});
+    const {error}=await client.auth.updateUser({password:newPassword});
     if(error) throw error;
-    if(pendingRecovery){
-      const newPassword=window.prompt("Masukkan kata sandi baru (minimal 8 karakter):");
-      if(!newPassword||newPassword.length<8) throw new Error("Kata sandi baru minimal 8 karakter. Silakan ulangi proses lupa kata sandi.");
-      const {error:updateError}=await client.auth.updateUser({password:newPassword});
-      if(updateError) throw updateError;
-      pendingRecovery=false; otpWrap.classList.add("kca-hidden"); form.elements.otp.value="";
-      say("Kata sandi berhasil diperbarui. Silakan masuk kembali.","success");
-      await client.auth.signOut();
-    }else{
-      const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
-      if(!pending) throw new Error("Data registrasi toko tidak ditemukan di perangkat ini. Silakan daftar ulang.");
-      const {error:storeError}=await client.rpc("create_my_store",{p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName});
-      if(storeError) throw storeError;
-      sessionStorage.removeItem("kca_pending_store"); otpWrap.classList.add("kca-hidden");
-      say("Email berhasil diverifikasi dan toko berhasil didaftarkan.","success");
-    }
-  }catch(error){console.error("KASIRKU email verification:",error);say(error.message||"Kode tidak valid atau sudah kedaluwarsa.","error");}
-  finally{verifyButton.disabled=false;}
+    recoveryWrap.classList.add("kca-hidden");
+    form.elements.newPassword.value="";
+    say("Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.","success");
+    await client.auth.signOut();
+  }catch(error){say(error.message||"Gagal memperbarui kata sandi.","error");}
+  finally{savePasswordButton.disabled=false;}
 });
+async function finishPendingStore(session){
+  if(!session?.user||storeSetupInProgress)return;
+  const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
+  if(!pending)return;
+  storeSetupInProgress=true;
+  try{
+    const {data:membership,error:membershipError}=await client.from("store_memberships")
+      .select("store_id").eq("user_id",session.user.id).eq("is_active",true).limit(1);
+    if(membershipError)throw membershipError;
+    if(membership?.length){sessionStorage.removeItem("kca_pending_store");return;}
+    const {error}=await client.rpc("create_my_store",{
+      p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
+    });
+    if(error)throw error;
+    sessionStorage.removeItem("kca_pending_store");
+    say("Email berhasil dikonfirmasi dan toko berhasil dibuat.","success");
+  }catch(error){console.error("KASIRKU store setup:",error);say(error.message||"Konfirmasi berhasil, tetapi pembuatan toko belum selesai. Silakan masuk kembali.","error");}
+  finally{storeSetupInProgress=false;}
+}
 form.addEventListener("submit",async event=>{
   event.preventDefault();
   submit.disabled=true; say("Memproses…");
@@ -181,13 +186,13 @@ form.addEventListener("submit",async event=>{
       });
       if(error) throw error;
       if(!data.session){
-        pendingEmail=email; pendingRecovery=false; otpWrap.classList.remove("kca-hidden");
-        say("Kode verifikasi telah diminta. Periksa email, masukkan kode di bawah, lalu tekan Verifikasi kode.","success");
+        say("Akun dibuat. Buka tautan konfirmasi yang dikirim ke email untuk mengaktifkan akun dan menyelesaikan pendaftaran toko.","success");
       }else{
         const {data:store,error:storeError}=await client.rpc("create_my_store",{
           p_store_name:storeName,p_branch_name:branchName,p_display_name:displayName
         });
         if(storeError) throw storeError;
+        sessionStorage.removeItem("kca_pending_store");
         say("Akun dan toko berhasil didaftarkan. Tahap berikutnya menghubungkan data kasir.", "success");
       }
     }
@@ -196,5 +201,21 @@ form.addEventListener("submit",async event=>{
     say(error.message||"Terjadi kesalahan. Coba lagi.","error");
   }finally{submit.disabled=false}
 });
-loadSdk().catch(error=>say(error.message,"error"));
+loadSdk().then(async()=>{
+  client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
+    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  });
+  client.auth.onAuthStateChange((event,session)=>{
+    if(event==="PASSWORD_RECOVERY"){
+      recoveryWrap.classList.remove("kca-hidden");
+      layer.querySelector("#kca-subtitle").textContent="Buat kata sandi baru";
+      say("Tautan pemulihan valid. Masukkan kata sandi baru.","success");
+    }
+    if(event==="SIGNED_IN"||event==="INITIAL_SESSION"){
+      setTimeout(()=>finishPendingStore(session),0);
+    }
+  });
+  const {data:{session}}=await client.auth.getSession();
+  if(session) await finishPendingStore(session);
+}).catch(error=>say(error.message,"error"));
 })();
