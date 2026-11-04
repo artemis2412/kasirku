@@ -264,3 +264,25 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .table-legend-panel small{font-size:10px;color:#7b8980}
 @media(max-width:650px){.table-page{gap:15px}.table-overview{padding:13px;gap:9px;border-radius:16px}.table-overview-icon{width:40px;height:40px;font-size:23px}.table-overview-copy h2{font-size:17px}.table-overview-copy p{font-size:11px}.table-overview-counts{gap:5px}.table-count{min-width:48px;padding:7px 6px}.table-count strong{font-size:19px}.table-count span{font-size:9px}.table-grid-modern{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.table-card-modern{min-height:128px;padding:10px 2px;gap:7px;border-radius:15px}.table-card-number{font-size:24px}.table-card-status{min-width:60px;padding:5px 8px;font-size:10px}.table-card-duration{font-size:9px}.table-legend-panel{padding:12px 10px;gap:6px}.table-legend-panel>div+div{padding-left:8px}.table-legend-panel b{font-size:11px}.table-legend-panel small{font-size:9px}}
 @media(max-width:360px){.table-card-modern{min-height:120px}.table-card-number{font-size:22px}.table-card-duration{font-size:8px}.table-overview-icon{display:none}}
+
+
+/* Match reference: wider, shorter table tiles across the full content width */
+.table-page>.table-grid-modern{width:100%;max-width:none;margin:0;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.table-page>.table-grid-modern>.table-card-modern{width:100%;min-width:0;min-height:0;aspect-ratio:.82;padding:12px 5px;gap:9px;border-radius:18px}
+.table-page>.table-grid-modern>.table-card-modern .table-card-icon{font-size:22px}
+.table-page>.table-grid-modern>.table-card-modern .table-card-number{font-size:clamp(24px,5vw,32px)}
+.table-page>.table-grid-modern>.table-card-modern .table-card-status{min-width:0;width:82%;padding:7px 5px;font-size:12px}
+.table-page>.table-grid-modern>.table-card-modern .table-card-duration{font-size:10px;white-space:nowrap}
+@media(max-width:650px){
+ .table-page>.table-grid-modern{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+ .table-page>.table-grid-modern>.table-card-modern{aspect-ratio:.80;padding:10px 3px;gap:8px;border-radius:17px}
+ .table-page>.table-grid-modern>.table-card-modern .table-card-icon{font-size:20px}
+ .table-page>.table-grid-modern>.table-card-modern .table-card-number{font-size:clamp(23px,5.5vw,30px)}
+ .table-page>.table-grid-modern>.table-card-modern .table-card-status{width:88%;font-size:11px;padding:6px 3px}
+ .table-page>.table-grid-modern>.table-card-modern .table-card-duration{font-size:9px}
+}
+@media(max-width:360px){
+ .table-page>.table-grid-modern{gap:7px}
+ .table-page>.table-grid-modern>.table-card-modern{aspect-ratio:.76;gap:6px}
+ .table-page>.table-grid-modern>.table-card-modern .table-card-duration{font-size:8px}
+}
