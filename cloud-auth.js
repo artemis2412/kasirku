@@ -4,6 +4,19 @@
 // Preview only. This screen is intentionally isolated from the live POS
 // until cloud identity, branch mapping, and local-data migration are tested.
 const cfg = window.KASIRKU_SUPABASE_CONFIG;
+function ensureCloudBridge(){
+  if(typeof window.KASIRKU_CLOUD?.getScopedClient==="function")return Promise.resolve();
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    script.src="./cloud-bridge.js?v=identity-isolation-6";
+    script.onload=()=>{
+      if(typeof window.KASIRKU_CLOUD?.getScopedClient==="function")resolve();
+      else reject(new Error("Modul keamanan Cloud belum termuat. Muat ulang halaman beberapa saat lagi."));
+    };
+    script.onerror=()=>reject(new Error("Gagal memuat modul keamanan Cloud. Periksa koneksi lalu muat ulang."));
+    document.head.appendChild(script);
+  });
+}
 if (!cfg || !cfg.url || !cfg.publishableKey) {
   console.error("KASIRKU Supabase config is missing.");
   return;
@@ -227,7 +240,7 @@ form.addEventListener("submit",async event=>{
     say(error.message||"Terjadi kesalahan. Coba lagi.","error");
   }finally{submit.disabled=false}
 });
-loadSdk().then(async()=>{
+ensureCloudBridge().then(()=>loadSdk()).then(async()=>{
   client=await window.KASIRKU_CLOUD.getScopedClient();
   const showInviteSetup=(session)=>{
     if(!inviteMode||!session?.user)return;
