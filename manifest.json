@@ -5,20 +5,14 @@
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f8f5",
-  "theme_color": "#123d30",
+  "theme_color": "#103d2c",
   "description": "KASIRKU — Aplikasi Kasir Modern",
   "icons": [
     {
-      "src": "./icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "./icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "./assets/kasirku-mark.svg?v=3",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
