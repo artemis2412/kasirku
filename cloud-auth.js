@@ -150,6 +150,14 @@ const savePasswordButton=layer.querySelector("#kca-save-password");
 let mode="login",client=null,storeSetupInProgress=false;
 const inviteMode=new URLSearchParams(location.search).has("accept-staff-invite");
 function say(text,type=""){message.textContent=text;message.className="kca-message "+type}
+function returnToDashboard(){
+  window.dispatchEvent(new CustomEvent("kasirku:cloud-context"));
+  const url=new URL(window.location.href);
+  url.searchParams.delete("cloud-auth-preview");
+  url.searchParams.delete("accept-staff-invite");
+  history.replaceState({},document.title,url.pathname+url.search+url.hash);
+  layer.remove();
+}
 layer.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",()=>{
   mode=btn.dataset.tab;
   layer.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b===btn));
@@ -188,9 +196,8 @@ savePasswordButton.addEventListener("click",async()=>{
       if(acceptError) throw acceptError;
       if(accepted?.status!=="accepted") throw new Error("Kata sandi tersimpan, tetapi undangan belum diterima. Hubungi Owner.");
       await linkLocalCloudIdentity();
-      recoveryWrap.classList.add("kca-hidden");
-      say("Akun pegawai aktif! Kata sandi tersimpan dan undangan berhasil diterima.","success");
-      layer.querySelectorAll(".kca-tabs,.kca-note").forEach(x=>x.classList.add("kca-hidden"));
+      say("Akun pegawai aktif! Mengarahkan ke Dashboard…","success");
+      setTimeout(returnToDashboard,650);
     }else{
       recoveryWrap.classList.add("kca-hidden");
       say("Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.","success");
@@ -216,6 +223,7 @@ async function finishPendingStore(session){
     await linkLocalCloudIdentity();
     sessionStorage.removeItem("kca_pending_store");
     say("Email berhasil dikonfirmasi, toko dibuat, dan akun PIN terhubung.","success");
+    setTimeout(returnToDashboard,650);
   }catch(error){console.error("KASIRKU store setup:",error);say(error.message||"Konfirmasi berhasil, tetapi pembuatan toko belum selesai. Silakan masuk kembali.","error");}
   finally{storeSetupInProgress=false;}
 }
@@ -241,12 +249,14 @@ form.addEventListener("submit",async event=>{
       if(membership?.length){
         await linkLocalCloudIdentity();
         sessionStorage.removeItem("kca_pending_store");
-        say("Login berhasil. Akun Cloud cocok dengan peran PIN perangkat ini.", "success");
+        say("Login berhasil. Mengarahkan ke Dashboard…", "success");
+        setTimeout(returnToDashboard,650);
       }else{
         const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
         if(!acceptError&&accepted?.status==="accepted"){
           await linkLocalCloudIdentity();
-          say("Undangan diterima. Akun Cloud cocok dengan peran PIN perangkat ini.", "success");
+          say("Undangan diterima. Mengarahkan ke Dashboard…", "success");
+          setTimeout(returnToDashboard,650);
           return;
         }
         const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
@@ -257,7 +267,8 @@ form.addEventListener("submit",async event=>{
           if(storeError) throw storeError;
           await linkLocalCloudIdentity();
           sessionStorage.removeItem("kca_pending_store");
-          say("Login, toko, dan pengaitan akun berhasil.", "success");
+          say("Login, toko, dan pengaitan akun berhasil. Mengarahkan ke Dashboard…", "success");
+          setTimeout(returnToDashboard,650);
         }else{
           say("Login berhasil, tetapi akun ini belum memiliki toko. Pendaftaran toko perlu diselesaikan terlebih dahulu.", "success");
         }
@@ -287,7 +298,8 @@ form.addEventListener("submit",async event=>{
         if(storeError) throw storeError;
         await linkLocalCloudIdentity();
         sessionStorage.removeItem("kca_pending_store");
-        say("Akun, toko, dan pengaitan Owner berhasil.", "success");
+        say("Akun, toko, dan pengaitan Owner berhasil. Mengarahkan ke Dashboard…", "success");
+        setTimeout(returnToDashboard,650);
       }
     }
   }catch(error){
