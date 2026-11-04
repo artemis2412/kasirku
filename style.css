@@ -1241,3 +1241,33 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
   main,body.desktop-mode main{min-height:100dvh!important;height:auto!important;overflow:visible!important;touch-action:pan-y pinch-zoom!important}
   #view,body.desktop-mode #view{height:auto!important;max-height:none!important;min-height:calc(100dvh - 170px)!important;overflow:visible!important;touch-action:pan-y pinch-zoom!important;-webkit-overflow-scrolling:touch;padding-bottom:120px!important}
 }
+
+
+/* Mobile sidebar drawer: allow its own vertical scrolling */
+@media(max-width:650px){
+  #sidebar{
+    position:fixed!important;
+    top:0!important;
+    bottom:0!important;
+    left:0!important;
+    height:100dvh!important;
+    max-height:100dvh!important;
+    overflow-x:hidden!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+    touch-action:pan-y!important;
+    padding-bottom:28px!important;
+  }
+  #sidebar.open{
+    display:flex!important;
+    overflow-y:auto!important;
+    touch-action:pan-y!important;
+  }
+  #sidebar #nav{
+    flex:0 0 auto!important;
+  }
+  #sidebar .sidebar-foot{
+    flex:0 0 auto!important;
+  }
+}
