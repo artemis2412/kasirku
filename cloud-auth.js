@@ -35,11 +35,11 @@ layer.innerHTML = `
   <section class="kca-card" aria-label="Akun KASIRKU">
     <header class="kca-brand">
       <div class="kca-logo">K</div><small>SISTEM KASIR MODERN</small>
-      <h1>KASIRKU</h1><p>Masuk ke akun tokomu</p>
+      <h1>KASIRKU</h1><p id="kca-subtitle">Masuk ke akun tokomu</p>
     </header>
     <div class="kca-tabs">
       <button type="button" class="active" data-tab="login">Masuk</button>
-      <button type="button" data-tab="register">Daftar Owner</button>
+      <button type="button" data-tab="register">Registrasi Toko</button>
     </div>
     <form id="kca-form">
       <div id="kca-name-wrap" class="kca-hidden">
@@ -77,7 +77,8 @@ layer.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",(
   layer.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b===btn));
   nameWrap.classList.toggle("kca-hidden",mode!=="register");
   form.elements.password.autocomplete=mode==="login"?"current-password":"new-password";
-  submit.textContent=mode==="login"?"Masuk":"Buat Akun Owner";
+  submit.textContent=mode==="login"?"Masuk":"Registrasi Sekarang";
+  layer.querySelector("#kca-subtitle").textContent=mode==="login"?"Masuk ke akun tokomu":"Daftarkan Toko Anda";
   say("");
 }));
 form.addEventListener("submit",async event=>{
@@ -110,7 +111,7 @@ form.addEventListener("submit",async event=>{
           });
           if(storeError) throw storeError;
           sessionStorage.removeItem("kca_pending_store");
-          say("Login dan pembuatan toko owner berhasil. Tahap berikutnya menghubungkan data kasir.", "success");
+          say("Login dan registrasi toko berhasil. Tahap berikutnya menghubungkan data kasir.", "success");
         }else{
           say("Login berhasil, tetapi akun ini belum memiliki toko. Pendaftaran toko perlu diselesaikan terlebih dahulu.", "success");
         }
@@ -130,13 +131,13 @@ form.addEventListener("submit",async event=>{
       });
       if(error) throw error;
       if(!data.session){
-        say("Akun berhasil didaftarkan. Periksa email untuk konfirmasi, lalu masuk dari perangkat dan browser yang sama agar pendaftaran toko dapat dilanjutkan.", "success");
+        say("Registrasi akun berhasil. Periksa email untuk konfirmasi, lalu masuk dari perangkat dan browser yang sama agar pendaftaran toko dapat dilanjutkan.", "success");
       }else{
         const {data:store,error:storeError}=await client.rpc("create_my_store",{
           p_store_name:storeName,p_branch_name:branchName,p_display_name:displayName
         });
         if(storeError) throw storeError;
-        say("Akun owner dan toko berhasil dibuat. Tahap berikutnya menghubungkan data kasir.", "success");
+        say("Akun dan toko berhasil didaftarkan. Tahap berikutnya menghubungkan data kasir.", "success");
       }
     }
   }catch(error){
