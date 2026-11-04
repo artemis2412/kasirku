@@ -145,7 +145,7 @@
     return {...(invitation||{}),...(sent||{})};
   }
   async function refresh(){
-    if(running)return window.KASIRKU_CLOUD.getState();
+    if(running){refreshAgain=true;return window.KASIRKU_CLOUD.getState();}
     running=true;
     try{
       if(!cfg?.url||!cfg?.publishableKey)throw new Error("Konfigurasi cloud belum tersedia");
