@@ -79,7 +79,8 @@ const message=layer.querySelector("#kca-message");
 const forgot=layer.querySelector("#kca-forgot");
 const recoveryWrap=layer.querySelector("#kca-recovery-wrap");
 const savePasswordButton=layer.querySelector("#kca-save-password");
-let mode="login",client=null,storeSetupInProgress=false;\nconst inviteMode=new URLSearchParams(location.search).has("accept-staff-invite");
+let mode="login",client=null,storeSetupInProgress=false;
+const inviteMode=new URLSearchParams(location.search).has("accept-staff-invite");
 function say(text,type=""){message.textContent=text;message.className="kca-message "+type}
 layer.querySelectorAll("[data-tab]").forEach(btn=>btn.addEventListener("click",()=>{
   mode=btn.dataset.tab;
