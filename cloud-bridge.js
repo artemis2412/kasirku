@@ -7,7 +7,8 @@
   window.KASIRKU_CLOUD = {
     getState: () => ({...state, memberships:[...state.memberships], branches:[...state.branches]}),
     refresh: refresh,
-    loadCatalog: loadCatalog
+    loadCatalog: loadCatalog,
+    getLocalBranchMappings: getLocalBranchMappings
   };
   function publish(){
     window.dispatchEvent(new CustomEvent("kasirku:cloud-context", {detail:window.KASIRKU_CLOUD.getState()}));
@@ -22,6 +23,40 @@
     });
   }
   let client=null, running=false;
+  const LOCAL_BRANCH_MAP_KEY = "kasirku_cloud_branch_map_v1";
+  function readLocalBranches(){
+    try{
+      const rows=JSON.parse(localStorage.getItem("ksecurity_branches")||"[]");
+      return Array.isArray(rows)?rows.filter(x=>x&&x.id&&x.name):[];
+    }catch{return []}
+  }
+  function getLocalBranchMappings(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(LOCAL_BRANCH_MAP_KEY)||"{}");
+      return {storeId:state.store?.id||saved.storeId||null,mappings:Array.isArray(saved.mappings)?saved.mappings:[],localBranches:readLocalBranches().map(b=>({id:b.id,name:b.name,active:b.active!==false}))};
+    }catch{return {storeId:state.store?.id||null,mappings:[],localBranches:readLocalBranches()}}
+  }
+  function saveApprovedInitialMapping(){
+    if(!state.store?.id||!state.branches.length)return;
+    const locals=readLocalBranches(),cloud=state.branches;
+    const local=locals.filter(b=>String(b.name).trim()==="Roti Cafe kuwe in");
+    const remote=cloud.filter(b=>String(b.name).trim()==="Cabang satu");
+    if(local.length!==1||remote.length!==1)return;
+    let saved={storeId:state.store.id,mappings:[]};
+    try{saved=JSON.parse(localStorage.getItem(LOCAL_BRANCH_MAP_KEY)||"{}")}catch{}
+    if(saved.storeId!==state.store.id)saved={storeId:state.store.id,mappings:[]};
+    const exists=saved.mappings.find(m=>m.localBranchId===local[0].id||m.cloudBranchId===remote[0].id);
+    if(exists){
+      if(exists.localBranchId!==local[0].id||exists.cloudBranchId!==remote[0].id)return;
+      return;
+    }
+    saved.mappings.push({
+      localBranchId:local[0].id,localBranchName:local[0].name,
+      cloudBranchId:remote[0].id,cloudBranchName:remote[0].name,
+      storeId:state.store.id,approvedBy:"owner-confirmed",createdAt:new Date().toISOString()
+    });
+    localStorage.setItem(LOCAL_BRANCH_MAP_KEY,JSON.stringify(saved));
+  }
   async function loadCatalog(branchId){
     if(!client)throw new Error("Koneksi cloud belum siap");
     const branch=state.branches.find(b=>b.id===branchId);
@@ -68,6 +103,7 @@
             allowed=allowed.filter(b=>ids.has(b.id));
           }
           state.branches=allowed;
+          saveApprovedInitialMapping();
         }
       }
     }catch(error){state.error=error?.message||"Gagal memuat konteks cloud";}
