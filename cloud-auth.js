@@ -4,13 +4,68 @@
 // Preview only. This screen is intentionally isolated from the live POS
 // until cloud identity, branch mapping, and local-data migration are tested.
 const cfg = window.KASIRKU_SUPABASE_CONFIG;
+let cloudAuthClient=null, cloudAuthLocalId=null;
+function getLocalPinSession(){
+  try{
+    const id=localStorage.getItem("ksecurity_session");
+    const users=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");
+    const u=Array.isArray(users)?users.find(x=>String(x?.id)===String(id)&&x?.active!==false):null;
+    return u?{id:String(u.id),name:String(u.name||""),role:String(u.role||"").toLowerCase()}:null;
+  }catch{return null}
+}
+async function getIsolatedCloudClient(){
+  const local=getLocalPinSession();
+  if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu.");
+  await loadSdk();
+  if(!cloudAuthClient||cloudAuthLocalId!==local.id){
+    const prefix="kasirku_supabase_auth_v1:"+encodeURIComponent(local.id)+":";
+    const storage={
+      getItem:async key=>localStorage.getItem(prefix+key),
+      setItem:async(key,value)=>localStorage.setItem(prefix+key,value),
+      removeItem:async key=>localStorage.removeItem(prefix+key)
+    };
+    cloudAuthClient=window.supabase.createClient(cfg.url,cfg.publishableKey,{
+      auth:{storage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+    });
+    cloudAuthLocalId=local.id;
+  }
+  return cloudAuthClient;
+}
+async function linkLocalCloudIdentity(){
+  const local=getLocalPinSession();
+  if(!local)throw new Error("Sesi PIN lokal tidak ditemukan.");
+  const client=await getIsolatedCloudClient();
+  const {data:{session},error:sessionError}=await client.auth.getSession();
+  if(sessionError)throw sessionError;
+  if(!session?.user)throw new Error("Akun Cloud belum login.");
+  const {data:memberships,error}=await client.from("store_memberships")
+    .select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
+  if(error)throw error;
+  if(!memberships?.length)throw new Error("Keanggotaan Cloud aktif tidak ditemukan.");
+  if(memberships.length!==1)throw new Error("Akun Cloud memiliki lebih dari satu keanggotaan toko. Pengaitan ditahan.");
+  const expected=local.role==="owner"?"owner":local.role==="admin"?"admin":"cashier";
+  const actual=String(memberships[0].role||"").toLowerCase();
+  if(actual!==expected)throw new Error("Peran tidak cocok: PIN lokal "+expected+" tetapi akun Cloud "+actual+". Pengaitan dibatalkan.");
+  const linkKey="kasirku_cloud_identity_link_v1:"+encodeURIComponent(local.id);
+  const old=(()=>{try{return JSON.parse(localStorage.getItem(linkKey)||"null")}catch{return null}})();
+  if(old&&old.userId!==session.user.id)throw new Error("Akun PIN ini sudah ditautkan ke akun Cloud lain.");
+  const users=(()=>{try{return JSON.parse(localStorage.getItem("ksecurity_users")||"[]")}catch{return []}})();
+  for(const other of users){
+    if(!other?.id||String(other.id)===local.id)continue;
+    const otherLink=(()=>{try{return JSON.parse(localStorage.getItem("kasirku_cloud_identity_link_v1:"+encodeURIComponent(String(other.id))||"null"))}catch{return null}})();
+    if(otherLink?.userId===session.user.id)throw new Error("Akun Cloud ini sudah ditautkan ke akun PIN lain pada perangkat ini.");
+  }
+  localStorage.setItem(linkKey,JSON.stringify({userId:session.user.id,email:String(session.user.email||"").toLowerCase(),role:actual,linkedAt:new Date().toISOString()}));
+  if(window.KASIRKU_CLOUD?.refresh)await window.KASIRKU_CLOUD.refresh();
+  return true;
+}
 function ensureCloudBridge(){
-  if(typeof window.KASIRKU_CLOUD?.getScopedClient==="function")return Promise.resolve();
+  if(typeof window.KASIRKU_CLOUD?.refresh==="function")return Promise.resolve();
   return new Promise((resolve,reject)=>{
     const script=document.createElement("script");
     script.src="./cloud-bridge.js?v=identity-isolation-6";
     script.onload=()=>{
-      if(typeof window.KASIRKU_CLOUD?.getScopedClient==="function")resolve();
+      if(typeof window.KASIRKU_CLOUD?.refresh==="function")resolve();
       else reject(new Error("Modul keamanan Cloud belum termuat. Muat ulang halaman beberapa saat lagi."));
     };
     script.onerror=()=>reject(new Error("Gagal memuat modul keamanan Cloud. Periksa koneksi lalu muat ulang."));
@@ -111,7 +166,7 @@ forgot.addEventListener("click",async()=>{
   if(!email){say("Masukkan email akun terlebih dahulu.","error");form.elements.email.focus();return;}
   forgot.disabled=true; say("Mengirim kode pemulihan…");
   try{
-    if(!client){await loadSdk();client=await window.KASIRKU_CLOUD.getScopedClient();}
+    if(!client){await loadSdk();client=await getIsolatedCloudClient();}
     const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname+"?cloud-auth-preview"});
     if(error) throw error;
     say("Jika email terdaftar, tautan pemulihan akan dikirim. Buka email ini dari perangkat yang sama, lalu buat kata sandi baru.","success");
@@ -125,14 +180,14 @@ savePasswordButton.addEventListener("click",async()=>{
   if(newPassword!==confirmPassword){say("Ulangi kata sandi harus sama.","error");return;}
   savePasswordButton.disabled=true;
   try{
-    if(!client)client=await window.KASIRKU_CLOUD.getScopedClient();
+    if(!client)client=await getIsolatedCloudClient();
     const {error}=await client.auth.updateUser({password:newPassword});
     if(error) throw error;
     if(inviteMode){
       const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
       if(acceptError) throw acceptError;
       if(accepted?.status!=="accepted") throw new Error("Kata sandi tersimpan, tetapi undangan belum diterima. Hubungi Owner.");
-      await window.KASIRKU_CLOUD.linkCurrentIdentity();
+      await linkLocalCloudIdentity();
       recoveryWrap.classList.add("kca-hidden");
       say("Akun pegawai aktif! Kata sandi tersimpan dan undangan berhasil diterima.","success");
       layer.querySelectorAll(".kca-tabs,.kca-note").forEach(x=>x.classList.add("kca-hidden"));
@@ -158,7 +213,7 @@ async function finishPendingStore(session){
       p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
     });
     if(error)throw error;
-    await window.KASIRKU_CLOUD.linkCurrentIdentity();
+    await linkLocalCloudIdentity();
     sessionStorage.removeItem("kca_pending_store");
     say("Email berhasil dikonfirmasi, toko dibuat, dan akun PIN terhubung.","success");
   }catch(error){console.error("KASIRKU store setup:",error);say(error.message||"Konfirmasi berhasil, tetapi pembuatan toko belum selesai. Silakan masuk kembali.","error");}
@@ -173,10 +228,10 @@ form.addEventListener("submit",async event=>{
   try{
     if(!client){
       await loadSdk();
-      client=await window.KASIRKU_CLOUD.getScopedClient();
+      client=await getIsolatedCloudClient();
     }
     if(mode==="login"){
-      const local=window.KASIRKU_CLOUD.getLocalSession();
+      const local=getLocalPinSession();
       if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu sebelum menghubungkan akun Cloud.");
       const {data,error}=await client.auth.signInWithPassword({email,password});
       if(error) throw error;
@@ -184,13 +239,13 @@ form.addEventListener("submit",async event=>{
         .select("store_id,role,is_active").eq("user_id",data.user.id).eq("is_active",true).limit(1);
       if(membershipError) throw membershipError;
       if(membership?.length){
-        await window.KASIRKU_CLOUD.linkCurrentIdentity();
+        await linkLocalCloudIdentity();
         sessionStorage.removeItem("kca_pending_store");
         say("Login berhasil. Akun Cloud cocok dengan peran PIN perangkat ini.", "success");
       }else{
         const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
         if(!acceptError&&accepted?.status==="accepted"){
-          await window.KASIRKU_CLOUD.linkCurrentIdentity();
+          await linkLocalCloudIdentity();
           say("Undangan diterima. Akun Cloud cocok dengan peran PIN perangkat ini.", "success");
           return;
         }
@@ -200,7 +255,7 @@ form.addEventListener("submit",async event=>{
             p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
           });
           if(storeError) throw storeError;
-          await window.KASIRKU_CLOUD.linkCurrentIdentity();
+          await linkLocalCloudIdentity();
           sessionStorage.removeItem("kca_pending_store");
           say("Login, toko, dan pengaitan akun berhasil.", "success");
         }else{
@@ -230,7 +285,7 @@ form.addEventListener("submit",async event=>{
           p_store_name:storeName,p_branch_name:branchName,p_display_name:displayName
         });
         if(storeError) throw storeError;
-        await window.KASIRKU_CLOUD.linkCurrentIdentity();
+        await linkLocalCloudIdentity();
         sessionStorage.removeItem("kca_pending_store");
         say("Akun, toko, dan pengaitan Owner berhasil.", "success");
       }
@@ -241,7 +296,7 @@ form.addEventListener("submit",async event=>{
   }finally{submit.disabled=false}
 });
 ensureCloudBridge().then(()=>loadSdk()).then(async()=>{
-  client=await window.KASIRKU_CLOUD.getScopedClient();
+  client=await getIsolatedCloudClient();
   const showInviteSetup=(session)=>{
     if(!inviteMode||!session?.user)return;
     layer.querySelectorAll(".kca-tabs").forEach(x=>x.classList.add("kca-hidden"));
