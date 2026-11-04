@@ -222,3 +222,7 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .cash-unlock-btn{font-size:12px;padding:6px 11px;min-height:32px;opacity:.82}
 
 .cash-unlock-btn{font-size:12px;padding:6px 11px;min-height:32px;opacity:.82}
+
+/* Table page refinements */
+.table-pick{min-height:94px;border-radius:16px;gap:7px;padding:10px 5px;transition:transform .12s ease,box-shadow .12s ease}.table-pick:active{transform:scale(.97)}.table-pick.busy{opacity:1;background:#fff4e9;border-color:#e7bd91;color:#98501f}.table-pick-status{display:block;font-size:11px;line-height:1.35;color:var(--muted);text-align:center}.table-pick.busy .table-pick-status{color:#a65d26}.table-pick-status strong{display:block;font-size:12px;color:inherit;font-weight:750}.table-detail-summary{display:grid;gap:12px}.table-detail-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.table-state-dot{width:9px;height:9px;border-radius:50%;display:inline-block}.busy-dot{background:#d98536}.table-duration-label{margin-left:auto;color:var(--muted);font-size:12px}.table-duration-label strong{color:var(--ink);font-size:14px}
+@media(max-width:420px){.table-pick{min-height:88px}.table-pick-number{font-size:22px}}
