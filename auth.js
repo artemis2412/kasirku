@@ -96,7 +96,8 @@ function renderAudit(){const host=document.getElementById("ks-audit-list");if(!h
 function apply(){if(!user)return;const owner=user.role==="owner",allowed=user.role==="owner"?adminPages:user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!allowed.includes(x.dataset.page)});if(owner){document.querySelectorAll("#view button:not(#ks-pin-panel button):not(#ks-branch-panel button)").forEach(x=>x.hidden=true);document.querySelectorAll("#view input:not(#ks-pin-panel input):not(#ks-branch-panel input),#view select:not(#ks-pin-panel select):not(#ks-branch-panel select),#view textarea:not(#ks-pin-panel textarea):not(#ks-branch-panel textarea)").forEach(x=>x.disabled=true);document.querySelectorAll("#view form:not(#ks-pin-form):not(#ks-branch-form)").forEach(x=>x.hidden=true)}pinPanel();branchPanel();updateBranchLabel()}
 ["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p){const allowed=user.role==="owner"||user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;if(!allowed.includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}}},true);
-const observer=new MutationObserver(()=>{if(user)apply()});
-document.addEventListener("DOMContentLoaded",()=>{style();observer.observe(document.body,{childList:true,subtree:true});if(!read().length)setup();else restoreSession();installActivityAudit()});
-if(document.readyState!=="loading"){style();observer.observe(document.body,{childList:true,subtree:true});if(!read().length)setup();else login();installActivityAudit()}
+document.addEventListener("DOMContentLoaded",()=>{style();if(!read().length)setup();else restoreSession();installActivityAudit()});
+if(document.readyState!=="loading"){style();if(!read().length)setup();else restoreSession();installActivityAudit()}
+window.addEventListener("load",()=>{if(user)apply()});
+document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p)window.setTimeout(()=>{if(user)apply()},0)},false);
 })();
