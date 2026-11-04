@@ -1089,3 +1089,31 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .report-chart{width:100%;overflow-x:auto;margin-top:12px}
 .report-chart svg{display:block;width:100%;min-width:320px;height:auto}
 @media(max-width:650px){.report-filter-row{grid-template-columns:1fr}.report-chart svg{min-width:520px}}
+
+
+/* Printable report sheet; optional cash ledger remains a separate section */
+#report-print-paper{display:none}
+.report-print-options{display:grid;gap:10px}
+.report-include-cash{display:flex;align-items:flex-start;gap:9px;font-weight:650;color:var(--ink);font-size:14px}
+.report-include-cash input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--green)}
+@media print{
+  body.report-print-mode *{visibility:hidden!important}
+  body.report-print-mode #report-print-paper,
+  body.report-print-mode #report-print-paper *{visibility:visible!important}
+  body.report-print-mode #report-print-paper{
+    display:block!important;position:absolute!important;left:0!important;top:0!important;width:100%!important;
+    max-width:none!important;padding:8mm!important;margin:0!important;background:#fff!important;color:#111!important;
+    font-family:Arial,sans-serif!important;font-size:11px!important;box-sizing:border-box!important;
+  }
+  body.report-print-mode #report-print-paper header{text-align:center;margin-bottom:18px}
+  body.report-print-mode #report-print-paper h1{font-size:20px;margin:0 0 5px}
+  body.report-print-mode #report-print-paper h2{font-size:16px;margin:0 0 5px}
+  body.report-print-mode #report-print-paper h3{font-size:13px;margin:18px 0 7px;border-bottom:1px solid #bbb;padding-bottom:5px}
+  body.report-print-mode #report-print-paper table{width:100%;border-collapse:collapse;margin:7px 0 14px}
+  body.report-print-mode #report-print-paper th,body.report-print-mode #report-print-paper td{border:1px solid #ccc;padding:6px;text-align:left}
+  body.report-print-mode #report-print-paper .num{text-align:right;white-space:nowrap}
+  body.report-print-mode #report-print-paper .report-print-summary{display:flex;gap:12px;justify-content:space-between;margin:12px 0}
+  body.report-print-mode #report-print-paper .report-print-summary>div{display:grid;gap:5px;border:1px solid #ccc;padding:9px;flex:1}
+  body.report-print-mode #report-print-paper footer{text-align:center;margin-top:22px;font-size:9px;color:#555}
+  @page{margin:8mm}
+}
