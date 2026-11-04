@@ -2,11 +2,6 @@ name: Build KASIRKU Android APK
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '**'
-      - '!README.md'
 
 permissions:
   contents: read
