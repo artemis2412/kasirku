@@ -1,7 +1,7 @@
 (() => {
 "use strict";
 const STORAGE={menus:"kasirku_menus",orders:"kasirku_orders",tables:"kasirku_tables"};
-const pages=[["Dashboard","⌂"],["Kasir","▣"],["Pesanan","☷"],["Meja","▦"],["Menu","☕"],["Dapur","♨"],["Laporan","▤"],["Kas","💰"],["Pengaturan","⚙"]];
+const pages=[["Dashboard","⌂"],["Kasir","▣"],["Pesanan","☷"],["Meja",'<img src="./assets/table-icon.svg" alt="">'],["Menu","☕"],["Dapur","♨"],["Laporan","▤"],["Kas","💰"],["Pengaturan","⚙"]];
 const defaultCategories=["Makanan","Minuman","Snack","Dessert","Lainnya"];
 let current="Dashboard",menus=read(STORAGE.menus,[]),orders=read(STORAGE.orders,[]),tables=read(STORAGE.tables,null);
 let dialogState=null;
