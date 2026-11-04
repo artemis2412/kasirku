@@ -193,20 +193,20 @@ create or replace function private.is_store_member(target_store uuid)
 returns boolean
 language sql stable security definer
 set search_path = ''
-as $
+as $$
   select exists (
     select 1 from public.store_memberships sm
     where sm.store_id = target_store
       and sm.user_id = (select auth.uid())
       and sm.is_active = true
   );
-$;
+$$;
 
 create or replace function private.has_branch_access(target_store uuid, target_branch uuid)
 returns boolean
 language sql stable security definer
 set search_path = ''
-as $
+as $$
   select exists (
     select 1
     from public.store_memberships sm
@@ -223,7 +223,7 @@ as $
         )
       )
   );
-$;
+$$;
 
 revoke all on function private.is_store_member(uuid) from public, anon, authenticated;
 revoke all on function private.has_branch_access(uuid, uuid) from public, anon, authenticated;
