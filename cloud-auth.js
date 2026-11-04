@@ -53,7 +53,8 @@ layer.innerHTML = `
       <button type="button" id="kca-forgot" style="display:block;margin:12px auto 0;border:0;background:none;color:#16734b;font:inherit;font-size:12px;font-weight:750">Lupa kata sandi?</button>
       <div id="kca-recovery-wrap" class="kca-hidden">
         <label class="kca-field">Kata sandi baru<input name="newPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Minimal 8 karakter"></label>
-        <button type="button" id="kca-save-password" class="kca-primary">Simpan kata sandi baru</button>
+        <label class="kca-field">Ulangi kata sandi<input name="confirmPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Ulangi kata sandi"></label>
+        <button type="button" id="kca-save-password" class="kca-primary">Simpan kata sandi & aktifkan akun</button>
       </div>
     </form>
     <p id="kca-message" class="kca-message" role="status" aria-live="polite"></p>
@@ -105,15 +106,25 @@ forgot.addEventListener("click",async()=>{
 });
 savePasswordButton.addEventListener("click",async()=>{
   const newPassword=String(form.elements.newPassword.value||"");
+  const confirmPassword=String(form.elements.confirmPassword.value||"");
   if(newPassword.length<8){say("Kata sandi baru minimal 8 karakter.","error");return;}
+  if(newPassword!==confirmPassword){say("Ulangi kata sandi harus sama.","error");return;}
   savePasswordButton.disabled=true;
   try{
     const {error}=await client.auth.updateUser({password:newPassword});
     if(error) throw error;
-    recoveryWrap.classList.add("kca-hidden");
-    form.elements.newPassword.value="";
-    say("Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.","success");
-    await client.auth.signOut();
+    if(inviteMode){
+      const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
+      if(acceptError) throw acceptError;
+      if(accepted?.status!=="accepted") throw new Error("Kata sandi tersimpan, tetapi undangan belum diterima. Hubungi Owner.");
+      recoveryWrap.classList.add("kca-hidden");
+      say("Akun pegawai aktif! Kata sandi tersimpan dan undangan berhasil diterima.","success");
+      layer.querySelectorAll(".kca-tabs,.kca-note").forEach(x=>x.classList.add("kca-hidden"));
+    }else{
+      recoveryWrap.classList.add("kca-hidden");
+      say("Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.","success");
+      await client.auth.signOut();
+    }
   }catch(error){say(error.message||"Gagal memperbarui kata sandi.","error");}
   finally{savePasswordButton.disabled=false;}
 });
@@ -210,32 +221,30 @@ loadSdk().then(async()=>{
   client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
     auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
   });
-  let inviteLinkHandled=false;
+  const showInviteSetup=(session)=>{
+    if(!inviteMode||!session?.user)return;
+    layer.querySelectorAll(".kca-tabs").forEach(x=>x.classList.add("kca-hidden"));
+    nameWrap.classList.add("kca-hidden");
+    form.querySelectorAll(".kca-field").forEach(x=>{if(!x.closest("#kca-recovery-wrap"))x.classList.add("kca-hidden")});
+    submit.classList.add("kca-hidden");
+    forgot.classList.add("kca-hidden");
+    recoveryWrap.classList.remove("kca-hidden");
+    layer.querySelector("#kca-subtitle").textContent="Aktifkan akun pegawai";
+    say("Undangan terverifikasi. Buat kata sandi pribadi untuk akun KASIRKU.","success");
+  };
   client.auth.onAuthStateChange((event,session)=>{
-    if(inviteMode&&(event==="SIGNED_IN"||event==="INITIAL_SESSION")&&session?.user){
-      showInviteSetup(session);
-    }
-    if(event==="SIGNED_IN"&&!inviteLinkHandled&&inviteMode&&session?.user){
-      inviteLinkHandled=true;
-      setTimeout(async()=>{
-        const {data,error}=await client.rpc("accept_staff_invitation");
-        if(!error&&data?.status==="accepted"){
-          say("Undangan diterima. Akun pegawai berhasil terhubung ke toko dan cabang.","success");
-        }else{
-          say(error?.message||"Akun aktif, tetapi undangan belum dapat diterima. Silakan masuk kembali setelah memastikan email sesuai undangan.","error");
-        }
-      },0);
-    }
-    if(event==="PASSWORD_RECOVERY"){
+    if(inviteMode&&(event==="SIGNED_IN"||event==="INITIAL_SESSION")&&session?.user) showInviteSetup(session);
+    if(event==="PASSWORD_RECOVERY"&&!inviteMode){
       recoveryWrap.classList.remove("kca-hidden");
       layer.querySelector("#kca-subtitle").textContent="Buat kata sandi baru";
       say("Tautan pemulihan valid. Masukkan kata sandi baru.","success");
     }
-    if(event==="SIGNED_IN"||event==="INITIAL_SESSION"){
-      setTimeout(()=>finishPendingStore(session),0);
-    }
+    if((event==="SIGNED_IN"||event==="INITIAL_SESSION")&&!inviteMode) setTimeout(()=>finishPendingStore(session),0);
   });
   const {data:{session}}=await client.auth.getSession();
-  if(session) await finishPendingStore(session);
+  if(inviteMode){
+    if(session?.user) showInviteSetup(session);
+    else say("Buka tautan undangan terbaru dari email untuk membuat kata sandi akun pegawai.","error");
+  }else if(session) await finishPendingStore(session);
 }).catch(error=>say(error.message,"error"));
 })();
