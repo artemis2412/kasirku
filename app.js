@@ -1,17 +1,17 @@
 (() => {
 "use strict";
 const STORAGE={menus:"kasirku_menus",orders:"kasirku_orders",tables:"kasirku_tables"};
-const icon=(body)=>'<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+body+'</svg>';
+const icon=(name)=>'<span class="icon-art icon-'+name+'" aria-hidden="true"></span>';
 const pages=[
-["Dashboard",icon('<rect x="3" y="3" width="8" height="8" rx="1.6"/><rect x="13" y="3" width="8" height="5" rx="1.6"/><rect x="13" y="10" width="8" height="11" rx="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.6"/>')],
-["Kasir",icon('<circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M1.8 2.8h2.4l2.6 12.1a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 1.9-1.5L22 7H5.1"/>')],
-["Pesanan",icon('<path d="M8 4.5h8"/><path d="M9 3h6a1 1 0 0 1 1 1v2H8V4a1 1 0 0 1 1-1Z"/><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 11h6M9 15h6M9 18h3"/>')],
-["Meja",icon('<path d="M4 11V7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5V11"/><path d="M3 11h18v5H3zM5 16v4m14-4v4"/>')],
-["Menu",icon('<path d="M4 2v7a3 3 0 0 0 6 0V2M7 2v20M16 2v20M16 2c3 2 4 5 4 8h-4"/>')],
-["Dapur",icon('<path d="M3 13a5 5 0 0 1 5-5 5 5 0 0 1 9-1 4.5 4.5 0 0 1 4 6H3Z"/><path d="M5 13v7h14v-7M8 17h8"/>')],
-["Laporan",icon('<path d="M3 3v18h18"/><path d="M7 15v-3m5 3V7m5 8v-5m4 5V4"/>')],
-["Kas",icon('<rect x="2.5" y="5.5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19M16 14h5.5v3H16a1.5 1.5 0 0 1 0-3Z"/><path d="M6 5.5V4h10"/>')],
-["Pengaturan",'<svg class="settings-icon-art" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="gear-body" d="M9.7 2.6h4.6l.55 2.15c.55.18 1.06.48 1.53.8l2.08-.78 2.3 3.98-1.58 1.48c.1.58.1 1.16 0 1.74l1.58 1.48-2.3 3.98-2.08-.78c-.47.32-.98.62-1.53.8l-.55 2.15H9.7l-.55-2.15a7.4 7.4 0 0 1-1.53-.8l-2.08.78-2.3-3.98 1.58-1.48a7 7 0 0 1 0-1.74L3.24 8.75l2.3-3.98 2.08.78c.47-.32.98-.62 1.53-.8L9.7 2.6Z"/><circle class="gear-hole" cx="12" cy="10.95" r="3.25"/></svg>']
+["Dashboard",icon("dashboard")],
+["Kasir",icon("kasir")],
+["Pesanan",icon("pesanan")],
+["Meja",icon("meja")],
+["Menu",icon("menu")],
+["Dapur",icon("dapur")],
+["Laporan",icon("laporan")],
+["Kas",icon("kas")],
+["Pengaturan",icon("pengaturan")]
 ];
 
 const defaultCategories=["Makanan","Minuman","Snack","Dessert","Lainnya"];
