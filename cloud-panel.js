@@ -1,0 +1,58 @@
+(() => {
+  "use strict";
+  const PANEL_ID="ks-cloud-check-panel";
+  const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  function isOwner(){
+    try{
+      const id=localStorage.getItem("ksecurity_session");
+      const users=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");
+      return !!users.find(x=>x.id===id&&x.role==="owner"&&x.active!==false);
+    }catch{return false}
+  }
+  function currentPage(){return document.getElementById("page-title")?.textContent?.trim()||""}
+  function panelMarkup(){
+    return '<section id="'+PANEL_ID+'" style="margin:18px 0;padding:18px;border:1px solid #d9e8dd;border-radius:18px;background:linear-gradient(145deg,#fff,#f6faf7);color:#203b2d;box-shadow:0 8px 24px #123b2610">'
+      +'<div style="display:flex;align-items:center;gap:11px"><div style="width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#e5f3e9;color:#17764d;font-size:21px">☁</div><div style="min-width:0;flex:1"><div style="font-size:10px;font-weight:800;letter-spacing:1.8px;color:#23845a">KONEKSI & PEMETAAN</div><h3 style="margin:3px 0 0;font-size:18px">Status Cloud KASIRKU</h3></div><span id="ks-cloud-dot" style="width:10px;height:10px;border-radius:50%;background:#b9c5bd"></span></div>'
+      +'<div id="ks-cloud-state" role="status" style="margin-top:14px;padding:12px;border-radius:12px;background:#f1f6f2;color:#52675a;font-size:13px;line-height:1.55">Memeriksa koneksi Cloud…</div>'
+      +'<div id="ks-cloud-store" style="margin-top:12px"></div>'
+      +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Pemetaan cabang perangkat ini</div><div id="ks-cloud-mappings" style="display:grid;gap:8px"><span style="color:#718078;font-size:12px">Memuat pemetaan…</span></div></div>'
+      +'<button id="ks-cloud-refresh" type="button" style="width:100%;min-height:44px;margin-top:15px;border:0;border-radius:12px;background:linear-gradient(135deg,#188b59,#116b46);color:white;font:700 13px system-ui">↻ Periksa ulang Cloud</button>'
+      +'<p style="margin:10px 0 0;color:#829087;font-size:11px;line-height:1.5">Panel ini hanya membaca status akun, cabang, dan pemetaan. Tidak mengirim atau mengubah transaksi.</p></section>';
+  }
+  function renderStatus(){
+    const state=window.KASIRKU_CLOUD?.getState?.()||{};
+    const mappings=window.KASIRKU_CLOUD?.getLocalBranchMappings?.()||{mappings:[],localBranches:[]};
+    const status=document.getElementById("ks-cloud-state"),store=document.getElementById("ks-cloud-store"),mapBox=document.getElementById("ks-cloud-mappings"),dot=document.getElementById("ks-cloud-dot");
+    if(!status||!store||!mapBox)return;
+    if(!state.ready){status.textContent="Menunggu koneksi Cloud siap…";dot.style.background="#d5a43b"}
+    else if(state.error){status.textContent="Cloud belum dapat diperiksa: "+state.error;dot.style.background="#c44b45"}
+    else if(!state.authenticated){status.textContent="Belum login Cloud pada perangkat ini. Buka mode login Cloud dan masuk dengan akun Owner.";dot.style.background="#d5a43b"}
+    else if(!state.store){status.textContent="Login Cloud terdeteksi, tetapi keanggotaan toko aktif belum ditemukan.";dot.style.background="#d5a43b"}
+    else{status.textContent="Terhubung dan login Cloud berhasil. Perangkat ini mengenali akun Owner.";dot.style.background="#168b58"}
+    store.innerHTML=state.store?'<div style="padding:11px 12px;border:1px solid #e1ebe4;border-radius:12px;background:#fff"><div style="font-size:10px;color:#829087;letter-spacing:1px">TOKO CLOUD</div><b style="display:block;margin-top:3px;font-size:14px">'+esc(state.store.name||"Toko terhubung")+'</b><div style="margin-top:4px;color:#718078;font-size:11px">Peran: '+esc(state.store.role||"-")+' · '+(state.branches||[]).length+' cabang dapat diakses</div></div>':'';
+    const locals=mappings.localBranches||[],saved=mappings.mappings||[];
+    if(!locals.length){mapBox.innerHTML='<span style="color:#b06a25;font-size:12px">Daftar cabang lokal belum terbaca. Muat ulang aplikasi setelah login PIN.</span>';return}
+    mapBox.innerHTML=locals.map(local=>{
+      const match=saved.find(m=>m.localBranchId===local.id);
+      const remote=match?(state.branches||[]).find(b=>b.id===match.cloudBranchId):null;
+      const label=match?(remote?remote.name:match.cloudBranchName):"Belum dipasangkan";
+      return '<div style="padding:10px 11px;border:1px solid '+(match?'#cfe5d5':'#e6ebe7')+';border-radius:11px;background:'+(match?'#f4faf5':'#fff')+'"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><b style="font-size:13px">'+esc(local.name)+'</b><span style="font-size:10px;font-weight:800;color:'+(match?'#168153':'#8b968e')+'">'+(match?'TERHUBUNG':'BELUM DIPASANG')+'</span></div><div style="margin-top:5px;color:#718078;font-size:12px">↳ Cloud: '+esc(label)+'</div></div>';
+    }).join("");
+  }
+  function mount(){
+    if(!isOwner()||currentPage()!=="Pengaturan")return;
+    const host=document.getElementById("view");
+    if(!host||host.querySelector("#"+PANEL_ID))return;
+    host.appendChild(document.createRange().createContextualFragment(panelMarkup()));
+    document.getElementById("ks-cloud-refresh").addEventListener("click",async()=>{
+      const button=document.getElementById("ks-cloud-refresh");button.disabled=true;button.textContent="Memeriksa…";
+      try{await window.KASIRKU_CLOUD?.refresh?.()}finally{button.disabled=false;button.textContent="↻ Periksa ulang Cloud";renderStatus()}
+    });
+    renderStatus();
+  }
+  window.addEventListener("kasirku:cloud-context",renderStatus);
+  const observer=new MutationObserver(()=>{mount();renderStatus()});
+  observer.observe(document.body,{childList:true,subtree:true});
+  window.addEventListener("load",()=>{mount();renderStatus()});
+  setTimeout(()=>{mount();renderStatus()},800);
+})();
