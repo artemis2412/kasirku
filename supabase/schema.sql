@@ -185,29 +185,33 @@ create index if not exists idx_cash_entries_branch_date on public.cash_entries(b
 create index if not exists idx_cash_closures_branch_date on public.cash_closures(branch_id, closure_date desc);
 
 -- Access helpers run with the table owner's privileges, but accept only auth.uid().
-create or replace function public.is_store_member(target_store uuid)
+create schema if not exists private;
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
+
+create or replace function private.is_store_member(target_store uuid)
 returns boolean
 language sql stable security definer
-set search_path = public
-as $$
+set search_path = ''
+as $
   select exists (
     select 1 from public.store_memberships sm
     where sm.store_id = target_store
-      and sm.user_id = auth.uid()
+      and sm.user_id = (select auth.uid())
       and sm.is_active = true
   );
-$$;
+$;
 
-create or replace function public.has_branch_access(target_store uuid, target_branch uuid)
+create or replace function private.has_branch_access(target_store uuid, target_branch uuid)
 returns boolean
 language sql stable security definer
-set search_path = public
-as $$
+set search_path = ''
+as $
   select exists (
     select 1
     from public.store_memberships sm
     where sm.store_id = target_store
-      and sm.user_id = auth.uid()
+      and sm.user_id = (select auth.uid())
       and sm.is_active = true
       and (
         sm.role in ('owner','admin')
@@ -215,11 +219,16 @@ as $$
           select 1 from public.branch_memberships bm
           where bm.store_id = target_store
             and bm.branch_id = target_branch
-            and bm.user_id = auth.uid()
+            and bm.user_id = (select auth.uid())
         )
       )
   );
-$$;
+$;
+
+revoke all on function private.is_store_member(uuid) from public, anon, authenticated;
+revoke all on function private.has_branch_access(uuid, uuid) from public, anon, authenticated;
+grant execute on function private.is_store_member(uuid) to authenticated;
+grant execute on function private.has_branch_access(uuid, uuid) to authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.stores enable row level security;
@@ -238,46 +247,46 @@ create policy "profiles_read_self" on public.profiles for select to authenticate
 create policy "profiles_insert_self" on public.profiles for insert to authenticated with check (id = auth.uid());
 create policy "profiles_update_self" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 
-create policy "stores_read_members" on public.stores for select to authenticated using (public.is_store_member(id));
-create policy "branches_read_members" on public.branches for select to authenticated using (public.has_branch_access(store_id, id));
-create policy "store_memberships_read_members" on public.store_memberships for select to authenticated using (public.is_store_member(store_id));
-create policy "branch_memberships_read_members" on public.branch_memberships for select to authenticated using (public.has_branch_access(store_id, branch_id));
+create policy "stores_read_members" on public.stores for select to authenticated using (private.is_store_member(id));
+create policy "branches_read_members" on public.branches for select to authenticated using (private.has_branch_access(store_id, id));
+create policy "store_memberships_read_members" on public.store_memberships for select to authenticated using (private.is_store_member(store_id));
+create policy "branch_memberships_read_members" on public.branch_memberships for select to authenticated using (private.has_branch_access(store_id, branch_id));
 
 create policy "categories_branch_access" on public.menu_categories for all to authenticated
-using (public.has_branch_access(store_id, branch_id))
-with check (public.has_branch_access(store_id, branch_id));
+using (private.has_branch_access(store_id, branch_id))
+with check (private.has_branch_access(store_id, branch_id));
 
 create policy "products_branch_access" on public.products for all to authenticated
-using (public.has_branch_access(store_id, branch_id))
-with check (public.has_branch_access(store_id, branch_id));
+using (private.has_branch_access(store_id, branch_id))
+with check (private.has_branch_access(store_id, branch_id));
 
 create policy "orders_branch_access" on public.orders for all to authenticated
-using (public.has_branch_access(store_id, branch_id))
-with check (public.has_branch_access(store_id, branch_id));
+using (private.has_branch_access(store_id, branch_id))
+with check (private.has_branch_access(store_id, branch_id));
 
 create policy "order_items_access" on public.order_items for all to authenticated
 using (exists (
   select 1 from public.orders o
   where o.id = order_items.order_id
-    and public.has_branch_access(o.store_id, o.branch_id)
+    and private.has_branch_access(o.store_id, o.branch_id)
 ))
 with check (exists (
   select 1 from public.orders o
   where o.id = order_items.order_id
-    and public.has_branch_access(o.store_id, o.branch_id)
+    and private.has_branch_access(o.store_id, o.branch_id)
 ));
 
 create policy "cash_entries_branch_access" on public.cash_entries for all to authenticated
-using (public.has_branch_access(store_id, branch_id))
-with check (public.has_branch_access(store_id, branch_id));
+using (private.has_branch_access(store_id, branch_id))
+with check (private.has_branch_access(store_id, branch_id));
 
 create policy "cash_closures_branch_access" on public.cash_closures for all to authenticated
-using (public.has_branch_access(store_id, branch_id))
-with check (public.has_branch_access(store_id, branch_id));
+using (private.has_branch_access(store_id, branch_id))
+with check (private.has_branch_access(store_id, branch_id));
 
 create policy "sync_devices_branch_access" on public.sync_devices for all to authenticated
-using (public.has_branch_access(store_id, branch_id))
-with check (public.has_branch_access(store_id, branch_id));
+using (private.has_branch_access(store_id, branch_id))
+with check (private.has_branch_access(store_id, branch_id));
 
 grant usage on schema public to authenticated;
 grant select, insert, update on public.profiles to authenticated;
