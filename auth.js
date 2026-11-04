@@ -42,6 +42,8 @@ function restoreSession(){const id=localStorage.getItem("ksecurity_session");con
 function lock(){user=null;clearTimeout(timer);localStorage.removeItem("ksecurity_session");document.getElementById("ks-account")?.remove();login()}
 function reset(){clearTimeout(timer);timer=setTimeout(lock,600000)}
 const cashierPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan","Pengaturan"];
+const adminPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Laporan","Kas","Pengaturan"];
+const supervisorPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan"];
 function pinPanel(){
 if(!["owner","admin"].includes(user?.role)||document.getElementById("ks-pin-panel"))return;
 const host=document.getElementById("view");
@@ -73,9 +75,9 @@ e.target.reset();msg.style.color="#16834a";msg.textContent="PIN berhasil diperba
 };
 }
 function renderAudit(){const host=document.getElementById("ks-audit-list");if(!host)return;const rows=(()=>{try{return JSON.parse(localStorage.getItem(AUDIT_KEY)||"[]")}catch{return []}})().slice().reverse();host.innerHTML=rows.length?rows.map(x=>'<div style="padding:12px 0;border-bottom:1px solid #e5ece6"><b>'+String(x.action||"Aktivitas").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</b><div style="font-size:13px;color:#68786e;margin-top:4px">'+new Date(x.at).toLocaleString("id-ID")+' · '+x.actor+' ('+x.actorRole+')</div><div style="font-size:13px;margin-top:3px">'+String(x.details||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</div></div>').join(""):'<p style="color:#718078">Belum ada aktivitas keamanan.</p>'}
-function apply(){if(!user)return;const owner=user.role==="owner";document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!owner&&!cashierPages.includes(x.dataset.page)});if(owner){document.querySelectorAll("#view button:not(#ks-pin-panel button)").forEach(x=>x.hidden=true);document.querySelectorAll("#view input:not(#ks-pin-panel input),#view select:not(#ks-pin-panel select),#view textarea:not(#ks-pin-panel textarea)").forEach(x=>x.disabled=true);document.querySelectorAll("#view form:not(#ks-pin-form)").forEach(x=>x.hidden=true)}pinPanel()}
+function apply(){if(!user)return;const owner=user.role==="owner",allowed=user.role==="owner"?adminPages:user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!allowed.includes(x.dataset.page)});if(owner){document.querySelectorAll("#view button:not(#ks-pin-panel button)").forEach(x=>x.hidden=true);document.querySelectorAll("#view input:not(#ks-pin-panel input),#view select:not(#ks-pin-panel select),#view textarea:not(#ks-pin-panel textarea)").forEach(x=>x.disabled=true);document.querySelectorAll("#view form:not(#ks-pin-form)").forEach(x=>x.hidden=true)}pinPanel()}
 ["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
-document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p&&user.role==="cashier"&&!cashierPages.includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}},true);
+document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p){const allowed=user.role==="owner"||user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;if(!allowed.includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}}},true);
 const observer=new MutationObserver(()=>{if(user)apply()});
 document.addEventListener("DOMContentLoaded",()=>{style();observer.observe(document.body,{childList:true,subtree:true});if(!read().length)setup();else restoreSession();installActivityAudit()});
 if(document.readyState!=="loading"){style();observer.observe(document.body,{childList:true,subtree:true});if(!read().length)setup();else login();installActivityAudit()}
