@@ -10,6 +10,8 @@
     loadCatalog: loadCatalog,
     syncCatalog: syncCatalog,
     inviteStaff: inviteStaff,
+    getAdminBranchAccess: getAdminBranchAccess,
+    setAdminBranchAccess: setAdminBranchAccess,
     getLocalBranchMappings: getLocalBranchMappings,
     getScopedClient: getScopedClient,
     getLocalSession: readLocalSession,
@@ -174,6 +176,23 @@
       if(result.error)throw result.error;if(old)productsUpdated++;else productsCreated++;
     }
     return {branch:{id:branch.id,name:branch.name},categoriesCreated,categoriesUpdated,productsCreated,productsUpdated,totalLocalProducts:menuMap.size,totalLocalCategories:categoryNames.length};
+  }
+  async function getAdminBranchAccess(){
+    if(!client||!state.authenticated||!state.store||String(state.store.role).toLowerCase()!=="owner")throw new Error("Hanya Owner yang dapat melihat pengaturan akses Admin.");
+    const {data:admins,error:adminError}=await client.from("store_memberships").select("user_id,role").eq("store_id",state.store.id).eq("role","admin").eq("is_active",true);
+    if(adminError)throw adminError;
+    const {data:assignments,error:assignmentError}=await client.from("branch_memberships").select("user_id,branch_id").eq("store_id",state.store.id);
+    if(assignmentError)throw assignmentError;
+    return (admins||[]).map(admin=>({userId:admin.user_id,branchIds:(assignments||[]).filter(x=>x.user_id===admin.user_id).map(x=>x.branch_id)}));
+  }
+  async function setAdminBranchAccess(adminUserId,branchIds){
+    if(!client||!state.authenticated||!state.store||String(state.store.role).toLowerCase()!=="owner")throw new Error("Hanya Owner yang dapat mengatur akses cabang Admin.");
+    const selected=[...new Set((branchIds||[]).map(String))];
+    if(!selected.length)throw new Error("Pilih minimal satu cabang.");
+    const {data,error}=await client.rpc("set_admin_branch_access",{p_store_id:state.store.id,p_admin_user_id:adminUserId,p_branch_ids:selected});
+    if(error)throw error;
+    await refresh();
+    return data;
   }
   async function inviteStaff(email,role,branchId){
     if(!client||!state.authenticated||!state.store)throw new Error("Login Cloud belum siap");
