@@ -74,30 +74,22 @@ function branchPanel(){
 function updateBranchLabel(){
  const list=branchRead(),id=localStorage.getItem(ACTIVE_BRANCH_KEY)||"main",b=list.find(x=>x.id===id&&x.active)||list.find(x=>x.id==="main");
  const el=document.querySelector(".branch-name");if(!el||!b)return;
- if(user?.role!=="owner"){
-  const assigned=Array.isArray(user?.branchIds)?user.branchIds:(user?.branchId?[user.branchId]:[]);
-  const allowed=list.filter(x=>x.active&&assigned.includes(x.id));
-  if(allowed.length>1){
-   let select=el.querySelector("#ks-branch-switch");
-   if(!select){el.innerHTML='<select id="ks-branch-switch" aria-label="Pilih cabang tugas" style="box-sizing:border-box;width:100%;padding:10px 9px;border:1px solid #52735f;border-radius:9px;background:#214a38;color:#fff;font:inherit"></select>';select=el.querySelector("#ks-branch-switch");select.onchange=()=>{localStorage.setItem(ACTIVE_BRANCH_KEY,select.value);audit("Cabang tugas dipilih",user.name+" memilih "+(branchRead().find(x=>x.id===select.value)?.name||"cabang"));window.location.reload()}}
-   select=el.querySelector("#ks-branch-switch");select.innerHTML="";allowed.forEach(x=>{const option=document.createElement("option");option.value=x.id;option.textContent=x.name;option.selected=x.id===id;select.appendChild(option)});return;
-  }
-  if(el.textContent!==b.name)el.textContent=b.name;return;
+ let allowed=list.filter(x=>x.active),canAdd=user?.role==="owner";
+ if(!canAdd){const assigned=Array.isArray(user?.branchIds)?user.branchIds:(user?.branchId?[user.branchId]:[]);allowed=allowed.filter(x=>assigned.includes(x.id));if(allowed.length<=1){el.textContent=(allowed[0]||b).name;return}}
+ if(!document.getElementById("ks-branch-picker-style")){
+  const css=document.createElement("style");css.id="ks-branch-picker-style";css.textContent='.ks-branch-picker{position:relative;width:100%}.ks-branch-picker-trigger{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:10px 12px;border:1px solid #456653;border-radius:13px;background:#183b2d;color:#f1f7f2;font:500 15px system-ui;text-align:left;cursor:pointer}.ks-branch-picker-trigger span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ks-branch-picker-trigger svg{width:18px;height:18px;flex:0 0 auto;transition:transform .18s}.ks-branch-picker-trigger[aria-expanded=true] svg{transform:rotate(180deg)}.ks-branch-picker-menu{position:absolute;z-index:100020;top:calc(100% + 7px);left:0;right:0;max-height:min(42vh,280px);overflow:auto;padding:5px;border:1px solid #42614e;border-radius:13px;background:#17372b;box-shadow:0 14px 32px #0005}.ks-branch-picker-menu[hidden]{display:none}.ks-branch-picker-option{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:44px;padding:10px 11px;border:0;border-radius:9px;background:transparent;color:#e5efe8;font:500 14px system-ui;text-align:left;cursor:pointer}.ks-branch-picker-option:active,.ks-branch-picker-option[aria-current=true]{background:#28513d}.ks-branch-picker-option small{color:#a9d2b8;font-size:11px}.ks-branch-add{width:100%;min-height:44px;margin-top:8px;padding:9px;border:1px dashed #63856e;border-radius:12px;background:transparent;color:#dcebe1;font:650 13px system-ui;cursor:pointer}.ks-branch-picker-option:focus-visible,.ks-branch-picker-trigger:focus-visible,.ks-branch-add:focus-visible{outline:2px solid #9bd4ad;outline-offset:2px}';document.head.appendChild(css)
  }
- let select=el.querySelector("#ks-branch-switch"),add=el.querySelector("#ks-branch-add");
- if(!select){
-  el.innerHTML='<div style="display:flex;gap:7px;align-items:center"><select id="ks-branch-switch" aria-label="Pilih cabang" style="width:100%;min-width:0;padding:10px 9px;border:1px solid #52735f;border-radius:9px;background:#214a38;color:#fff;font:inherit"></select></div><button id="ks-branch-add" type="button" style="width:100%;margin-top:8px;padding:9px;border:1px dashed #71927d;border-radius:9px;background:transparent;color:#dcebe1;font:600 13px system-ui">＋ Tambah Cabang</button>';
-  select=el.querySelector("#ks-branch-switch");add=el.querySelector("#ks-branch-add");
-  select.onchange=()=>{localStorage.setItem(ACTIVE_BRANCH_KEY,select.value);const chosen=branchRead().find(x=>x.id===select.value);audit("Cabang dipilih","Owner memilih "+(chosen?.name||"cabang"));window.location.reload()};
-  add.onclick=()=>branchModal("Tambah Cabang Baru","",(name,error)=>{const items=branchRead();if(items.some(x=>x.name.toLowerCase()===name.toLowerCase())){error.textContent="Nama cabang sudah digunakan.";return false}const item={id:"br-"+Date.now(),name,active:true,createdAt:new Date().toISOString()};items.push(item);localStorage.setItem(BRANCH_KEY,JSON.stringify(items));localStorage.setItem(ACTIVE_BRANCH_KEY,item.id);audit("Cabang ditambahkan","Owner menambahkan cabang "+name);window.location.reload()});
- }
- select=el.querySelector("#ks-branch-switch");
- const activeId=localStorage.getItem(ACTIVE_BRANCH_KEY)||"main";
- select.innerHTML="";
- list.filter(x=>x.active).forEach(x=>{const option=document.createElement("option");option.value=x.id;option.textContent=x.name;option.selected=x.id===activeId;select.appendChild(option)});
- if(!list.some(x=>x.id===activeId&&x.active)){localStorage.setItem(ACTIVE_BRANCH_KEY,b.id);select.value=b.id}
+ const current=allowed.find(x=>x.id===id)||allowed[0]||b;
+ el.innerHTML='<div class="ks-branch-picker"><button type="button" class="ks-branch-picker-trigger" id="ks-branch-switch" aria-expanded="false" aria-controls="ks-branch-picker-menu"><span>'+escBranch(current.name)+'</span><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="ks-branch-picker-menu" id="ks-branch-picker-menu" hidden>'+allowed.map(x=>'<button type="button" class="ks-branch-picker-option" data-branch-choice="'+escBranch(x.id)+'" aria-current="'+(x.id===current.id?'true':'false')+'"><span>'+escBranch(x.name)+'</span>'+(x.id===current.id?'<small>✓ Aktif</small>':'')+'</button>').join("")+'</div></div>'+(canAdd?'<button type="button" class="ks-branch-add" id="ks-branch-add">＋ Tambah Cabang</button>':'');
+ const trigger=el.querySelector("#ks-branch-switch"),menu=el.querySelector("#ks-branch-picker-menu");
+ trigger.onclick=()=>{const open=menu.hidden;menu.hidden=!open;trigger.setAttribute("aria-expanded",String(open))};
+ el.onclick=e=>{
+  const choice=e.target.closest("[data-branch-choice]");
+  if(choice){const chosen=allowed.find(x=>x.id===choice.dataset.branchChoice);if(!chosen||chosen.id===current.id)return;localStorage.setItem(ACTIVE_BRANCH_KEY,chosen.id);audit(canAdd?"Cabang dipilih":"Cabang tugas dipilih",(canAdd?"Owner memilih ":"")+((user?.name?user.name+" memilih ":""))+chosen.name);window.location.reload();return}
+  if(e.target.closest("#ks-branch-add"))branchModal("Tambah Cabang Baru","",(name,error)=>{const items=branchRead();if(items.some(x=>x.name.toLowerCase()===name.toLowerCase())){error.textContent="Nama cabang sudah digunakan.";return false}const item={id:"br-"+Date.now(),name,active:true,createdAt:new Date().toISOString()};items.push(item);localStorage.setItem(BRANCH_KEY,JSON.stringify(items));localStorage.setItem(ACTIVE_BRANCH_KEY,item.id);audit("Cabang ditambahkan","Owner menambahkan cabang "+name);window.location.reload()});
+ };
+ function escBranch(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 }
-
 function error(t){const x=document.getElementById("ks-error");if(x)x.textContent=t}
 async function setup(){show('<h2>Keamanan KASIRKU</h2><p>Buat PIN Owner dan Kasir untuk perangkat ini.</p><form id="ks-setup"><label>PIN Owner (6 angka)</label><input name="o" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>Ulangi PIN Owner</label><input name="o2" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>PIN Kasir (6 angka)</label><input name="c" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>Ulangi PIN Kasir</label><input name="c2" type="password" inputmode="numeric" minlength="6" maxlength="6" required><div id="ks-error"></div><button>Simpan PIN</button></form>');
 document.getElementById("ks-setup").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),o=f.get("o"),o2=f.get("o2"),c=f.get("c"),c2=f.get("c2");if(!/^\d{6}$/.test(o)||!/^\d{6}$/.test(c)){error("PIN harus tepat 6 angka.");return}if(o!==o2||c!==c2||o===c){error("Periksa ulang PIN. Kedua PIN harus berbeda.");return}const a=[];for(const [id,name,role,pin] of [["owner","Owner","owner",o],["cashier","Kasir","cashier",c]]){const s=salt();a.push({id,name,role,salt:s,hash:await hash(s,pin)})}localStorage.setItem(KEY,JSON.stringify(a));login()};
