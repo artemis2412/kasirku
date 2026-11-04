@@ -1227,3 +1227,17 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .navbtn .nav-icon{width:28px!important;height:28px!important;flex:0 0 28px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;background:none!important;border:0!important;border-radius:8px!important;box-shadow:none!important;color:inherit!important;font-family:system-ui,sans-serif!important;font-size:25px!important;line-height:1!important;filter:none!important}
 .navbtn .icon-art{display:none!important}
 #bottom-nav .navbtn .nav-icon{width:100%!important;height:30px!important;flex:0 0 30px!important;font-size:25px!important}
+
+
+/* Mobile vertical scrolling recovery */
+@media(max-width:650px){
+  html,body{
+    height:auto!important;min-height:100%!important;
+    overflow-x:hidden!important;overflow-y:auto!important;
+    touch-action:pan-y pinch-zoom!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  body,body.desktop-mode{min-height:100dvh!important;overflow-y:auto!important;touch-action:pan-y pinch-zoom!important}
+  main,body.desktop-mode main{min-height:100dvh!important;height:auto!important;overflow:visible!important;touch-action:pan-y pinch-zoom!important}
+  #view,body.desktop-mode #view{height:auto!important;max-height:none!important;min-height:calc(100dvh - 170px)!important;overflow:visible!important;touch-action:pan-y pinch-zoom!important;-webkit-overflow-scrolling:touch;padding-bottom:120px!important}
+}
