@@ -17,6 +17,7 @@
   function panelMarkup(){
     return '<section id="'+PANEL_ID+'" style="margin:18px 0;padding:18px;border:1px solid #d9e8dd;border-radius:18px;background:linear-gradient(145deg,#fff,#f6faf7);color:#203b2d;box-shadow:0 8px 24px #123b2610">'
       +'<div style="display:flex;align-items:center;gap:11px"><div style="width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:#e5f3e9;color:#17764d;font-size:21px">☁</div><div style="min-width:0;flex:1"><div style="font-size:10px;font-weight:800;letter-spacing:1.8px;color:#23845a">KONEKSI & PEMETAAN</div><h3 style="margin:3px 0 0;font-size:18px">Status Cloud KASIRKU</h3></div><span id="ks-cloud-dot" style="width:10px;height:10px;border-radius:50%;background:#b9c5bd"></span></div>'
+      +'<button id="ks-cloud-login" type="button" style="width:100%;min-height:44px;margin-top:13px;border:0;border-radius:12px;background:#e4f2e8;color:#176b46;font:700 13px system-ui">Hubungkan Akun Cloud</button>'
       +'<div id="ks-cloud-state" role="status" style="margin-top:14px;padding:12px;border-radius:12px;background:#f1f6f2;color:#52675a;font-size:13px;line-height:1.55">Memeriksa koneksi Cloud…</div>'
       +'<div id="ks-cloud-store" style="margin-top:12px"></div>'
       +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Pemetaan cabang perangkat ini</div><div id="ks-cloud-mappings" style="display:grid;gap:8px"><span style="color:#718078;font-size:12px">Memuat pemetaan…</span></div></div>'
@@ -81,6 +82,11 @@
     document.getElementById("ks-cloud-refresh").addEventListener("click",async()=>{
       const button=document.getElementById("ks-cloud-refresh");button.disabled=true;button.textContent="Memeriksa…";
       try{await window.KASIRKU_CLOUD?.refresh?.()}finally{button.disabled=false;button.textContent="↻ Periksa ulang Cloud";renderStatus()}
+    });
+    document.getElementById("ks-cloud-login").addEventListener("click",()=>{
+      const url=new URL(window.location.href);
+      url.searchParams.set("cloud-auth-preview","");
+      window.location.href=url.toString();
     });
     renderStatus();
   }
