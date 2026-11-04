@@ -101,9 +101,14 @@ jobs:
                   }
               }
           """
-          s = re.sub(r"(?m)^\s*buildTypes\s*\{", signing + "\n            buildTypes {", s, count=1)
-          if "signingConfigs.release" not in s:
-              s = re.sub(r"(?m)^(\s*release\s*\{)", r"\1\n                signingConfig signingConfigs.release", s, count=1)
+          s, n = re.subn(r"(?m)^\s*buildTypes\s*\{", signing + "\n            buildTypes {", s, count=1)
+          if n != 1:
+              raise SystemExit("Could not find Android buildTypes block.")
+          before, sep, after = s.partition("buildTypes {")
+          after, n = re.subn(r"(?m)^(\s*release\s*\{)", r"\1\n                signingConfig signingConfigs.release", after, count=1)
+          if n != 1:
+              raise SystemExit("Could not find release build type.")
+          s = before + sep + after
           version_code = os.environ["VERSION_CODE"]
           version_name = os.environ["VERSION_NAME"]
           s, n1 = re.subn(r"(?m)(^\s*versionCode\s+)\d+", r"\g<1>" + version_code, s, count=1)
