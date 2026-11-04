@@ -1,7 +1,7 @@
 (() => {
 "use strict";
 const STORAGE={menus:"kasirku_menus",orders:"kasirku_orders",tables:"kasirku_tables"};
-const icon=(name)=>'<span class="icon-art icon-'+name+'" aria-hidden="true"></span>';
+const icon=(name)=>({dashboard:"⌂",kasir:"▣",pesanan:"▤",meja:"▦",menu:"☷",dapur:"♨",laporan:"▥",kas:"＄",pengaturan:"⚙"})[name]||"•";
 const pages=[
 ["Dashboard",icon("dashboard")],
 ["Kasir",icon("kasir")],
