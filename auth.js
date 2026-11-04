@@ -74,7 +74,16 @@ function branchPanel(){
 function updateBranchLabel(){
  const list=branchRead(),id=localStorage.getItem(ACTIVE_BRANCH_KEY)||"main",b=list.find(x=>x.id===id&&x.active)||list.find(x=>x.id==="main");
  const el=document.querySelector(".branch-name");if(!el||!b)return;
- if(user?.role!=="owner"){if(el.textContent!==b.name)el.textContent=b.name;return}
+ if(user?.role!=="owner"){
+  const assigned=Array.isArray(user?.branchIds)?user.branchIds:(user?.branchId?[user.branchId]:[]);
+  const allowed=list.filter(x=>x.active&&assigned.includes(x.id));
+  if(allowed.length>1){
+   let select=el.querySelector("#ks-branch-switch");
+   if(!select){el.innerHTML='<select id="ks-branch-switch" aria-label="Pilih cabang tugas" style="box-sizing:border-box;width:100%;padding:10px 9px;border:1px solid #52735f;border-radius:9px;background:#214a38;color:#fff;font:inherit"></select>';select=el.querySelector("#ks-branch-switch");select.onchange=()=>{localStorage.setItem(ACTIVE_BRANCH_KEY,select.value);audit("Cabang tugas dipilih",user.name+" memilih "+(branchRead().find(x=>x.id===select.value)?.name||"cabang"));window.location.reload()}}
+   select=el.querySelector("#ks-branch-switch");select.innerHTML="";allowed.forEach(x=>{const option=document.createElement("option");option.value=x.id;option.textContent=x.name;option.selected=x.id===id;select.appendChild(option)});return;
+  }
+  if(el.textContent!==b.name)el.textContent=b.name;return;
+ }
  let select=el.querySelector("#ks-branch-switch"),add=el.querySelector("#ks-branch-add");
  if(!select){
   el.innerHTML='<div style="display:flex;gap:7px;align-items:center"><select id="ks-branch-switch" aria-label="Pilih cabang" style="width:100%;min-width:0;padding:10px 9px;border:1px solid #52735f;border-radius:9px;background:#214a38;color:#fff;font:inherit"></select></div><button id="ks-branch-add" type="button" style="width:100%;margin-top:8px;padding:9px;border:1px dashed #71927d;border-radius:9px;background:transparent;color:#dcebe1;font:600 13px system-ui">＋ Tambah Cabang</button>';
