@@ -66,6 +66,7 @@ function cloudCatalogPanel(){
  }
  return '<section class="panel" style="margin-top:14px"><div class="page-heading"><div><h3>Katalog Cloud · Sinkronisasi</h3><div class="hint">Kirim kategori dan produk dari cabang lokal aktif ke cabang Cloud yang sudah dipasangkan.</div></div><button class="btn btn-light" type="button" data-action="refresh-cloud-catalog">Muat Ulang</button></div>'+body+(c?.authenticated&&c?.branches?.length&&cloudCatalogView.status==="loaded"?'<div class="form-actions" style="margin-top:12px"><button class="btn" type="button" data-action="sync-local-catalog">↑ Sinkronkan Menu Lokal ke Cloud</button></div>':'')+'<div id="cloud-sync-result" class="hint" role="status" style="margin-top:10px"></div><div class="hint" style="margin-top:8px">Hanya kategori dan produk. Pesanan, transaksi, serta catatan kas tidak dikirim.</div></section>';
 }
+window.KASIRKU_REFRESH_CLOUD_CATALOG=refreshCloudCatalog;
 async function refreshCloudCatalog(){
  const c=window.KASIRKU_CLOUD?.getState?.();
  const token=++cloudCatalogRequest;
