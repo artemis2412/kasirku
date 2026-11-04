@@ -1,7 +1,18 @@
 (() => {
 "use strict";
 const STORAGE={menus:"kasirku_menus",orders:"kasirku_orders",tables:"kasirku_tables"};
-const pages=[["Dashboard","⌂"],["Kasir","▣"],["Pesanan","☷"],["Meja",'<img src="./assets/table-icon.svg" alt="">'],["Menu","☕"],["Dapur","♨"],["Laporan","▤"],["Kas","💰"],["Pengaturan","⚙"]];
+const icon=(body)=>'<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+body+'</svg>';
+const pages=[
+["Dashboard",icon('<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>')],
+["Kasir",icon('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4m-4 4h10"/>')],
+["Pesanan",icon('<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>')],
+["Meja",icon('<path d="M3 9h18M5 9V5h14v4M7 9v10m10-10v10M4 19h16M3 13h18"/>')],
+["Menu",icon('<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18M17 3v18m0-18c-2 2-3 5-3 8h6"/>')],
+["Dapur",icon('<path d="M4 14h16a0 0 0 0 1 0 0v2a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M8 11c-2-2 2-3 0-6m5 6c-2-2 2-4 0-7m5 7c-2-2 2-3 0-5"/>')],
+["Laporan",icon('<path d="M4 19V5m0 14h17"/><path d="m7 15 4-4 3 2 5-6"/><path d="M16 7h3v3"/>')],
+["Kas",icon('<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18m-13 5h4M7 3h10"/>')],
+["Pengaturan",icon('<path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.5.9L16 20h-8l-.3-1.2a8 8 0 0 1-1.5-.9l-1.7.7-1.4-2.4 1.4-1.1a8 8 0 0 1 0-1.8l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.5-.9L8 4h8l.3 1.2a8 8 0 0 1 1.5.9l1.7-.7 1.4 2.4-1.4 1.1a8 8 0 0 1 0 1.8l1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.5.9L16 20"/>')]
+];
 const defaultCategories=["Makanan","Minuman","Snack","Dessert","Lainnya"];
 let reportPreviewOpen=false;
 let current="Dashboard",menus=read(STORAGE.menus,[]),orders=read(STORAGE.orders,[]),tables=read(STORAGE.tables,null);
