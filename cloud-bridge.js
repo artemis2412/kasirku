@@ -17,7 +17,7 @@
     getLocalSession: readLocalSession,
     linkCurrentIdentity: linkCurrentIdentity
   };
-  function readLocalSession(){try{const id=localStorage.getItem("ksecurity_session");const rows=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");const u=Array.isArray(rows)?rows.find(x=>String(x?.id)===String(id)&&x?.active!==false):null;return u?{id:String(u.id),name:String(u.name||""),role:String(u.role||"").toLowerCase()}:null}catch{return null}}
+  function readLocalSession(){try{const id=sessionStorage.getItem("ksecurity_session")||localStorage.getItem("ksecurity_session");const rows=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");const u=Array.isArray(rows)?rows.find(x=>String(x?.id)===String(id)&&x?.active!==false):null;return u?{id:String(u.id),name:String(u.name||""),role:String(u.role||"").toLowerCase()}:null}catch{return null}}
   function publish(){
     window.dispatchEvent(new CustomEvent("kasirku:cloud-context", {detail:window.KASIRKU_CLOUD.getState()}));
   }
