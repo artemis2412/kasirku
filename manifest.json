@@ -6,7 +6,7 @@
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f7f4",
-  "theme_color": "#14251f",
+  "theme_color": "#123d30",
   "description": "Sistem kasir warung makan dan cafe",
   "icons": [
     {
