@@ -51,7 +51,7 @@
     renderStatus();
   }
   window.addEventListener("kasirku:cloud-context",renderStatus);
-  const observer=new MutationObserver(()=>{mount();renderStatus()});
+  const observer=new MutationObserver(()=>{mount()});
   observer.observe(document.body,{childList:true,subtree:true});
   window.addEventListener("load",()=>{mount();renderStatus()});
   setTimeout(()=>{mount();renderStatus()},800);
