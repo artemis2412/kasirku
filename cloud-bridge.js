@@ -140,7 +140,7 @@
       const {data:{session},error:sessionError}=await client.auth.getSession();
       if(sessionError)throw sessionError;
       state.authenticated=!!session?.user;
-      state.user=session?.user?{id:session.user.id,email:session.user.email}:null;
+      state.user=session?.user?{id:session.user.id,email:session.user.email,name:String(session.user.user_metadata?.display_name||session.user.user_metadata?.full_name||session.user.user_metadata?.name||session.user.email?.split("@")[0]||"Pengguna").trim()}:null;
       state.memberships=[];state.store=null;state.branches=[];state.error=null;
       if(session?.user){
         const {data:memberships,error}=await client.from("store_memberships")
