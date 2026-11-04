@@ -318,3 +318,62 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .nav-icon img{display:block;width:25px;height:18px;object-fit:contain}
 #bottom-nav .nav-icon{width:100%;height:27px;flex:0 0 27px}
 #bottom-nav .nav-icon img{width:27px;height:20px}
+
+
+/* Soft colored wave accents at the bottom of each table tile */
+.table-page>.table-grid-modern>.table-card-modern{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  padding-top:14px;
+  padding-bottom:10px;
+  gap:7px;
+}
+.table-page>.table-grid-modern>.table-card-modern::before,
+.table-page>.table-grid-modern>.table-card-modern::after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  pointer-events:none;
+  width:132%;
+  left:-16%;
+  height:42%;
+  bottom:-19%;
+  border-radius:48% 52% 0 0 / 30% 25% 0 0;
+}
+.table-page>.table-grid-modern>.table-card-modern::before{
+  background:#d1e9d8;
+  transform:rotate(-5deg);
+}
+.table-page>.table-grid-modern>.table-card-modern::after{
+  left:-22%;
+  bottom:-27%;
+  height:39%;
+  background:#bfe0ca;
+  opacity:.72;
+  transform:rotate(5deg);
+}
+.table-page>.table-grid-modern>.table-card-modern.occupied::before{
+  background:#f8dfc5;
+}
+.table-page>.table-grid-modern>.table-card-modern.occupied::after{
+  background:#f2c99f;
+}
+.table-page>.table-grid-modern>.table-card-modern>*{
+  position:relative;
+  z-index:1;
+}
+.table-page>.table-grid-modern>.table-card-modern .table-card-icon{
+  margin-top:4px;
+  margin-bottom:1px;
+}
+@media(max-width:650px){
+  .table-page>.table-grid-modern>.table-card-modern{
+    padding-top:12px;
+    padding-bottom:9px;
+    gap:6px;
+  }
+  .table-page>.table-grid-modern>.table-card-modern .table-card-icon{
+    margin-top:4px;
+  }
+}
