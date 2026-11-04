@@ -21,9 +21,44 @@
       +'<div id="ks-cloud-state" role="status" style="margin-top:14px;padding:12px;border-radius:12px;background:#f1f6f2;color:#52675a;font-size:13px;line-height:1.55">Memeriksa koneksi Cloud…</div>'
       +'<div id="ks-cloud-store" style="margin-top:12px"></div>'
       +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Pemetaan cabang perangkat ini</div><div id="ks-cloud-mappings" style="display:grid;gap:8px"><span style="color:#718078;font-size:12px">Memuat pemetaan…</span></div></div>'
+      +(localSessionUser()?.role==="owner"?'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Akses Cabang Admin</div><div id="ks-admin-access" style="display:grid;gap:9px"><span style="color:#718078;font-size:12px">Memuat daftar Admin…</span></div></div>':'')
       +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Undang Pegawai Cloud</div><form id="ks-cloud-invite-form" style="display:grid;gap:9px"><input name="email" type="email" required placeholder="Email pegawai" style="box-sizing:border-box;width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;font:inherit"><select name="branch" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="">Pilih cabang Cloud</option></select><select name="role" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="cashier">Kasir</option>'+(localSessionUser()?.role==="owner"?'<option value="admin">Admin</option>':'')+'</select><button type="submit" style="min-height:43px;border:0;border-radius:11px;background:#e4f2e8;color:#176b46;font:700 13px system-ui">Kirim Undangan</button><div id="ks-cloud-invite-message" role="status" style="font-size:12px;line-height:1.5;color:#718078"></div></form><p style="margin:8px 0 0;color:#829087;font-size:10px;line-height:1.45">Undangan hanya mendukung Admin dan Kasir. Email harus dikonfirmasi oleh pegawai.</p></div>'
       +'<button id="ks-cloud-refresh" type="button" style="width:100%;min-height:44px;margin-top:15px;border:0;border-radius:12px;background:linear-gradient(135deg,#188b59,#116b46);color:white;font:700 13px system-ui">↻ Periksa ulang Cloud</button>'
       +'<p style="margin:10px 0 0;color:#829087;font-size:11px;line-height:1.5">Panel ini menampilkan status Cloud, pemetaan cabang, dan undangan pegawai. Transaksi belum disinkronkan otomatis.</p></section>';
+  }
+  async function renderAdminAccess(){
+    const host=document.getElementById("ks-admin-access");
+    if(!host||localSessionUser()?.role!=="owner")return;
+    if(!window.KASIRKU_CLOUD?.getAdminBranchAccess)return;
+    try{
+      const admins=await window.KASIRKU_CLOUD.getAdminBranchAccess();
+      const branches=window.KASIRKU_CLOUD.getState()?.branches||[];
+      if(!admins.length){host.innerHTML='<span style="color:#718078;font-size:12px">Belum ada Admin aktif di toko ini.</span>';return}
+      const previous=host.querySelector('[name="admin-user"]')?.value;
+      const selected=admins.some(x=>x.userId===previous)?previous:admins[0].userId;
+      const current=admins.find(x=>x.userId===selected);
+      host.innerHTML='<label style="font-size:12px;font-weight:700;color:#52675a">Pilih akun Admin</label><select name="admin-user" style="width:100%;padding:11px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit">'+admins.map((a,i)=>'<option value="'+esc(a.userId)+'" '+(a.userId===selected?'selected':'')+'>Admin '+(i+1)+' · '+esc(a.userId.slice(0,8))+'</option>').join('')+'</select><div style="font-size:12px;color:#52675a;font-weight:700">Cabang yang boleh diakses</div><div data-admin-branch-list style="display:grid;gap:7px">'+branches.map(b=>'<label style="display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid #e3ebe5;border-radius:10px;background:#fff;font-size:13px"><input type="checkbox" name="admin-branch" value="'+esc(b.id)+'" '+(current.branchIds.includes(b.id)?'checked':'')+' style="width:17px;height:17px;accent-color:#168153">'+esc(b.name)+'</label>').join('')+'</div><button type="button" data-save-admin-access style="min-height:42px;border:0;border-radius:10px;background:#168153;color:white;font:700 13px system-ui">Simpan Akses Cabang</button><div data-admin-access-message role="status" style="font-size:12px;color:#718078"></div>';
+      if(!host.dataset.bound){
+        host.dataset.bound="1";
+        host.addEventListener("change",event=>{
+          if(event.target?.name!=="admin-user")return;
+          const admin=admins.find(x=>x.userId===event.target.value);
+          const list=host.querySelector("[data-admin-branch-list]");
+          if(admin&&list)list.querySelectorAll('input[name="admin-branch"]').forEach(input=>input.checked=admin.branchIds.includes(input.value));
+        });
+        host.addEventListener("click",async event=>{
+          const button=event.target.closest("[data-save-admin-access]");
+          if(!button)return;
+          const msg=host.querySelector("[data-admin-access-message]");
+          const userId=host.querySelector('[name="admin-user"]')?.value;
+          const ids=[...host.querySelectorAll('input[name="admin-branch"]:checked')].map(input=>input.value);
+          button.disabled=true;button.textContent="Menyimpan…";msg.textContent="";
+          try{await window.KASIRKU_CLOUD.setAdminBranchAccess(userId,ids);msg.style.color="#168153";msg.textContent="Akses cabang Admin berhasil diperbarui.";await renderAdminAccess()}
+          catch(error){msg.style.color="#b42318";msg.textContent=error.message||"Gagal menyimpan akses cabang."}
+          finally{button.disabled=false;button.textContent="Simpan Akses Cabang"}
+        });
+      }
+    }catch(error){host.innerHTML='<span style="color:#b42318;font-size:12px">'+esc(error.message||"Gagal memuat akses Admin.")+'</span>'}
   }
   function renderStatus(){
     const state=window.KASIRKU_CLOUD?.getState?.()||{};
@@ -59,6 +94,7 @@
         });
       }
     }
+    renderAdminAccess();
     const cloudRole=String(state.store?.role||"").toLowerCase();
     const localUser=localSessionUser();
     const localRole=String(localUser?.role||window.KASIRKU_LOCAL_ROLE||"").toLowerCase();
