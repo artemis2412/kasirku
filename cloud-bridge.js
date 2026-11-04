@@ -90,7 +90,10 @@
         state.memberships=memberships||[];
         if(state.memberships.length){
           const m=state.memberships[0];
-          state.store={id:m.store_id,role:m.role};
+          const {data:storeRow,error:storeError}=await client.from("stores")
+            .select("id,name").eq("id",m.store_id).maybeSingle();
+          if(storeError)throw storeError;
+          state.store={id:m.store_id,name:storeRow?.name||"Toko terhubung",role:m.role};
           const {data:branches,error:branchError}=await client.from("branches")
             .select("id,name,is_active").eq("store_id",m.store_id).eq("is_active",true).order("created_at");
           if(branchError)throw branchError;
