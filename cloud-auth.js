@@ -123,7 +123,10 @@ form.addEventListener("submit",async event=>{
       sessionStorage.setItem("kca_pending_store",JSON.stringify({displayName,storeName,branchName}));
       const {data,error}=await client.auth.signUp({
         email,password,
-        options:{data:{display_name:displayName}}
+        options:{
+          data:{display_name:displayName},
+          emailRedirectTo: window.location.origin + window.location.pathname + "?cloud-auth-preview"
+        }
       });
       if(error) throw error;
       if(!data.session){
