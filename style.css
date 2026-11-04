@@ -781,3 +781,57 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
     gap:6px!important;
   }
 }
+
+
+/* Simple inline quantity controls for editing an unpaid order */
+.order-edit-line{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:10px 0;
+}
+.order-edit-name{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  min-width:0;
+  font-weight:600;
+}
+.order-edit-name small{
+  color:#87918b;
+  font-size:12px;
+  font-weight:400;
+}
+.order-qty-control{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-shrink:0;
+}
+.order-qty-control button{
+  width:36px;
+  height:36px;
+  border:1px solid #cfe2d5;
+  border-radius:11px;
+  background:#edf5ef;
+  color:#176447;
+  font-size:23px;
+  line-height:1;
+  font-weight:700;
+  display:grid;
+  place-items:center;
+}
+.order-qty-control button:disabled{
+  opacity:.35;
+}
+.order-qty-control b{
+  min-width:18px;
+  text-align:center;
+  font-size:16px;
+}
+@media(max-width:420px){
+  .order-edit-line{gap:8px}
+  .order-qty-control{gap:8px}
+  .order-qty-control button{width:34px;height:34px}
+}
