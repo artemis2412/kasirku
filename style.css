@@ -425,3 +425,65 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
     margin:7px 0 4px!important;
   }
 }
+
+
+/* KASIRKU bottom navigation: clearer active state + soft organic decoration */
+@media(max-width:650px){
+  #bottom-nav{
+    background:linear-gradient(to bottom,rgba(255,255,255,0) 0,rgba(255,255,255,.96) 42px,#fff 100%);
+    border-top:0;
+    overflow:visible;
+    isolation:isolate;
+    padding-top:12px;
+  }
+  #bottom-nav::before,
+  #bottom-nav::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    top:-43px;
+    height:57px;
+    z-index:-1;
+    pointer-events:none;
+  }
+  #bottom-nav::before{
+    background:
+      radial-gradient(ellipse 37% 85% at 12% 100%,#dcebe0 98%,transparent 100%),
+      radial-gradient(ellipse 42% 100% at 52% 100%,#e8f2eb 98%,transparent 100%),
+      radial-gradient(ellipse 38% 82% at 91% 100%,#dcebe0 98%,transparent 100%);
+  }
+  #bottom-nav::after{
+    top:-31px;
+    height:45px;
+    opacity:.85;
+    background:
+      radial-gradient(ellipse 35% 75% at 32% 100%,#cfe4d5 98%,transparent 100%),
+      radial-gradient(ellipse 34% 80% at 77% 100%,#d7e9dc 98%,transparent 100%);
+  }
+  #bottom-nav .navbtn{
+    position:relative;
+    z-index:1;
+    min-height:70px;
+    border-radius:16px;
+    color:#78857e;
+    background:transparent;
+    transition:background .18s ease,color .18s ease,transform .18s ease,box-shadow .18s ease;
+  }
+  #bottom-nav .navbtn.active{
+    color:#fff;
+    background:#176447;
+    box-shadow:0 5px 15px rgba(23,100,71,.24);
+    transform:translateY(-3px);
+    font-weight:750;
+  }
+  #bottom-nav .navbtn.active .nav-icon{
+    color:#fff;
+  }
+  #bottom-nav .navbtn.active .nav-icon img{
+    filter:brightness(0) invert(1);
+  }
+  #bottom-nav .nav-icon{
+    font-size:21px;
+  }
+}
