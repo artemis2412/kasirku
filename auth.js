@@ -15,7 +15,7 @@ function login(){const list=read();show('<h2>Masuk KASIRKU</h2><p>Pilih akun dan
 }
 function lock(){user=null;clearTimeout(timer);document.getElementById("ks-account")?.remove();login()}
 function reset(){clearTimeout(timer);timer=setTimeout(lock,600000)}
-function apply(){if(!user)return;const owner=user.role==="owner";const cashierPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan"];document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!owner&&!cashierPages.includes(x.dataset.page)});if(owner){document.querySelectorAll("#view button").forEach(x=>x.hidden=true);document.querySelectorAll("#view input,#view select,#view textarea").forEach(x=>x.disabled=true);document.querySelectorAll("#view form").forEach(x=>x.hidden=true)}}
+function apply(){if(!user)return;const owner=user.role==="owner";const cashierPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan","Pengaturan"];document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!owner&&!cashierPages.includes(x.dataset.page)});if(owner){document.querySelectorAll("#view button").forEach(x=>x.hidden=true);document.querySelectorAll("#view input,#view select,#view textarea").forEach(x=>x.disabled=true);document.querySelectorAll("#view form").forEach(x=>x.hidden=true)}}
 ["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p&&user.role==="cashier"&&!["Kasir","Pesanan","Meja","Dapur"].includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}},true);
 const observer=new MutationObserver(()=>{if(user)apply()});
