@@ -487,3 +487,36 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
     font-size:21px;
   }
 }
+
+
+/* Correction: keep navigation decoration entirely inside the bar */
+@media(max-width:650px){
+  #bottom-nav{
+    overflow:hidden!important;
+    isolation:isolate;
+    padding-top:6px!important;
+    border-top:1px solid #e2ebe4!important;
+    background:linear-gradient(180deg,#f0f6f1 0%,#ffffff 72%)!important;
+  }
+  #bottom-nav::before{
+    content:""!important;
+    position:absolute!important;
+    inset:0!important;
+    top:0!important;
+    left:0!important;
+    right:0!important;
+    height:auto!important;
+    z-index:0!important;
+    pointer-events:none!important;
+    background:
+      radial-gradient(ellipse 46% 65% at 8% 0%,rgba(196,221,202,.55) 0 98%,transparent 100%),
+      radial-gradient(ellipse 42% 58% at 93% 0%,rgba(216,234,220,.65) 0 98%,transparent 100%)!important;
+  }
+  #bottom-nav::after{
+    content:none!important;
+    display:none!important;
+  }
+  #bottom-nav .navbtn{
+    z-index:1!important;
+  }
+}
