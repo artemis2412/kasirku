@@ -40,7 +40,7 @@
       configScript.src = "./supabase-config.js?v=1";
       configScript.onload = () => {
         const authScript = document.createElement("script");
-        authScript.src = "./cloud-auth.js?v=6";
+        authScript.src = "./cloud-auth.js?v=7";
         document.body.appendChild(authScript);
       };
       configScript.onerror = () => console.error("KASIRKU: gagal memuat konfigurasi login cloud.");
