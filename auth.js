@@ -156,6 +156,7 @@ function apply(){
  // Owner is the highest local role: keep operational controls, forms and settings enabled.
  // Special owner-only management panels remain protected by their own role checks.
  pinPanel();branchPanel();employeePanel();updateBranchLabel();
+ window.dispatchEvent(new Event("kasirku:page-ready"));
 }
 ["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p){const allowed=user.role==="owner"||user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;if(!allowed.includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}}},true);
