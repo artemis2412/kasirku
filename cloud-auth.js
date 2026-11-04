@@ -100,22 +100,34 @@ form.addEventListener("submit",async event=>{
         .select("store_id,role,status").eq("user_id",data.user.id).eq("status","active").limit(1);
       if(membershipError) throw membershipError;
       if(membership?.length){
+        sessionStorage.removeItem("kca_pending_store");
         say("Login berhasil. Akun dan toko terdeteksi. Tahap berikutnya menghubungkan akses kasir.", "success");
       }else{
-        say("Login berhasil. Akun ini belum memiliki toko. Gunakan pendaftaran owner atau hubungi pemilik toko.", "success");
+        const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
+        if(pending){
+          const {error:storeError}=await client.rpc("create_my_store",{
+            p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
+          });
+          if(storeError) throw storeError;
+          sessionStorage.removeItem("kca_pending_store");
+          say("Login dan pembuatan toko owner berhasil. Tahap berikutnya menghubungkan data kasir.", "success");
+        }else{
+          say("Login berhasil, tetapi akun ini belum memiliki toko. Pendaftaran toko perlu diselesaikan terlebih dahulu.", "success");
+        }
       }
     }else{
       const displayName=String(fd.get("displayName")||"").trim();
       const storeName=String(fd.get("storeName")||"").trim();
       const branchName=String(fd.get("branchName")||"").trim();
       if(displayName.length<2||storeName.length<2||branchName.length<2) throw new Error("Isi nama pemilik, nama toko, dan nama cabang (minimal 2 karakter).");
+      sessionStorage.setItem("kca_pending_store",JSON.stringify({displayName,storeName,branchName}));
       const {data,error}=await client.auth.signUp({
         email,password,
         options:{data:{display_name:displayName}}
       });
       if(error) throw error;
       if(!data.session){
-        say("Akun berhasil didaftarkan. Periksa email untuk konfirmasi, lalu masuk. Setelah login, proses pembuatan toko dilanjutkan.", "success");
+        say("Akun berhasil didaftarkan. Periksa email untuk konfirmasi, lalu masuk dari perangkat dan browser yang sama agar pendaftaran toko dapat dilanjutkan.", "success");
       }else{
         const {data:store,error:storeError}=await client.rpc("create_my_store",{
           p_store_name:storeName,p_branch_name:branchName,p_display_name:displayName
