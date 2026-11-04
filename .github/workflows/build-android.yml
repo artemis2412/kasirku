@@ -2,6 +2,12 @@ name: Build KASIRKU Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Versi aplikasi, contoh 1.0.0"
+        required: true
+        default: "1.0.0"
+        type: string
 
 permissions:
   contents: read
@@ -55,17 +61,72 @@ jobs:
       - name: Generate native Android resources
         run: npx capacitor-assets generate --android
 
-      - name: Build debug APK
+      - name: Configure permanent APK signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KASIRKU_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KASIRKU_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KASIRKU_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KASIRKU_KEY_PASSWORD }}
+          VERSION_NAME: ${{ inputs.version_name }}
+          VERSION_CODE: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          test -n "$KEYSTORE_BASE64" || (echo "Missing KASIRKU_KEYSTORE_BASE64" && exit 1)
+          test -n "$KEYSTORE_PASSWORD" || (echo "Missing KASIRKU_KEYSTORE_PASSWORD" && exit 1)
+          test -n "$KEY_ALIAS" || (echo "Missing KASIRKU_KEY_ALIAS" && exit 1)
+          test -n "$KEY_PASSWORD" || (echo "Missing KASIRKU_KEY_PASSWORD" && exit 1)
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/kasirku-release.p12
+          cat > android/keystore.properties <<EOF
+          storeFile=app/kasirku-release.p12
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          p = Path("android/app/build.gradle")
+          s = p.read_text()
+          if "signingConfigs {" in s:
+              raise SystemExit("Signing config already exists; refusing to overwrite.")
+          signing = """
+              signingConfigs {
+                  release {
+                      def ks = new Properties()
+                      file("../keystore.properties").withInputStream { ks.load(it) }
+                      storeFile file(ks['storeFile'])
+                      storePassword ks['storePassword']
+                      keyAlias ks['keyAlias']
+                      keyPassword ks['keyPassword']
+                  }
+              }
+          """
+          s = re.sub(r"(?m)^\s*buildTypes\s*\{", signing + "\n            buildTypes {", s, count=1)
+          if "signingConfigs.release" not in s:
+              s = re.sub(r"(?m)^(\s*release\s*\{)", r"\1\n                signingConfig signingConfigs.release", s, count=1)
+          version_code = os.environ["VERSION_CODE"]
+          version_name = os.environ["VERSION_NAME"]
+          s, n1 = re.subn(r"(?m)(^\s*versionCode\s+)\d+", r"\g<1>" + version_code, s, count=1)
+          s, n2 = re.subn(r'(?m)(^\s*versionName\s+)[\'"][^\'"]*[\'"]', lambda m: m.group(1) + '"' + version_name + '"', s, count=1)
+          if n1 != 1 or n2 != 1:
+              raise SystemExit("Could not safely set Android versionCode/versionName.")
+          p.write_text(s)
+          PY
+
+      - name: Build signed release APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
-      - name: Upload APK artifact
+      - name: Verify APK signature
+        run: |
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n 1)/apksigner" verify --verbose android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload signed APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KASIRKU-debug-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: KASIRKU-release-APK-${{ inputs.version_name }}-${{ github.run_number }}
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
-          retention-days: 14
-
+          retention-days: 30
