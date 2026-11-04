@@ -1,0 +1,178 @@
+/* KASIRKU — shared mobile layout corrections (web + Capacitor WebView) */
+@media (max-width: 650px) {
+  :root {
+    --kasirku-mobile-nav-height: 76px;
+  }
+
+  html,
+  body {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden !important;
+  }
+
+  body {
+    min-height: 100dvh;
+    padding: 0;
+  }
+
+  main {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+  }
+
+  /* Keep the app header below Android's status bar / display cutout. */
+  .topbar {
+    box-sizing: border-box;
+    height: auto;
+    min-height: calc(76px + env(safe-area-inset-top, 0px));
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+    padding-bottom: 8px;
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    scroll-margin-top: env(safe-area-inset-top, 0px);
+  }
+
+  #view {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    padding-top: 16px;
+    padding-right: max(13px, env(safe-area-inset-right, 0px));
+    padding-bottom: calc(var(--kasirku-mobile-nav-height) + 28px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-left: max(13px, env(safe-area-inset-left, 0px));
+    overflow: visible !important;
+  }
+
+  /* Five primary destinations share the available width; no clipped tab row. */
+  #bottom-nav {
+    position: fixed;
+    z-index: 50;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    width: 100%;
+    height: calc(var(--kasirku-mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    align-items: stretch;
+    justify-content: space-around;
+    gap: 2px;
+    padding: 6px max(7px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(7px, env(safe-area-inset-left, 0px));
+    overflow: hidden;
+    background: rgba(255,255,255,.97);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -5px 18px rgba(20,47,37,.07);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  #bottom-nav .navbtn {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: 0;
+    min-height: 0 !important;
+    height: 100%;
+    padding: 5px 2px !important;
+    gap: 3px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    white-space: nowrap;
+    border-radius: 12px;
+    font-size: clamp(9px, 2.8vw, 11px) !important;
+    line-height: 1.15;
+  }
+
+  #bottom-nav .navbtn .nav-icon {
+    width: 27px !important;
+    height: 27px !important;
+    min-width: 27px;
+    flex: 0 0 27px !important;
+    font-size: 24px !important;
+  }
+
+  #bottom-nav .navbtn > span:last-child {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* The online pill sits above the navigation instead of inside/on top of it. */
+  .connection-status {
+    z-index: 45;
+    right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--kasirku-mobile-nav-height) + env(safe-area-inset-bottom, 0px) + 10px);
+    max-width: 116px;
+  }
+
+  .page-stack {
+    gap: 12px;
+  }
+
+  .welcome {
+    padding: 20px 18px;
+    border-radius: 18px;
+  }
+
+  .welcome h2 {
+    font-size: clamp(20px, 5.4vw, 25px);
+    line-height: 1.25;
+  }
+
+  .welcome p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .card,
+  .panel {
+    min-width: 0;
+    padding: 13px;
+    border-radius: 15px;
+  }
+
+  .card .value {
+    overflow-wrap: anywhere;
+    font-size: clamp(18px, 5vw, 22px);
+  }
+
+  .two-col {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  /* Ensure the drawer also respects the Android top inset. */
+  #sidebar {
+    padding-top: calc(20px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    max-height: 100dvh;
+  }
+}
+
+@media (max-width: 380px) {
+  @media (max-width: 650px) {
+    #bottom-nav .navbtn {
+      font-size: 9px !important;
+      padding-right: 1px !important;
+      padding-left: 1px !important;
+    }
+
+    #bottom-nav .navbtn .nav-icon {
+      width: 24px !important;
+      height: 24px !important;
+      flex-basis: 24px !important;
+    }
+  }
+}
+
+/* Desktop layout remains unchanged by the mobile corrections above. */
