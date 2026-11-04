@@ -1016,3 +1016,8 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .edit-added-list .order-qty-control button{width:34px;height:34px;border:1px solid var(--border,#dce6df);border-radius:10px;background:var(--surface,#fff);color:var(--primary,#245c43);font-size:20px;font-weight:800}
 .edit-added-list .order-qty-control b{min-width:20px;text-align:center}
 .edit-added-list .order-edit-line{gap:9px;flex-wrap:wrap}
+
+
+/* Force one-button dialogs to center on narrow mobile screens */
+.app-dialog-actions.single{display:flex!important;justify-content:center!important;align-items:center!important;width:100%!important;grid-template-columns:none!important}
+.app-dialog-actions.single>.btn{display:block!important;width:min(272px,100%)!important;min-width:0!important;margin-left:auto!important;margin-right:auto!important;flex:0 1 272px!important}
