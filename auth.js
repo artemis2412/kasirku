@@ -18,6 +18,7 @@ function reset(){clearTimeout(timer);timer=setTimeout(lock,600000)}
 function apply(){if(!user)return;const owner=user.role==="owner";document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!owner&&!["Kasir","Pesanan","Meja","Dapur"].includes(x.dataset.page)});if(owner)document.querySelectorAll("#view button,#view input,#view select,#view textarea").forEach(x=>x.disabled=true)}
 ["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p&&user.role==="cashier"&&!["Kasir","Pesanan","Meja","Dapur"].includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}},true);
-document.addEventListener("DOMContentLoaded",()=>{style();if(!read().length)setup();else login()});
-if(document.readyState!=="loading"){style();if(!read().length)setup();else login()}
+const observer=new MutationObserver(()=>{if(user)apply()});
+document.addEventListener("DOMContentLoaded",()=>{style();observer.observe(document.body,{childList:true,subtree:true});if(!read().length)setup();else login()});
+if(document.readyState!=="loading"){style();observer.observe(document.body,{childList:true,subtree:true});if(!read().length)setup();else login()}
 })();
