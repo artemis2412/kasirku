@@ -643,3 +643,96 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
     font-size:8px;
   }
 }
+
+
+/* Compact table tiles; show occupied duration underneath, outside the card */
+.table-page>.table-grid-modern>.table-item-wrap{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:5px;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern{
+  width:100%;
+  min-width:0;
+  min-height:0!important;
+  height:142px;
+  aspect-ratio:auto!important;
+  padding:11px 4px 9px!important;
+  gap:7px!important;
+  border-radius:18px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-icon{
+  width:34px!important;
+  height:23px!important;
+  max-width:34px;
+  max-height:23px;
+  flex:0 0 23px;
+  object-fit:contain;
+  margin:5px 0 1px!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-number{
+  font-size:clamp(23px,5.5vw,30px);
+  line-height:1.05;
+  margin:0;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-status{
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  width:auto!important;
+  max-width:92%;
+  padding:6px 12px;
+  margin-top:3px;
+  border-radius:999px;
+  font-size:11px;
+  line-height:1.1;
+  white-space:nowrap;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern::before,
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern::after{
+  height:34%;
+  bottom:-13%;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern>*{
+  position:relative;
+  z-index:1;
+  flex-shrink:0;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-duration{
+  display:block;
+  min-height:17px;
+  width:100%;
+  text-align:center;
+  color:#8b5a2b;
+  font-size:10px;
+  line-height:1.2;
+  white-space:nowrap;
+  position:static;
+  z-index:auto;
+  margin:0;
+}
+@media(max-width:650px){
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern{
+    height:140px;
+    padding:10px 3px 8px!important;
+    gap:6px!important;
+  }
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-duration{
+    font-size:10px;
+    min-height:16px;
+  }
+}
+@media(max-width:380px){
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern{
+    height:136px;
+  }
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-duration{
+    font-size:9px;
+  }
+}
