@@ -53,7 +53,9 @@
         });
       }
     }
-    store.innerHTML=state.store?'<div style="padding:11px 12px;border:1px solid #e1ebe4;border-radius:12px;background:#fff"><div style="font-size:10px;color:#829087;letter-spacing:1px">TOKO CLOUD</div><b style="display:block;margin-top:3px;font-size:14px">'+esc(state.store.name||"Toko terhubung")+'</b><div style="margin-top:4px;color:#718078;font-size:11px">Peran: '+esc(state.store.role||"-")+' · '+(state.branches||[]).length+' cabang dapat diakses</div></div>':'';
+    const cloudRole=String(state.store?.role||"").toLowerCase();
+    const greetingName=state.user?.name||state.user?.email?.split("@")[0]||"Pengguna";
+    store.innerHTML=state.store?'<div style="padding:14px;border:1px solid #cfe5d5;border-radius:14px;background:linear-gradient(135deg,#f1faf3,#fff)"><div style="font-size:17px;font-weight:850;color:#176b46">Halo '+(cloudRole==="owner"?"Owner":cloudRole==="admin"?"Admin":"Pegawai")+', '+esc(greetingName)+' 👋</div><div style="margin-top:7px;font-size:10px;color:#829087;letter-spacing:1px">TOKO CLOUD</div><b style="display:block;margin-top:3px;font-size:14px">'+esc(state.store.name||"Toko terhubung")+'</b><div style="margin-top:4px;color:#718078;font-size:11px">Peran: '+esc(state.store.role||"-")+' · '+(state.branches||[]).length+' cabang dapat diakses</div></div>':'<div style="padding:12px;border:1px solid #e5eee7;border-radius:12px;background:#fff;color:#718078;font-size:13px">Halo! Menunggu akun Cloud terhubung…</div>';
     const locals=mappings.localBranches||[],saved=mappings.mappings||[];
     if(!locals.length){mapBox.innerHTML='<span style="color:#b06a25;font-size:12px">Daftar cabang lokal belum terbaca. Muat ulang aplikasi setelah login PIN.</span>';return}
     mapBox.innerHTML=locals.map(local=>{
