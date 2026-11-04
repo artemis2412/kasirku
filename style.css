@@ -1130,3 +1130,13 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
  body.report-paper-58 #report-print-paper .report-print-summary,body.report-paper-80 #report-print-paper .report-print-summary{display:grid!important;grid-template-columns:1fr!important;gap:4px!important}
  body.report-paper-58 #report-print-paper th,body.report-paper-58 #report-print-paper td,body.report-paper-80 #report-print-paper th,body.report-paper-80 #report-print-paper td{padding:3px 2px!important;font-size:8px!important;overflow-wrap:anywhere}
 }
+
+
+/* KASIRKU mobile report fixes: contain chart and keep date controls phone-sized */
+.report-filter,.report-filter-row,.report-filter-row label,.report-filter-row .field{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+.report-filter-row{grid-template-columns:minmax(0,1fr)!important}
+.report-filter-row input[type="date"]{width:100%!important;min-width:0!important;max-width:100%!important;min-height:44px!important;font-size:16px!important;touch-action:manipulation}
+.report-filter .btn{width:100%;margin-top:8px}
+.report-chart{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;box-sizing:border-box!important}
+.report-chart svg{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;overflow:hidden!important;box-sizing:border-box!important}
+@media(max-width:650px){.report-chart,.report-chart svg{min-width:0!important;width:100%!important}.report-filter-row input[type="date"]{font-size:16px!important}}
