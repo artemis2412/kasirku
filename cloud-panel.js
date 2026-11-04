@@ -6,7 +6,8 @@
     try{
       const id=localStorage.getItem("ksecurity_session");
       const users=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");
-      return !!users.find(x=>x.id===id&&x.role==="owner"&&x.active!==false);
+      const active=users.find(x=>String(x.id)===String(id)&&x.active!==false);
+      return active?.role==="owner";
     }catch{return false}
   }
   function currentPage(){return document.getElementById("page-title")?.textContent?.trim()||""}
@@ -73,7 +74,9 @@
     });
     renderStatus();
   }
+  window.KASIRKU_CLOUD_PANEL_MOUNT=mount;
   window.addEventListener("kasirku:cloud-context",renderStatus);
+  window.addEventListener("kasirku:page-ready",()=>{mount();renderStatus()});
   const observer=new MutationObserver(()=>{mount()});
   observer.observe(document.body,{childList:true,subtree:true});
   window.addEventListener("load",()=>{mount();renderStatus()});
