@@ -1,17 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
-<title id="t">KASIRKU</title><desc id="d">Simbol huruf K yang menyatu dengan struk kasir dalam warna hijau emerald.</desc>
+<title id="t">KASIRKU</title><desc id="d">Ikon KASIRKU berupa simbol K dan struk kasir putih-hijau di atas latar gradasi hijau.</desc>
 <defs>
- <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#20b978"/><stop offset="1" stop-color="#087447"/></linearGradient>
- <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e8f7ee"/></linearGradient>
- <filter id="s" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-color="#002d1c" flood-opacity=".22"/></filter>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#16c94b"/><stop offset=".42" stop-color="#006b2c"/><stop offset="1" stop-color="#003d24"/></linearGradient>
+ <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8dff00"/><stop offset="1" stop-color="#00a83b"/></linearGradient>
+ <linearGradient id="white" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#dce9e1"/></linearGradient>
+ <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#001d10" flood-opacity=".55"/></filter>
 </defs>
-<rect x="12" y="12" width="488" height="488" rx="112" fill="#103d2c"/>
-<path d="M55 378c95 78 251 82 363 13" fill="none" stroke="#fff" stroke-opacity=".06" stroke-width="24" stroke-linecap="round"/>
-<g filter="url(#s)">
- <path d="M295 68h112a24 24 0 0 1 24 24v285l-27-19-27 19-27-19-27 19-27-19-27 19V92a24 24 0 0 1 24-24z" fill="url(#paper)"/>
- <path d="M325 133h76M325 174h76M325 215h48" fill="none" stroke="#168a59" stroke-width="15" stroke-linecap="round"/>
- <path d="M105 121h75v107l107-107h91L244 255l139 137h-92L180 285v107h-75z" fill="url(#g)" stroke="#d7ffea" stroke-width="7" stroke-linejoin="round"/>
+<rect width="512" height="512" rx="112" fill="url(#bg)"/>
+<path d="M0 105Q170 -30 512 10V0H0Z" fill="#7dff00" opacity=".38"/>
+<path d="M0 410Q250 520 512 365V512H0Z" fill="#001f12" opacity=".32"/>
+<g filter="url(#shadow)">
+ <path d="M300 62h104a25 25 0 0 1 25 25v285l-25-17-26 17-26-17-26 17-26-17-26 17V87a25 25 0 0 1 26-25Z" fill="url(#white)"/>
+ <path d="M321 123h80M321 163h80M321 203h52" stroke="#087c38" stroke-width="14" stroke-linecap="round"/>
+ <path d="M91 112h81v116L288 112h102L250 256l143 144H289L172 285v115H91Z" fill="url(#glow)" stroke="#f5fff7" stroke-width="8" stroke-linejoin="round"/>
+ <path d="M172 285v115h-81V112h81v116" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round" opacity=".88"/>
 </g>
-<circle cx="402" cy="389" r="35" fill="#20b978" stroke="#d7ffea" stroke-width="8"/>
-<path d="m386 389 11 11 22-25" fill="none" stroke="#073b29" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M92 450Q250 398 420 445" fill="none" stroke="#8cff00" stroke-width="12" stroke-linecap="round"/>
 </svg>
