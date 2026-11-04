@@ -31,10 +31,16 @@
   </main>
   <script>if(new URLSearchParams(location.search).has("security-preview")){document.write('<script src="./auth.js?v=27"><\/script>')}</script>
   <script>
-    const qs = new URLSearchParams(location.search);
-    if (qs.has("cloud-auth-preview")) {
-      document.write('<script src="./supabase-config.js?v=1"><\\/script>');
-      document.write('<script src="./cloud-auth.js?v=1"><\\/script>');
+    if (new URLSearchParams(location.search).has("cloud-auth-preview")) {
+      const configScript = document.createElement("script");
+      configScript.src = "./supabase-config.js?v=1";
+      configScript.onload = () => {
+        const authScript = document.createElement("script");
+        authScript.src = "./cloud-auth.js?v=2";
+        document.body.appendChild(authScript);
+      };
+      configScript.onerror = () => console.error("KASIRKU: gagal memuat konfigurasi login cloud.");
+      document.body.appendChild(configScript);
     }
   </script>
   <script src="./branch-storage.js?v=1"></script>
