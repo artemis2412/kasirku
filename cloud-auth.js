@@ -98,7 +98,7 @@ forgot.addEventListener("click",async()=>{
   if(!email){say("Masukkan email akun terlebih dahulu.","error");form.elements.email.focus();return;}
   forgot.disabled=true; say("Mengirim kode pemulihan…");
   try{
-    if(!client){await loadSdk();client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});}
+    if(!client){await loadSdk();client=await window.KASIRKU_CLOUD.getScopedClient();}
     const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname+"?cloud-auth-preview"});
     if(error) throw error;
     say("Jika email terdaftar, tautan pemulihan akan dikirim. Buka email ini dari perangkat yang sama, lalu buat kata sandi baru.","success");
@@ -112,12 +112,14 @@ savePasswordButton.addEventListener("click",async()=>{
   if(newPassword!==confirmPassword){say("Ulangi kata sandi harus sama.","error");return;}
   savePasswordButton.disabled=true;
   try{
+    if(!client)client=await window.KASIRKU_CLOUD.getScopedClient();
     const {error}=await client.auth.updateUser({password:newPassword});
     if(error) throw error;
     if(inviteMode){
       const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
       if(acceptError) throw acceptError;
       if(accepted?.status!=="accepted") throw new Error("Kata sandi tersimpan, tetapi undangan belum diterima. Hubungi Owner.");
+      await window.KASIRKU_CLOUD.linkCurrentIdentity();
       recoveryWrap.classList.add("kca-hidden");
       say("Akun pegawai aktif! Kata sandi tersimpan dan undangan berhasil diterima.","success");
       layer.querySelectorAll(".kca-tabs,.kca-note").forEach(x=>x.classList.add("kca-hidden"));
@@ -143,8 +145,9 @@ async function finishPendingStore(session){
       p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
     });
     if(error)throw error;
+    await window.KASIRKU_CLOUD.linkCurrentIdentity();
     sessionStorage.removeItem("kca_pending_store");
-    say("Email berhasil dikonfirmasi dan toko berhasil dibuat.","success");
+    say("Email berhasil dikonfirmasi, toko dibuat, dan akun PIN terhubung.","success");
   }catch(error){console.error("KASIRKU store setup:",error);say(error.message||"Konfirmasi berhasil, tetapi pembuatan toko belum selesai. Silakan masuk kembali.","error");}
   finally{storeSetupInProgress=false;}
 }
@@ -157,23 +160,25 @@ form.addEventListener("submit",async event=>{
   try{
     if(!client){
       await loadSdk();
-      client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
-        auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
-      });
+      client=await window.KASIRKU_CLOUD.getScopedClient();
     }
     if(mode==="login"){
+      const local=window.KASIRKU_CLOUD.getState().localSession;
+      if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu sebelum menghubungkan akun Cloud.");
       const {data,error}=await client.auth.signInWithPassword({email,password});
       if(error) throw error;
       const {data:membership,error:membershipError}=await client.from("store_memberships")
         .select("store_id,role,is_active").eq("user_id",data.user.id).eq("is_active",true).limit(1);
       if(membershipError) throw membershipError;
       if(membership?.length){
+        await window.KASIRKU_CLOUD.linkCurrentIdentity();
         sessionStorage.removeItem("kca_pending_store");
-        say("Login berhasil. Akun dan toko terdeteksi.", "success");
+        say("Login berhasil. Akun Cloud cocok dengan peran PIN perangkat ini.", "success");
       }else{
         const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
         if(!acceptError&&accepted?.status==="accepted"){
-          say("Undangan diterima. Akun pegawai berhasil terhubung ke toko dan cabang.", "success");
+          await window.KASIRKU_CLOUD.linkCurrentIdentity();
+          say("Undangan diterima. Akun Cloud cocok dengan peran PIN perangkat ini.", "success");
           return;
         }
         const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
@@ -182,13 +187,16 @@ form.addEventListener("submit",async event=>{
             p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
           });
           if(storeError) throw storeError;
+          await window.KASIRKU_CLOUD.linkCurrentIdentity();
           sessionStorage.removeItem("kca_pending_store");
-          say("Login dan registrasi toko berhasil. Tahap berikutnya menghubungkan data kasir.", "success");
+          say("Login, toko, dan pengaitan akun berhasil.", "success");
         }else{
           say("Login berhasil, tetapi akun ini belum memiliki toko. Pendaftaran toko perlu diselesaikan terlebih dahulu.", "success");
         }
       }
     }else{
+      const local=window.KASIRKU_CLOUD.getState().localSession;
+      if(!local||local.role!=="owner")throw new Error("Registrasi toko hanya dapat dilakukan setelah login PIN Owner.");
       const displayName=String(fd.get("displayName")||"").trim();
       const storeName=String(fd.get("storeName")||"").trim();
       const branchName=String(fd.get("branchName")||"").trim();
@@ -209,8 +217,9 @@ form.addEventListener("submit",async event=>{
           p_store_name:storeName,p_branch_name:branchName,p_display_name:displayName
         });
         if(storeError) throw storeError;
+        await window.KASIRKU_CLOUD.linkCurrentIdentity();
         sessionStorage.removeItem("kca_pending_store");
-        say("Akun dan toko berhasil didaftarkan. Tahap berikutnya menghubungkan data kasir.", "success");
+        say("Akun, toko, dan pengaitan Owner berhasil.", "success");
       }
     }
   }catch(error){
@@ -219,9 +228,7 @@ form.addEventListener("submit",async event=>{
   }finally{submit.disabled=false}
 });
 loadSdk().then(async()=>{
-  client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
-    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
-  });
+  client=await window.KASIRKU_CLOUD.getScopedClient();
   const showInviteSetup=(session)=>{
     if(!inviteMode||!session?.user)return;
     layer.querySelectorAll(".kca-tabs").forEach(x=>x.classList.add("kca-hidden"));
