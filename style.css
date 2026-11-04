@@ -377,3 +377,51 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
     margin-top:4px;
   }
 }
+
+
+/* Final alignment: keep the table pictogram fully inside the card */
+.table-page>.table-grid-modern>.table-card-modern{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding-top:13px;
+}
+.table-page>.table-grid-modern>.table-card-modern .table-card-icon{
+  display:block;
+  position:relative;
+  width:28px!important;
+  height:15px!important;
+  max-width:28px;
+  max-height:15px;
+  flex:0 0 15px;
+  object-fit:contain;
+  object-position:center;
+  margin:7px 0 4px!important;
+  overflow:visible;
+}
+.table-page>.table-grid-modern>.table-card-modern .table-card-number{
+  display:block;
+  line-height:1.05;
+  margin:0;
+}
+.table-page>.table-grid-modern>.table-card-modern .table-card-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1.15;
+  margin-top:5px;
+}
+@media(max-width:650px){
+  .table-page>.table-grid-modern>.table-card-modern{
+    padding-top:10px;
+  }
+  .table-page>.table-grid-modern>.table-card-modern .table-card-icon{
+    width:26px!important;
+    height:14px!important;
+    max-width:26px;
+    max-height:14px;
+    flex-basis:14px;
+    margin:7px 0 4px!important;
+  }
+}
