@@ -98,7 +98,7 @@ form.addEventListener("submit",async event=>{
       const {data,error}=await client.auth.signInWithPassword({email,password});
       if(error) throw error;
       const {data:membership,error:membershipError}=await client.from("store_memberships")
-        .select("store_id,role,status").eq("user_id",data.user.id).eq("is_active",true).limit(1);
+        .select("store_id,role,is_active").eq("user_id",data.user.id).eq("is_active",true).limit(1);
       if(membershipError) throw membershipError;
       if(membership?.length){
         sessionStorage.removeItem("kca_pending_store");
