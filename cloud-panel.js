@@ -2,13 +2,16 @@
   "use strict";
   const PANEL_ID="ks-cloud-check-panel";
   const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  function isOwner(){
+  function localSessionUser(){
     try{
       const id=localStorage.getItem("ksecurity_session");
       const users=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");
-      const active=users.find(x=>String(x.id)===String(id)&&x.active!==false);
-      return window.KASIRKU_LOCAL_ROLE==="owner"||active?.role==="owner";
-    }catch{return false}
+      return users.find(x=>String(x.id)===String(id)&&x.active!==false)||null;
+    }catch{return null}
+  }
+  function isOwner(){
+    const active=localSessionUser();
+    return window.KASIRKU_LOCAL_ROLE==="owner"||active?.role==="owner";
   }
   function currentPage(){return document.getElementById("page-title")?.textContent?.trim()||""}
   function panelMarkup(){
@@ -54,7 +57,10 @@
       }
     }
     const cloudRole=String(state.store?.role||"").toLowerCase();
-    const greetingName=state.user?.name||state.user?.email?.split("@")[0]||"Pengguna";
+    const localUser=localSessionUser();
+    const localRole=String(localUser?.role||window.KASIRKU_LOCAL_ROLE||"").toLowerCase();
+    const greetingRole=localRole==="owner"?"Owner":localRole==="admin"?"Admin":localRole==="supervisor"?"Supervisor":localRole==="cashier"?"Kasir":greetingRole;
+    const greetingName=localUser?.name||state.user?.name||state.user?.email?.split("@")[0]||"Pengguna";
     store.innerHTML=state.store?'<div style="padding:14px;border:1px solid #cfe5d5;border-radius:14px;background:linear-gradient(135deg,#f1faf3,#fff)"><div style="font-size:17px;font-weight:850;color:#176b46">Halo '+(cloudRole==="owner"?"Owner":cloudRole==="admin"?"Admin":"Pegawai")+', '+esc(greetingName)+' 👋</div><div style="margin-top:7px;font-size:10px;color:#829087;letter-spacing:1px">TOKO CLOUD</div><b style="display:block;margin-top:3px;font-size:14px">'+esc(state.store.name||"Toko terhubung")+'</b><div style="margin-top:4px;color:#718078;font-size:11px">Peran: '+esc(state.store.role||"-")+' · '+(state.branches||[]).length+' cabang dapat diakses</div></div>':'<div style="padding:12px;border:1px solid #e5eee7;border-radius:12px;background:#fff;color:#718078;font-size:13px">Halo! Menunggu akun Cloud terhubung…</div>';
     const locals=mappings.localBranches||[],saved=mappings.mappings||[];
     if(!locals.length){mapBox.innerHTML='<span style="color:#b06a25;font-size:12px">Daftar cabang lokal belum terbaca. Muat ulang aplikasi setelah login PIN.</span>';return}
