@@ -41,23 +41,38 @@
   function saveApprovedInitialMapping(){
     if(!state.store?.id||!state.branches.length)return;
     const locals=readLocalBranches(),cloud=state.branches;
-    const local=locals.filter(b=>String(b.name).trim()==="Roti Cafe kuwe in");
-    const remote=cloud.filter(b=>String(b.name).trim()==="Cabang satu");
-    if(local.length!==1||remote.length!==1)return;
     let saved={storeId:state.store.id,mappings:[]};
     try{saved=JSON.parse(localStorage.getItem(LOCAL_BRANCH_MAP_KEY)||"{}")}catch{}
     if(saved.storeId!==state.store.id)saved={storeId:state.store.id,mappings:[]};
-    const exists=saved.mappings.find(m=>m.localBranchId===local[0].id||m.cloudBranchId===remote[0].id);
-    if(exists){
-      if(exists.localBranchId!==local[0].id||exists.cloudBranchId!==remote[0].id)return;
-      return;
+    if(!Array.isArray(saved.mappings))saved.mappings=[];
+    const normalize=value=>String(value||"").trim().toLocaleLowerCase("id-ID");
+    const pairs=[];
+    // Preserve the previously owner-approved legacy mapping.
+    const legacyLocal=locals.filter(b=>normalize(b.name)==="roti cafe kuwe in");
+    const legacyCloud=cloud.filter(b=>normalize(b.name)==="cabang satu");
+    if(legacyLocal.length===1&&legacyCloud.length===1)pairs.push([legacyLocal[0],legacyCloud[0]]);
+    // Exact, unique name matches are safe for the newly created branches.
+    for(const local of locals){
+      const matches=cloud.filter(remote=>normalize(remote.name)===normalize(local.name));
+      if(matches.length===1)pairs.push([local,matches[0]]);
     }
-    saved.mappings.push({
-      localBranchId:local[0].id,localBranchName:local[0].name,
-      cloudBranchId:remote[0].id,cloudBranchName:remote[0].name,
-      storeId:state.store.id,approvedBy:"owner-confirmed",createdAt:new Date().toISOString()
-    });
-    localStorage.setItem(LOCAL_BRANCH_MAP_KEY,JSON.stringify(saved));
+    let changed=false;
+    for(const [local,remote] of pairs){
+      const conflict=saved.mappings.find(m=>
+        (m.localBranchId===local.id&&m.cloudBranchId!==remote.id)||
+        (m.cloudBranchId===remote.id&&m.localBranchId!==local.id)
+      );
+      if(conflict)continue;
+      const exists=saved.mappings.some(m=>m.localBranchId===local.id&&m.cloudBranchId===remote.id&&m.storeId===state.store.id);
+      if(exists)continue;
+      saved.mappings.push({
+        localBranchId:local.id,localBranchName:local.name,
+        cloudBranchId:remote.id,cloudBranchName:remote.name,
+        storeId:state.store.id,approvedBy:"owner-confirmed",createdAt:new Date().toISOString()
+      });
+      changed=true;
+    }
+    if(changed)localStorage.setItem(LOCAL_BRANCH_MAP_KEY,JSON.stringify(saved));
   }
   async function loadCatalog(branchId){
     if(!client)throw new Error("Koneksi cloud belum siap");
