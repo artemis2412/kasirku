@@ -9,9 +9,9 @@
       return users.find(x=>String(x.id)===String(id)&&x.active!==false)||null;
     }catch{return null}
   }
-  function isOwner(){
+  function canAccessCloud(){
     const active=localSessionUser();
-    return window.KASIRKU_LOCAL_ROLE==="owner"||active?.role==="owner";
+    return ["owner","admin"].includes(String(active?.role||window.KASIRKU_LOCAL_ROLE||"").toLowerCase());
   }
   function currentPage(){return document.getElementById("page-title")?.textContent?.trim()||""}
   function panelMarkup(){
@@ -21,7 +21,7 @@
       +'<div id="ks-cloud-state" role="status" style="margin-top:14px;padding:12px;border-radius:12px;background:#f1f6f2;color:#52675a;font-size:13px;line-height:1.55">Memeriksa koneksi Cloud…</div>'
       +'<div id="ks-cloud-store" style="margin-top:12px"></div>'
       +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Pemetaan cabang perangkat ini</div><div id="ks-cloud-mappings" style="display:grid;gap:8px"><span style="color:#718078;font-size:12px">Memuat pemetaan…</span></div></div>'
-      +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Undang Pegawai Cloud</div><form id="ks-cloud-invite-form" style="display:grid;gap:9px"><input name="email" type="email" required placeholder="Email pegawai" style="box-sizing:border-box;width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;font:inherit"><select name="branch" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="">Pilih cabang Cloud</option></select><select name="role" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="cashier">Kasir</option><option value="admin">Admin</option></select><button type="submit" style="min-height:43px;border:0;border-radius:11px;background:#e4f2e8;color:#176b46;font:700 13px system-ui">Kirim Undangan</button><div id="ks-cloud-invite-message" role="status" style="font-size:12px;line-height:1.5;color:#718078"></div></form><p style="margin:8px 0 0;color:#829087;font-size:10px;line-height:1.45">Undangan hanya mendukung Admin dan Kasir. Email harus dikonfirmasi oleh pegawai.</p></div>'
+      +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Undang Pegawai Cloud</div><form id="ks-cloud-invite-form" style="display:grid;gap:9px"><input name="email" type="email" required placeholder="Email pegawai" style="box-sizing:border-box;width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;font:inherit"><select name="branch" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="">Pilih cabang Cloud</option></select><select name="role" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="cashier">Kasir</option>'+(localSessionUser()?.role==="owner"?'<option value="admin">Admin</option>':'')+'</select><button type="submit" style="min-height:43px;border:0;border-radius:11px;background:#e4f2e8;color:#176b46;font:700 13px system-ui">Kirim Undangan</button><div id="ks-cloud-invite-message" role="status" style="font-size:12px;line-height:1.5;color:#718078"></div></form><p style="margin:8px 0 0;color:#829087;font-size:10px;line-height:1.45">Undangan hanya mendukung Admin dan Kasir. Email harus dikonfirmasi oleh pegawai.</p></div>'
       +'<button id="ks-cloud-refresh" type="button" style="width:100%;min-height:44px;margin-top:15px;border:0;border-radius:12px;background:linear-gradient(135deg,#188b59,#116b46);color:white;font:700 13px system-ui">↻ Periksa ulang Cloud</button>'
       +'<p style="margin:10px 0 0;color:#829087;font-size:11px;line-height:1.5">Panel ini menampilkan status Cloud, pemetaan cabang, dan undangan pegawai. Transaksi belum disinkronkan otomatis.</p></section>';
   }
@@ -50,7 +50,7 @@
           const button=form.querySelector('button[type=submit]'),msg=document.getElementById("ks-cloud-invite-message");
           button.disabled=true;button.textContent="Mengirim…";msg.textContent="";
           try{
-            const result=await window.KASIRKU_CLOUD.inviteStaff(form.elements.email.value,form.elements.role.value,form.elements.branch.value);
+            const inviteRole=String(form.elements.role.value||"").toLowerCase();if(localSessionUser()?.role!=="owner"&&inviteRole!=="cashier")throw new Error("Admin hanya dapat mengundang Kasir.");const result=await window.KASIRKU_CLOUD.inviteStaff(form.elements.email.value,inviteRole,form.elements.branch.value);
             msg.style.color="#168153";
             msg.textContent=result.existing_user?"Email sudah punya akun Cloud. Minta pegawai masuk dengan email itu untuk menerima undangan.":"Undangan berhasil dikirim ke "+(result.email||form.elements.email.value)+".";
             form.elements.email.value="";
@@ -75,7 +75,7 @@
     }).join("");
   }
   function mount(){
-    if(!isOwner()||currentPage()!=="Pengaturan")return;
+    if(!canAccessCloud()||currentPage()!=="Pengaturan")return;
     const host=document.getElementById("view");
     if(!host||host.querySelector("#"+PANEL_ID))return;
     host.appendChild(document.createRange().createContextualFragment(panelMarkup()));
