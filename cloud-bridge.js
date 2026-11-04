@@ -6,7 +6,8 @@
   const state = { ready:false, authenticated:false, user:null, memberships:[], store:null, branches:[], error:null };
   window.KASIRKU_CLOUD = {
     getState: () => ({...state, memberships:[...state.memberships], branches:[...state.branches]}),
-    refresh: refresh
+    refresh: refresh,
+    loadCatalog: loadCatalog
   };
   function publish(){
     window.dispatchEvent(new CustomEvent("kasirku:cloud-context", {detail:window.KASIRKU_CLOUD.getState()}));
@@ -21,6 +22,18 @@
     });
   }
   let client=null, running=false;
+  async function loadCatalog(branchId){
+    if(!client)throw new Error("Koneksi cloud belum siap");
+    const branch=state.branches.find(b=>b.id===branchId);
+    if(!state.authenticated||!state.store||!branch)throw new Error("Cabang cloud tidak tersedia atau tidak diizinkan");
+    const [categoriesResult,productsResult]=await Promise.all([
+      client.from("menu_categories").select("id,name,branch_id").eq("store_id",state.store.id).eq("branch_id",branch.id).order("name"),
+      client.from("products").select("id,name,price,stock_unlimited,stock_quantity,is_active,category_id,branch_id").eq("store_id",state.store.id).eq("branch_id",branch.id).eq("is_active",true).order("name")
+    ]);
+    if(categoriesResult.error)throw categoriesResult.error;
+    if(productsResult.error)throw productsResult.error;
+    return {branch:{id:branch.id,name:branch.name},categories:categoriesResult.data||[],products:productsResult.data||[]};
+  }
   async function refresh(){
     if(running)return window.KASIRKU_CLOUD.getState();
     running=true;
