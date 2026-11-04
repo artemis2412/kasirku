@@ -151,6 +151,7 @@ e.target.reset();msg.style.color="#16834a";msg.textContent="PIN berhasil diperba
 function renderAudit(){const host=document.getElementById("ks-audit-list");if(!host)return;const rows=(()=>{try{return JSON.parse(localStorage.getItem(AUDIT_KEY)||"[]")}catch{return []}})().slice().reverse();host.innerHTML=rows.length?rows.map(x=>'<div style="padding:12px 0;border-bottom:1px solid #e5ece6"><b>'+String(x.action||"Aktivitas").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</b><div style="font-size:13px;color:#68786e;margin-top:4px">'+new Date(x.at).toLocaleString("id-ID")+' · '+x.actor+' ('+x.actorRole+')</div><div style="font-size:13px;margin-top:3px">'+String(x.details||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</div></div>').join(""):'<p style="color:#718078">Belum ada aktivitas keamanan.</p>'}
 function apply(){
  if(!user)return;
+ window.KASIRKU_LOCAL_ROLE=user.role;
  const allowed=user.role==="owner"?adminPages:user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;
  document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!allowed.includes(x.dataset.page)});
  // Owner is the highest local role: keep operational controls, forms and settings enabled.
