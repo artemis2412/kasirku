@@ -286,3 +286,28 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
  .table-page>.table-grid-modern>.table-card-modern{aspect-ratio:.76;gap:6px}
  .table-page>.table-grid-modern>.table-card-modern .table-card-duration{font-size:8px}
 }
+
+
+/* FIX: compact table icon so it stays inside each table tile */
+.table-page>.table-grid-modern>.table-card-modern .table-card-icon{
+  width:34px!important;
+  height:23px!important;
+  max-width:34px;
+  max-height:23px;
+  object-fit:contain;
+  flex:0 0 23px;
+  margin:0 0 1px;
+  opacity:.9;
+}
+.table-page>.table-grid-modern>.table-card-modern{
+  overflow:hidden;
+}
+@media(max-width:650px){
+  .table-page>.table-grid-modern>.table-card-modern .table-card-icon{
+    width:30px!important;
+    height:21px!important;
+    max-width:30px;
+    max-height:21px;
+    flex-basis:21px;
+  }
+}
