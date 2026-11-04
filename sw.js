@@ -1,5 +1,5 @@
-const CACHE_VERSION="kasirku-v13-brand-refresh-1";
-const APP_FILES=["./","./index.html","./style.css","./mobile-layout-fixes.css","./app.js","./branch-storage.js","./cloud-panel.js","./cloud-bridge.js","./cloud-auth.js","./cloud-catalog-sync.js","./update-checker.js","./manifest.json","./assets/table-icon.svg","./assets/kasirku-mark.svg"];
+const CACHE_VERSION="kasirku-v14-mobile-drawer-1";
+const APP_FILES=["./","./index.html","./style.css","./mobile-layout-fixes.css","./mobile-drawer.css","./app.js","./branch-storage.js","./cloud-panel.js","./cloud-bridge.js","./cloud-auth.js","./cloud-catalog-sync.js","./update-checker.js","./manifest.json","./assets/table-icon.svg","./assets/kasirku-mark.svg"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE_VERSION).then(cache=>cache.addAll(APP_FILES)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("kasirku-")&&k!==CACHE_VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener("fetch",event=>{const req=event.request;if(req.method!=="GET")return;const url=new URL(req.url);if(url.origin!==self.location.origin)return;event.respondWith(fetch(req).then(res=>{if(res.ok){const copy=res.clone();caches.open(CACHE_VERSION).then(c=>c.put(req,copy))}return res}).catch(()=>caches.match(req).then(hit=>hit||caches.match("./"))) )});
