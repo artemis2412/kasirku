@@ -835,3 +835,114 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
   .order-qty-control{gap:8px}
   .order-qty-control button{width:34px;height:34px}
 }
+
+
+/* FINAL TABLE GRID ALIGNMENT: keep every status pill inside its tile */
+.table-page>.table-grid-modern{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  grid-auto-rows:max-content!important;
+  align-items:start!important;
+  align-content:start!important;
+  column-gap:10px!important;
+  row-gap:18px!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  align-self:start!important;
+  width:100%!important;
+  min-width:0!important;
+  height:auto!important;
+  min-height:0!important;
+  gap:4px!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  height:140px!important;
+  min-height:140px!important;
+  max-height:140px!important;
+  aspect-ratio:auto!important;
+  padding:10px 4px 8px!important;
+  gap:5px!important;
+  overflow:hidden!important;
+  border-radius:18px!important;
+  flex:none!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-icon{
+  display:block!important;
+  width:34px!important;
+  height:23px!important;
+  min-height:23px!important;
+  max-height:23px!important;
+  flex:0 0 23px!important;
+  margin:3px 0 0!important;
+  object-fit:contain!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-number{
+  display:block!important;
+  flex:0 0 auto!important;
+  margin:0!important;
+  line-height:1.05!important;
+  font-size:29px!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-status{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-sizing:border-box!important;
+  flex:0 0 29px!important;
+  height:29px!important;
+  min-height:29px!important;
+  min-width:0!important;
+  width:auto!important;
+  max-width:94%!important;
+  margin:2px 0 0!important;
+  padding:4px 13px!important;
+  line-height:19px!important;
+  font-size:12px!important;
+  white-space:nowrap!important;
+  position:relative!important;
+  z-index:2!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern::before,
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern::after{
+  pointer-events:none!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-duration{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-height:17px!important;
+  height:17px!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:center!important;
+  font-size:10px!important;
+  line-height:17px!important;
+  white-space:nowrap!important;
+}
+@media(max-width:380px){
+  .table-page>.table-grid-modern{column-gap:7px!important;row-gap:15px!important}
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern{
+    height:136px!important;
+    min-height:136px!important;
+    max-height:136px!important;
+    padding:9px 3px 7px!important;
+  }
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-number{font-size:27px!important}
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-status{
+    height:27px!important;
+    min-height:27px!important;
+    flex-basis:27px!important;
+    font-size:11px!important;
+    padding:3px 10px!important;
+  }
+}
