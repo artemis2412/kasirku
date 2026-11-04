@@ -1021,3 +1021,63 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 /* Force one-button dialogs to center on narrow mobile screens */
 .app-dialog-actions.single{display:flex!important;justify-content:center!important;align-items:center!important;width:100%!important;grid-template-columns:none!important}
 .app-dialog-actions.single>.btn{display:block!important;width:min(272px,100%)!important;min-width:0!important;margin-left:auto!important;margin-right:auto!important;flex:0 1 272px!important}
+
+
+/* Compact near-square table tiles: retain four columns and external duration */
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern{
+  height:94px!important;
+  min-height:94px!important;
+  max-height:94px!important;
+  padding:6px 3px 5px!important;
+  gap:3px!important;
+  border-radius:15px!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-icon{
+  width:29px!important;
+  height:19px!important;
+  min-height:19px!important;
+  max-height:19px!important;
+  flex:0 0 19px!important;
+  margin:1px 0 0!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-number{
+  font-size:26px!important;
+  line-height:1!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-status{
+  height:25px!important;
+  min-height:25px!important;
+  flex-basis:25px!important;
+  margin:1px 0 0!important;
+  padding:2px 9px!important;
+  font-size:11px!important;
+  line-height:19px!important;
+}
+.table-page>.table-grid-modern>.table-item-wrap>.table-card-duration{
+  min-height:17px!important;
+  height:17px!important;
+}
+@media(max-width:380px){
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern{
+    height:90px!important;
+    min-height:90px!important;
+    max-height:90px!important;
+    padding:5px 2px 4px!important;
+    gap:3px!important;
+  }
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-icon{
+    width:27px!important;
+    height:18px!important;
+    min-height:18px!important;
+    max-height:18px!important;
+    flex-basis:18px!important;
+  }
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-number{font-size:24px!important}
+  .table-page>.table-grid-modern>.table-item-wrap>.table-card-modern .table-card-status{
+    height:24px!important;
+    min-height:24px!important;
+    flex-basis:24px!important;
+    padding:2px 8px!important;
+    font-size:10px!important;
+  }
+}
