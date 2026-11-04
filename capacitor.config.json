@@ -1,0 +1,11 @@
+{
+  "appId": "com.artemis.kasirku",
+  "appName": "KASIRKU",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}
