@@ -11,7 +11,7 @@ const pages=[
 ["Dapur",icon('<path d="M3 13a5 5 0 0 1 5-5 5 5 0 0 1 9-1 4.5 4.5 0 0 1 4 6H3Z"/><path d="M5 13v7h14v-7M8 17h8"/>')],
 ["Laporan",icon('<path d="M3 3v18h18"/><path d="M7 15v-3m5 3V7m5 8v-5m4 5V4"/>')],
 ["Kas",icon('<rect x="2.5" y="5.5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19M16 14h5.5v3H16a1.5 1.5 0 0 1 0-3Z"/><path d="M6 5.5V4h10"/>')],
-["Pengaturan",'<svg class="settings-icon-art" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill-rule="evenodd" d="M10.1 2.7h3.8l.6 2.1c.5.2 1 .4 1.4.8l2-.8 1.9 3.3-1.6 1.5c.1.5.1 1.1 0 1.6l1.6 1.5-1.9 3.3-2-.8c-.4.3-.9.6-1.4.8l-.6 2.1h-3.8l-.6-2.1c-.5-.2-1-.4-1.4-.8l-2 .8-1.9-3.3 1.6-1.5a6 6 0 0 1 0-1.6L4.2 8.1l1.9-3.3 2 .8c.4-.3.9-.6 1.4-.8l.6-2.1ZM12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" fill="#15965b" stroke="#075b37" stroke-width="1.1" stroke-linejoin="round"/></svg>']
+["Pengaturan",'<svg class="settings-icon-art" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="gear-body" d="M9.7 2.6h4.6l.55 2.15c.55.18 1.06.48 1.53.8l2.08-.78 2.3 3.98-1.58 1.48c.1.58.1 1.16 0 1.74l1.58 1.48-2.3 3.98-2.08-.78c-.47.32-.98.62-1.53.8l-.55 2.15H9.7l-.55-2.15a7.4 7.4 0 0 1-1.53-.8l-2.08.78-2.3-3.98 1.58-1.48a7 7 0 0 1 0-1.74L3.24 8.75l2.3-3.98 2.08.78c.47-.32.98-.62 1.53-.8L9.7 2.6Z"/><circle class="gear-hole" cx="12" cy="10.95" r="3.25"/></svg>']
 ];
 
 const defaultCategories=["Makanan","Minuman","Snack","Dessert","Lainnya"];
