@@ -218,3 +218,7 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 
 /* Checklist dapur dan progres porsi */
 .kitchen-checklist{display:grid;gap:12px;margin:14px 0}.kitchen-item{padding:12px;border:1px solid var(--line);border-radius:12px;background:#f8faf8}.kitchen-item-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.kitchen-progress{font-size:12px;font-weight:800;color:var(--forest2);white-space:nowrap}.kitchen-item-head{display:grid;grid-template-columns:minmax(0,1fr) auto 28px;align-items:center;gap:12px}.kitchen-unit{width:26px;height:26px;padding:0;border:1.5px solid #aab9ad;border-radius:6px;background:#fff;display:grid;place-items:center;flex-shrink:0}.kitchen-unit.checked{background:var(--forest2);border-color:var(--forest2)}.kitchen-unit.checked::after{content:"✓";font-size:17px;line-height:1;color:#fff;font-weight:800}
+
+.cash-unlock-btn{font-size:12px;padding:6px 11px;min-height:32px;opacity:.82}
+
+.cash-unlock-btn{font-size:12px;padding:6px 11px;min-height:32px;opacity:.82}
