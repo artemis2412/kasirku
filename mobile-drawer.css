@@ -1,0 +1,46 @@
+/* Mobile drawer: slide in/out, tap outside to dismiss, and edge-swipe support. */
+@media (max-width: 650px) {
+  #sidebar {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: min(86vw, 320px) !important;
+    max-width: 320px !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    transform: translateX(-105%);
+    transition: transform .26s cubic-bezier(.2,.75,.25,1);
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 61 !important;
+    box-shadow: 12px 0 34px rgba(0,0,0,.2);
+    will-change: transform;
+  }
+  #sidebar.open {
+    display: flex !important;
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(5,24,16,.42);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity .22s ease, visibility .22s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sidebar-backdrop.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  body.sidebar-open { overflow: hidden !important; }
+}
