@@ -31,7 +31,9 @@
     if(!status||!store||!mapBox)return;
     if(!state.ready){status.textContent="Menunggu koneksi Cloud siap…";dot.style.background="#d5a43b"}
     else if(state.error){status.textContent="Cloud belum dapat diperiksa: "+state.error;dot.style.background="#c44b45"}
-    else if(!state.authenticated){status.textContent="Belum login Cloud pada perangkat ini. Buka mode login Cloud dan masuk dengan akun Owner.";dot.style.background="#d5a43b"}
+    else if(!state.localSession){status.textContent="Masuk dengan PIN KASIRKU terlebih dahulu untuk membuka sesi Cloud milik akun ini.";dot.style.background="#d5a43b"}
+    else if(!state.cloudSignedIn){status.textContent="Akun Cloud belum login untuk pengguna PIN "+(state.localSession.name||"ini")+". Sesi Cloud tiap akun disimpan terpisah.";dot.style.background="#d5a43b"}
+    else if(!state.linked){status.textContent=state.error||"Akun Cloud belum ditautkan ke akun PIN ini.";dot.style.background="#c44b45"}
     else if(!state.store){status.textContent="Login Cloud terdeteksi, tetapi keanggotaan toko aktif belum ditemukan.";dot.style.background="#d5a43b"}
     else{status.textContent="Akun Cloud aktif dan toko berhasil dikenali.";dot.style.background="#168b58"}
     const branchSelect=document.querySelector("#ks-cloud-invite-form select[name=branch]");
