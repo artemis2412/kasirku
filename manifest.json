@@ -4,12 +4,12 @@
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f8f5",
-  "theme_color": "#103d2c",
+  "background_color": "#063d24",
+  "theme_color": "#063d24",
   "description": "KASIRKU — Aplikasi Kasir Modern",
   "icons": [
     {
-      "src": "./assets/kasirku-mark.svg?v=3",
+      "src": "./assets/kasirku-mark.svg?v=4",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
