@@ -3,14 +3,17 @@
   // Read-only bridge: exposes verified Supabase identity and allowed branches.
   // It does not change PIN login, local data, or active branch selection.
   const cfg = window.KASIRKU_SUPABASE_CONFIG;
-  const state = { ready:false, authenticated:false, user:null, memberships:[], store:null, branches:[], localSession:null, error:null };
+  const state = { ready:false, authenticated:false, cloudSignedIn:false, linked:false, user:null, memberships:[], store:null, branches:[], localSession:null, error:null };
   window.KASIRKU_CLOUD = {
     getState: () => ({...state, memberships:[...state.memberships], branches:[...state.branches]}),
     refresh: refresh,
     loadCatalog: loadCatalog,
     syncCatalog: syncCatalog,
     inviteStaff: inviteStaff,
-    getLocalBranchMappings: getLocalBranchMappings
+    getLocalBranchMappings: getLocalBranchMappings,
+    getScopedClient: getScopedClient,
+    getLocalSession: readLocalSession,
+    linkCurrentIdentity: linkCurrentIdentity
   };
   function readLocalSession(){try{const id=localStorage.getItem("ksecurity_session");const rows=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");const u=Array.isArray(rows)?rows.find(x=>String(x?.id)===String(id)&&x?.active!==false):null;return u?{id:String(u.id),name:String(u.name||""),role:String(u.role||"").toLowerCase()}:null}catch{return null}}
   function publish(){
@@ -25,7 +28,51 @@
       document.head.appendChild(s);
     });
   }
-  let client=null, running=false;
+  let client=null, clientLocalId=null, authSubscription=null, running=false, refreshAgain=false;
+  const IDENTITY_LINK_PREFIX="kasirku_cloud_identity_link_v1:";
+  function identityLinkKey(localId){return IDENTITY_LINK_PREFIX+encodeURIComponent(String(localId))}
+  function readIdentityLink(localId){try{return JSON.parse(localStorage.getItem(identityLinkKey(localId))||"null")}catch{return null}}
+  function scopedStorage(localId){
+    const prefix="kasirku_supabase_auth_v1:"+encodeURIComponent(String(localId))+":";
+    return {getItem:async key=>localStorage.getItem(prefix+key),setItem:async(key,value)=>localStorage.setItem(prefix+key,value),removeItem:async key=>localStorage.removeItem(prefix+key)};
+  }
+  async function getScopedClient(){
+    const local=readLocalSession();
+    if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu.");
+    await loadSdk();
+    if(!client||clientLocalId!==local.id){
+      if(authSubscription?.data?.subscription)authSubscription.data.subscription.unsubscribe();
+      client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{storage:scopedStorage(local.id),persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+      clientLocalId=local.id;
+      authSubscription=client.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});
+    }
+    return client;
+  }
+  async function linkCurrentIdentity(){
+    const local=readLocalSession();
+    if(!local)throw new Error("Sesi PIN lokal tidak ditemukan.");
+    const scoped=await getScopedClient();
+    const {data:{session},error:sessionError}=await scoped.auth.getSession();
+    if(sessionError)throw sessionError;
+    if(!session?.user)throw new Error("Akun Cloud belum login.");
+    const {data:memberships,error}=await scoped.from("store_memberships").select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
+    if(error)throw error;
+    if(!memberships?.length)throw new Error("Keanggotaan Cloud aktif tidak ditemukan.");
+    if(memberships.length!==1)throw new Error("Akun Cloud memiliki lebih dari satu keanggotaan toko. Pengaitan ditahan.");
+    const existing=readIdentityLink(local.id);
+    if(existing&&existing.userId!==session.user.id)throw new Error("Akun PIN ini sudah ditautkan ke akun Cloud lain.");
+    const users=(()=>{try{return JSON.parse(localStorage.getItem("ksecurity_users")||"[]")}catch{return []}})();
+    for(const other of users){
+      if(!other?.id||String(other.id)===String(local.id))continue;
+      if(readIdentityLink(other.id)?.userId===session.user.id)throw new Error("Akun Cloud ini sudah ditautkan ke akun PIN lain pada perangkat ini.");
+    }
+    const cloudRole=String(memberships[0].role||"").toLowerCase();
+    const expected=local.role==="owner"?"owner":local.role==="admin"?"admin":"cashier";
+    if(cloudRole!==expected)throw new Error("Peran tidak cocok: PIN lokal "+expected+" tetapi akun Cloud "+cloudRole+". Pengaitan dibatalkan.");
+    localStorage.setItem(identityLinkKey(local.id),JSON.stringify({userId:session.user.id,email:String(session.user.email||"").toLowerCase(),role:cloudRole,linkedAt:new Date().toISOString()}));
+    await refresh();
+    return true;
+  }
   const LOCAL_BRANCH_MAP_KEY = "kasirku_cloud_branch_map_v1";
   function readLocalBranches(){
     try{
@@ -145,56 +192,53 @@
     return {...(invitation||{}),...(sent||{})};
   }
   async function refresh(){
-    if(running){refreshAgain=true;return window.KASIRKU_CLOUD.getState();}
+    if(running){refreshAgain=true;return window.KASIRKU_CLOUD.getState()}
     running=true;
     try{
-      if(!cfg?.url||!cfg?.publishableKey)throw new Error("Konfigurasi cloud belum tersedia");
-      await loadSdk();
-      if(!client)client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
-        auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
-      });
       state.localSession=readLocalSession();
-      const {data:{session},error:sessionError}=await client.auth.getSession();
-      if(sessionError)throw sessionError;
-      state.authenticated=!!session?.user;
-      state.user=session?.user?{id:session.user.id,email:session.user.email,name:String(session.user.user_metadata?.display_name||session.user.user_metadata?.full_name||session.user.user_metadata?.name||session.user.email?.split("@")[0]||"Pengguna").trim()}:null;
-      state.memberships=[];state.store=null;state.branches=[];state.error=null;
-      if(session?.user){
-        const {data:memberships,error}=await client.from("store_memberships")
-          .select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
-        if(error)throw error;
-        state.memberships=memberships||[];
-        if(state.memberships.length){
-          const m=state.memberships[0];
-          const {data:storeRow,error:storeError}=await client.from("stores")
-            .select("id,name").eq("id",m.store_id).maybeSingle();
+      state.authenticated=false;state.cloudSignedIn=false;state.linked=false;state.user=null;state.memberships=[];state.store=null;state.branches=[];state.error=null;
+      if(!cfg?.url||!cfg?.publishableKey)throw new Error("Konfigurasi cloud belum tersedia");
+      if(!state.localSession){
+        if(authSubscription?.data?.subscription)authSubscription.data.subscription.unsubscribe();
+        client=null;clientLocalId=null;authSubscription=null;
+      }else{
+        const scoped=await getScopedClient();
+        const {data:{session},error:sessionError}=await scoped.auth.getSession();
+        if(sessionError)throw sessionError;
+        state.cloudSignedIn=!!session?.user;
+        if(session?.user){
+          state.user={id:session.user.id,email:session.user.email,name:String(session.user.user_metadata?.display_name||session.user.user_metadata?.full_name||session.user.user_metadata?.name||session.user.email?.split("@")[0]||"Pengguna").trim()};
+          const link=readIdentityLink(state.localSession.id);
+          if(!link||link.userId!==session.user.id)throw new Error("Akun Cloud belum ditautkan ke akun PIN perangkat ini.");
+          const {data:memberships,error}=await scoped.from("store_memberships").select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
+          if(error)throw error;
+          if(!memberships?.length)throw new Error("Keanggotaan Cloud aktif tidak ditemukan.");
+          if(memberships.length!==1)throw new Error("Akun Cloud memiliki lebih dari satu keanggotaan toko; akses ditahan.");
+          const m=memberships[0],expected=state.localSession.role==="owner"?"owner":state.localSession.role==="admin"?"admin":"cashier";
+          if(String(m.role).toLowerCase()!==expected||String(link.role).toLowerCase()!==expected){
+            localStorage.removeItem(identityLinkKey(state.localSession.id));
+            throw new Error("Peran PIN lokal dan peran Cloud tidak cocok. Sesi Cloud ditahan.");
+          }
+          state.memberships=memberships;state.linked=true;state.authenticated=true;
+          const {data:storeRow,error:storeError}=await scoped.from("stores").select("id,name").eq("id",m.store_id).maybeSingle();
           if(storeError)throw storeError;
           state.store={id:m.store_id,name:storeRow?.name||"Toko terhubung",role:m.role};
-          const {data:branches,error:branchError}=await client.from("branches")
-            .select("id,name,is_active").eq("store_id",m.store_id).eq("is_active",true).order("created_at");
+          const {data:branches,error:branchError}=await scoped.from("branches").select("id,name,is_active").eq("store_id",m.store_id).eq("is_active",true).order("created_at");
           if(branchError)throw branchError;
           let allowed=branches||[];
-          if(!["owner","admin"].includes(String(m.role).toLowerCase())){
-            const {data:assignments,error:assignmentError}=await client.from("branch_memberships")
-              .select("branch_id").eq("store_id",m.store_id).eq("user_id",session.user.id);
+          if(expected!=="owner"){
+            const {data:assignments,error:assignmentError}=await scoped.from("branch_memberships").select("branch_id").eq("store_id",m.store_id).eq("user_id",session.user.id);
             if(assignmentError)throw assignmentError;
             const ids=new Set((assignments||[]).map(x=>x.branch_id));
             allowed=allowed.filter(b=>ids.has(b.id));
           }
-          state.branches=allowed;
-          saveApprovedInitialMapping();
+          state.branches=allowed;saveApprovedInitialMapping();
         }
       }
-    }catch(error){state.error=error?.message||"Gagal memuat konteks cloud";}
-    finally{state.ready=true;running=false;publish();}
+    }catch(error){state.error=error?.message||"Gagal memuat konteks cloud"}
+    finally{state.ready=true;running=false;publish();if(refreshAgain){refreshAgain=false;setTimeout(refresh,0)}}
     return window.KASIRKU_CLOUD.getState();
   }
-  window.addEventListener("kasirku:local-session",event=>{state.localSession=event.detail||null;publish();});
-  loadSdk().then(()=>{
-    client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
-      auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
-    });
-    client.auth.onAuthStateChange(()=>{setTimeout(refresh,0);});
-    refresh();
-  }).catch(error=>{state.ready=true;state.error=error.message;publish();});
+  window.addEventListener("kasirku:local-session",()=>{state.ready=false;refresh()});
+  refresh();
 })();
