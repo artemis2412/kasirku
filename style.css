@@ -1081,3 +1081,11 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
     font-size:10px!important;
   }
 }
+
+
+/* Report date filters and responsive sales chart */
+.report-filter-row{display:grid;grid-template-columns:minmax(150px,1fr) repeat(2,minmax(130px,.7fr));gap:10px;align-items:end}
+.report-filter-row label{display:grid;gap:6px;font-size:12px;color:var(--muted);font-weight:650}
+.report-chart{width:100%;overflow-x:auto;margin-top:12px}
+.report-chart svg{display:block;width:100%;min-width:320px;height:auto}
+@media(max-width:650px){.report-filter-row{grid-template-columns:1fr}.report-chart svg{min-width:520px}}
