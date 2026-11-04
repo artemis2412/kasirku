@@ -77,7 +77,7 @@ jobs:
           test -n "$KEY_PASSWORD" || (echo "Missing KASIRKU_KEY_PASSWORD" && exit 1)
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/kasirku-release.p12
           cat > android/keystore.properties <<EOF
-          storeFile=app/kasirku-release.p12
+          storeFile=kasirku-release.p12
           storePassword=$KEYSTORE_PASSWORD
           keyAlias=$KEY_ALIAS
           keyPassword=$KEY_PASSWORD
