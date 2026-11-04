@@ -1210,3 +1210,14 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .navbtn[data-page="Pengaturan"] .nav-icon .gear-body{fill:#15965b;stroke:#075b37;stroke-width:1.45;stroke-linejoin:round}
 .navbtn[data-page="Pengaturan"] .nav-icon .gear-hole{fill:#eafff1;stroke:#075b37;stroke-width:1.35}
 #bottom-nav .navbtn[data-page="Pengaturan"] .nav-icon svg{width:27px;height:27px}
+
+
+/* Approved KASIRKU illustrated icon set */
+.navbtn .nav-icon{width:62px;height:62px;flex:0 0 62px;display:block;background:none;border:0;box-shadow:none;border-radius:0;color:inherit}
+.navbtn .icon-art{display:block;width:62px;height:62px;background-image:url("./assets/kasirku-icons.webp");background-repeat:no-repeat;background-size:400% 300%;border-radius:15px;filter:drop-shadow(0 4px 5px rgba(10,82,48,.12))}
+.icon-dashboard{background-position:0 0}.icon-kasir{background-position:33.333% 0}.icon-pesanan{background-position:66.666% 0}.icon-meja{background-position:100% 0}
+.icon-menu{background-position:0 50%}.icon-dapur{background-position:33.333% 50%}.icon-laporan{background-position:66.666% 50%}.icon-kas{background-position:100% 50%}
+.icon-cabang{background-position:0 100%}.icon-pengguna{background-position:33.333% 100%}.icon-pengaturan{background-position:66.666% 100%}.icon-keluar{background-position:100% 100%}
+.navbtn.active .nav-icon,.navbtn.active .icon-art{background-color:transparent;box-shadow:none}
+.navbtn.active .icon-art{filter:drop-shadow(0 5px 7px rgba(8,90,49,.2))}
+@media(max-width:650px){#bottom-nav .navbtn{min-width:84px;flex:1 0 84px;min-height:94px;gap:4px;padding:5px 3px;justify-content:flex-start;border-radius:13px;font-size:12px}#bottom-nav .navbtn .nav-icon{width:66px;height:66px;flex:0 0 66px;background:none}#bottom-nav .navbtn .icon-art{width:66px;height:66px;border-radius:16px}#bottom-nav .navbtn.active{background:#e5f7eb;color:#12633e}}
