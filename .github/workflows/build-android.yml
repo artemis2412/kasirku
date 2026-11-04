@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate app icon and splash assets
+        run: npm run prepare:android-assets
+
       - name: Prepare local web app
         shell: bash
         run: |
@@ -40,12 +43,17 @@ jobs:
             mkdir -p "www/$(dirname "$file")"
             cp "$file" "www/$file"
           done < <(git ls-files -z)
+          mkdir -p www/icons
+          cp icons/icon-192.png icons/icon-512.png www/icons/
 
       - name: Add Android platform
         run: npx cap add android
 
       - name: Sync web app
         run: npx cap sync android
+
+      - name: Generate native Android resources
+        run: npx capacitor-assets generate --android
 
       - name: Build debug APK
         working-directory: android
