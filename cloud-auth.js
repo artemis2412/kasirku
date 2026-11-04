@@ -157,8 +157,13 @@ form.addEventListener("submit",async event=>{
       if(membershipError) throw membershipError;
       if(membership?.length){
         sessionStorage.removeItem("kca_pending_store");
-        say("Login berhasil. Akun dan toko terdeteksi. Tahap berikutnya menghubungkan akses kasir.", "success");
+        say("Login berhasil. Akun dan toko terdeteksi.", "success");
       }else{
+        const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
+        if(!acceptError&&accepted?.status==="accepted"){
+          say("Undangan diterima. Akun pegawai berhasil terhubung ke toko dan cabang.", "success");
+          return;
+        }
         const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
         if(pending){
           const {error:storeError}=await client.rpc("create_my_store",{
@@ -205,7 +210,19 @@ loadSdk().then(async()=>{
   client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
     auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
   });
+  let inviteLinkHandled=false;
   client.auth.onAuthStateChange((event,session)=>{
+    if(event==="SIGNED_IN"&&!inviteLinkHandled&&new URLSearchParams(location.search).has("accept-staff-invite")&&session?.user){
+      inviteLinkHandled=true;
+      setTimeout(async()=>{
+        const {data,error}=await client.rpc("accept_staff_invitation");
+        if(!error&&data?.status==="accepted"){
+          say("Undangan diterima. Akun pegawai berhasil terhubung ke toko dan cabang.","success");
+        }else{
+          say(error?.message||"Akun aktif, tetapi undangan belum dapat diterima. Silakan masuk kembali setelah memastikan email sesuai undangan.","error");
+        }
+      },0);
+    }
     if(event==="PASSWORD_RECOVERY"){
       recoveryWrap.classList.remove("kca-hidden");
       layer.querySelector("#kca-subtitle").textContent="Buat kata sandi baru";
