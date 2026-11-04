@@ -9,6 +9,7 @@
     refresh: refresh,
     loadCatalog: loadCatalog,
     syncCatalog: syncCatalog,
+    inviteStaff: inviteStaff,
     getLocalBranchMappings: getLocalBranchMappings
   };
   function publish(){
@@ -110,6 +111,22 @@
       if(result.error)throw result.error;if(old)productsUpdated++;else productsCreated++;
     }
     return {branch:{id:branch.id,name:branch.name},categoriesCreated,categoriesUpdated,productsCreated,productsUpdated,totalLocalProducts:menuMap.size,totalLocalCategories:categoryNames.length};
+  }
+  async function inviteStaff(email,role,branchId){
+    if(!client||!state.authenticated||!state.store)throw new Error("Login Cloud belum siap");
+    if(!["owner","admin"].includes(String(state.store.role).toLowerCase()))throw new Error("Hanya Owner/Admin yang dapat mengundang pegawai");
+    email=String(email||"").trim().toLowerCase();
+    if(!email||!["admin","cashier"].includes(role)||!state.branches.some(b=>b.id===branchId))throw new Error("Data undangan tidak valid");
+    const {data:invitation,error:inviteError}=await client.rpc("create_staff_invitation",{
+      p_store_id:state.store.id,p_branch_id:branchId,p_email:email,p_role:role
+    });
+    if(inviteError)throw inviteError;
+    const {data:sent,error:sendError}=await client.functions.invoke("kasirku-send-staff-invite",{
+      body:{email,store_id:state.store.id,branch_id:branchId}
+    });
+    if(sendError)throw sendError;
+    if(sent?.error)throw new Error(sent.error);
+    return {...(invitation||{}),...(sent||{})};
   }
   async function refresh(){
     if(running)return window.KASIRKU_CLOUD.getState();
