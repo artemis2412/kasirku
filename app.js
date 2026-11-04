@@ -93,5 +93,8 @@ document.addEventListener("change",e=>{if(e.target.id==="restore-backup-file"){c
 document.getElementById("today-date").textContent=new Intl.DateTimeFormat("id-ID",{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date());
 window.addEventListener("error",e=>console.error("KASIRKU:",e.message));window.addEventListener("popstate",()=>{if(tableDetailId!==null){tableDetailId=null;render()}});
 const updateTableDurations=()=>{if(current==="Meja")document.querySelectorAll("[data-table-duration]").forEach(el=>{el.textContent=el.dataset.compact==="true"?"◷ "+shortDurationLabel(Number(el.dataset.start)):durationLabel(Number(el.dataset.start))})};window.setInterval(updateTableDurations,15000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)updateTableDurations()});
+
+function updateConnectionStatus(){const online=navigator.onLine;const el=document.getElementById("connection-status"),label=document.getElementById("connection-status-label");if(!el||!label)return;el.classList.toggle("is-online",online);label.textContent=online?"Online":"Offline";el.setAttribute("aria-label",online?"Perangkat terhubung ke internet":"Perangkat tidak terhubung ke internet")}
+window.addEventListener("online",updateConnectionStatus);window.addEventListener("offline",updateConnectionStatus);updateConnectionStatus();
 try{render()}catch(e){console.error(e);document.getElementById("view").innerHTML='<div class="panel"><h2>KASIRKU mengalami kendala</h2><p>Silakan kirim screenshot.</p></div>'}
 })();
