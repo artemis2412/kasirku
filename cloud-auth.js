@@ -163,7 +163,7 @@ form.addEventListener("submit",async event=>{
       client=await window.KASIRKU_CLOUD.getScopedClient();
     }
     if(mode==="login"){
-      const local=window.KASIRKU_CLOUD.getState().localSession;
+      const local=window.KASIRKU_CLOUD.getLocalSession();
       if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu sebelum menghubungkan akun Cloud.");
       const {data,error}=await client.auth.signInWithPassword({email,password});
       if(error) throw error;
