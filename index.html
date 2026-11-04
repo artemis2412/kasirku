@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#14251f">
-  <meta name="description" content="KASIRKU - Sistem kasir warung dan cafe">
+  <meta name="theme-color" content="#123d30">
+  <meta name="description" content="KASIRKU - Aplikasi Kasir Modern">
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=11.6">
-  <title>KASIRKU V4</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/kasirku-mark.svg">
+  <link rel="stylesheet" href="./style.css?v=12.0">
+  <title>KASIRKU — Aplikasi Kasir Modern</title>
 </head>
 <body>
   <aside id="sidebar">
-    <div class="brand">KASIRKU<small>WARUNG &amp; CAFE</small></div>
+    <div class="brand"><img class="brand-mark" src="./assets/kasirku-mark.svg" alt=""><span class="brand-wordmark">KASIRKU<small>APLIKASI KASIR MODERN</small></span></div>
     <div class="branch-label">CABANG AKTIF</div>
     <div class="branch-name">Cabang Utama</div>
     <nav id="nav" aria-label="Navigasi utama"></nav>
@@ -20,7 +21,7 @@
   <main>
     <header class="topbar">
       <button id="menu-toggle" class="menu-toggle" aria-label="Buka menu">☰</button>
-      <div><div class="eyebrow">SISTEM KASIR</div><h1 id="page-title">Dashboard</h1></div>
+      <div><div class="eyebrow">KASIRKU</div><h1 id="page-title">Dashboard</h1></div>
       <time id="today-date"></time>
     </header>
     <section id="view" aria-live="polite">
@@ -44,7 +45,7 @@
     }
   </script>
   <script src="./branch-storage.js?v=1"></script>
-  <script src="./app.js?v=12.5"></script>
+  <script src="./app.js?v=12.6"></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
