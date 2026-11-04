@@ -149,7 +149,14 @@ e.target.reset();msg.style.color="#16834a";msg.textContent="PIN berhasil diperba
 };
 }
 function renderAudit(){const host=document.getElementById("ks-audit-list");if(!host)return;const rows=(()=>{try{return JSON.parse(localStorage.getItem(AUDIT_KEY)||"[]")}catch{return []}})().slice().reverse();host.innerHTML=rows.length?rows.map(x=>'<div style="padding:12px 0;border-bottom:1px solid #e5ece6"><b>'+String(x.action||"Aktivitas").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</b><div style="font-size:13px;color:#68786e;margin-top:4px">'+new Date(x.at).toLocaleString("id-ID")+' · '+x.actor+' ('+x.actorRole+')</div><div style="font-size:13px;margin-top:3px">'+String(x.details||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</div></div>').join(""):'<p style="color:#718078">Belum ada aktivitas keamanan.</p>'}
-function apply(){if(!user)return;const owner=user.role==="owner",allowed=user.role==="owner"?adminPages:user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!allowed.includes(x.dataset.page)});if(owner){document.querySelectorAll("#view button:not(#ks-pin-panel button):not(#ks-branch-panel button):not(#ks-employee-panel button):not(#ks-cloud-check-panel button)").forEach(x=>x.hidden=true);document.querySelectorAll("#view input:not(#ks-pin-panel input):not(#ks-branch-panel input):not(#ks-employee-panel input),#view select:not(#ks-pin-panel select):not(#ks-branch-panel select):not(#ks-employee-panel select),#view textarea:not(#ks-pin-panel textarea):not(#ks-branch-panel textarea)").forEach(x=>x.disabled=true);document.querySelectorAll("#view form:not(#ks-pin-form):not(#ks-branch-form):not(#ks-employee-form)").forEach(x=>x.hidden=true)}pinPanel();branchPanel();employeePanel();updateBranchLabel()}
+function apply(){
+ if(!user)return;
+ const allowed=user.role==="owner"?adminPages:user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;
+ document.querySelectorAll("[data-page]").forEach(x=>{x.hidden=!allowed.includes(x.dataset.page)});
+ // Owner is the highest local role: keep operational controls, forms and settings enabled.
+ // Special owner-only management panels remain protected by their own role checks.
+ pinPanel();branchPanel();employeePanel();updateBranchLabel();
+}
 ["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p){const allowed=user.role==="owner"||user.role==="admin"?adminPages:user.role==="supervisor"?supervisorPages:cashierPages;if(!allowed.includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}}},true);
 document.addEventListener("DOMContentLoaded",()=>{style();if(!read().length)setup();else restoreSession();installActivityAudit()});
