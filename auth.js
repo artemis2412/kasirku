@@ -47,7 +47,23 @@ function branchPanel(){
  panel.onclick=e=>{const pick=e.target.closest("[data-branch-select]"),toggle=e.target.closest("[data-branch-toggle]");if(pick){localStorage.setItem(ACTIVE_BRANCH_KEY,pick.dataset.branchSelect);audit("Cabang dipilih","Owner memilih "+(branchRead().find(x=>x.id===pick.dataset.branchSelect)?.name||"cabang"));updateBranchLabel();panel.querySelector("#ks-branch-msg").textContent="Cabang dipilih. Data operasional masih menggunakan penyimpanan toko yang sama.";draw()}else if(toggle){const list=branchRead(),b=list.find(x=>x.id===toggle.dataset.branchToggle);if(!b)return;b.active=!b.active;if(!b.active&&localStorage.getItem(ACTIVE_BRANCH_KEY)===b.id)localStorage.setItem(ACTIVE_BRANCH_KEY,"main");localStorage.setItem(BRANCH_KEY,JSON.stringify(list));audit("Status cabang diubah",b.name+" · "+(b.active?"Aktif":"Nonaktif"));updateBranchLabel();draw()}};
  draw();
 }
-function updateBranchLabel(){const list=branchRead(),id=localStorage.getItem(ACTIVE_BRANCH_KEY)||"main",b=list.find(x=>x.id===id&&x.active)||list.find(x=>x.id==="main");const el=document.querySelector(".branch-name");if(el&&b&&el.textContent!==b.name)el.textContent=b.name}
+function updateBranchLabel(){
+ const list=branchRead(),id=localStorage.getItem(ACTIVE_BRANCH_KEY)||"main",b=list.find(x=>x.id===id&&x.active)||list.find(x=>x.id==="main");
+ const el=document.querySelector(".branch-name");if(!el||!b)return;
+ if(user?.role!=="owner"){if(el.textContent!==b.name)el.textContent=b.name;return}
+ let select=el.querySelector("#ks-branch-switch"),add=el.querySelector("#ks-branch-add");
+ if(!select){
+  el.innerHTML='<div style="display:flex;gap:7px;align-items:center"><select id="ks-branch-switch" aria-label="Pilih cabang" style="width:100%;min-width:0;padding:10px 9px;border:1px solid #52735f;border-radius:9px;background:#214a38;color:#fff;font:inherit"></select></div><button id="ks-branch-add" type="button" style="width:100%;margin-top:8px;padding:9px;border:1px dashed #71927d;border-radius:9px;background:transparent;color:#dcebe1;font:600 13px system-ui">＋ Tambah Cabang</button>';
+  select=el.querySelector("#ks-branch-switch");add=el.querySelector("#ks-branch-add");
+  select.onchange=()=>{localStorage.setItem(ACTIVE_BRANCH_KEY,select.value);const chosen=branchRead().find(x=>x.id===select.value);audit("Cabang dipilih","Owner memilih "+(chosen?.name||"cabang"));updateBranchLabel()};
+  add.onclick=()=>{const name=window.prompt("Masukkan nama cabang baru:");if(name===null)return;const clean=name.trim(),items=branchRead();if(!clean)return;if(items.some(x=>x.name.toLowerCase()===clean.toLowerCase())){window.alert("Nama cabang sudah digunakan.");return}const item={id:"br-"+Date.now(),name:clean,active:true,createdAt:new Date().toISOString()};items.push(item);localStorage.setItem(BRANCH_KEY,JSON.stringify(items));localStorage.setItem(ACTIVE_BRANCH_KEY,item.id);audit("Cabang ditambahkan","Owner menambahkan cabang "+clean);updateBranchLabel();window.alert("Cabang berhasil ditambahkan.")};
+ }
+ select=el.querySelector("#ks-branch-switch");
+ const activeId=localStorage.getItem(ACTIVE_BRANCH_KEY)||"main";
+ select.innerHTML="";
+ list.filter(x=>x.active).forEach(x=>{const option=document.createElement("option");option.value=x.id;option.textContent=x.name;option.selected=x.id===activeId;select.appendChild(option)});
+ if(!list.some(x=>x.id===activeId&&x.active)){localStorage.setItem(ACTIVE_BRANCH_KEY,b.id);select.value=b.id}
+}
 
 function error(t){const x=document.getElementById("ks-error");if(x)x.textContent=t}
 async function setup(){show('<h2>Keamanan KASIRKU</h2><p>Buat PIN Owner dan Kasir untuk perangkat ini.</p><form id="ks-setup"><label>PIN Owner (6 angka)</label><input name="o" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>Ulangi PIN Owner</label><input name="o2" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>PIN Kasir (6 angka)</label><input name="c" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>Ulangi PIN Kasir</label><input name="c2" type="password" inputmode="numeric" minlength="6" maxlength="6" required><div id="ks-error"></div><button>Simpan PIN</button></form>');
