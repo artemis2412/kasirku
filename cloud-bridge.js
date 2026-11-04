@@ -3,7 +3,7 @@
   // Read-only bridge: exposes verified Supabase identity and allowed branches.
   // It does not change PIN login, local data, or active branch selection.
   const cfg = window.KASIRKU_SUPABASE_CONFIG;
-  const state = { ready:false, authenticated:false, user:null, memberships:[], store:null, branches:[], error:null };
+  const state = { ready:false, authenticated:false, user:null, memberships:[], store:null, branches:[], localSession:null, error:null };
   window.KASIRKU_CLOUD = {
     getState: () => ({...state, memberships:[...state.memberships], branches:[...state.branches]}),
     refresh: refresh,
@@ -12,6 +12,7 @@
     inviteStaff: inviteStaff,
     getLocalBranchMappings: getLocalBranchMappings
   };
+  function readLocalSession(){try{const id=localStorage.getItem("ksecurity_session");const rows=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");const u=Array.isArray(rows)?rows.find(x=>String(x?.id)===String(id)&&x?.active!==false):null;return u?{id:String(u.id),name:String(u.name||""),role:String(u.role||"").toLowerCase()}:null}catch{return null}}
   function publish(){
     window.dispatchEvent(new CustomEvent("kasirku:cloud-context", {detail:window.KASIRKU_CLOUD.getState()}));
   }
@@ -152,6 +153,7 @@
       if(!client)client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
         auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
       });
+      state.localSession=readLocalSession();
       const {data:{session},error:sessionError}=await client.auth.getSession();
       if(sessionError)throw sessionError;
       state.authenticated=!!session?.user;
@@ -187,6 +189,7 @@
     finally{state.ready=true;running=false;publish();}
     return window.KASIRKU_CLOUD.getState();
   }
+  window.addEventListener("kasirku:local-session",event=>{state.localSession=event.detail||null;publish();});
   loadSdk().then(()=>{
     client=window.supabase.createClient(cfg.url,cfg.publishableKey,{
       auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
