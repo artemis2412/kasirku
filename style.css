@@ -1221,3 +1221,9 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .navbtn.active .nav-icon,.navbtn.active .icon-art{background-color:transparent;box-shadow:none}
 .navbtn.active .icon-art{filter:drop-shadow(0 5px 7px rgba(8,90,49,.2))}
 @media(max-width:650px){#bottom-nav .navbtn{min-width:84px;flex:1 0 84px;min-height:94px;gap:4px;padding:5px 3px;justify-content:flex-start;border-radius:13px;font-size:12px}#bottom-nav .navbtn .nav-icon{width:66px;height:66px;flex:0 0 66px;background:none}#bottom-nav .navbtn .icon-art{width:66px;height:66px;border-radius:16px}#bottom-nav .navbtn.active{background:#e5f7eb;color:#12633e}}
+
+
+/* Restore lightweight built-in navigation icons; no external sprite dependency. */
+.navbtn .nav-icon{width:28px!important;height:28px!important;flex:0 0 28px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;background:none!important;border:0!important;border-radius:8px!important;box-shadow:none!important;color:inherit!important;font-family:system-ui,sans-serif!important;font-size:25px!important;line-height:1!important;filter:none!important}
+.navbtn .icon-art{display:none!important}
+#bottom-nav .navbtn .nav-icon{width:100%!important;height:30px!important;flex:0 0 30px!important;font-size:25px!important}
