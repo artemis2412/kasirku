@@ -16,6 +16,7 @@
       +'<div id="ks-cloud-state" role="status" style="margin-top:14px;padding:12px;border-radius:12px;background:#f1f6f2;color:#52675a;font-size:13px;line-height:1.55">Memeriksa koneksi Cloud…</div>'
       +'<div id="ks-cloud-store" style="margin-top:12px"></div>'
       +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Pemetaan cabang perangkat ini</div><div id="ks-cloud-mappings" style="display:grid;gap:8px"><span style="color:#718078;font-size:12px">Memuat pemetaan…</span></div></div>'
+      +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Undang Pegawai Cloud</div><form id="ks-cloud-invite-form" style="display:grid;gap:9px"><input name="email" type="email" required placeholder="Email pegawai" style="box-sizing:border-box;width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;font:inherit"><select name="branch" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="">Pilih cabang Cloud</option></select><select name="role" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="cashier">Kasir</option><option value="admin">Admin</option></select><button type="submit" style="min-height:43px;border:0;border-radius:11px;background:#e4f2e8;color:#176b46;font:700 13px system-ui">Kirim Undangan</button><div id="ks-cloud-invite-message" role="status" style="font-size:12px;line-height:1.5;color:#718078"></div></form><p style="margin:8px 0 0;color:#829087;font-size:10px;line-height:1.45">Undangan hanya mendukung Admin dan Kasir. Email harus dikonfirmasi oleh pegawai.</p></div>'
       +'<button id="ks-cloud-refresh" type="button" style="width:100%;min-height:44px;margin-top:15px;border:0;border-radius:12px;background:linear-gradient(135deg,#188b59,#116b46);color:white;font:700 13px system-ui">↻ Periksa ulang Cloud</button>'
       +'<p style="margin:10px 0 0;color:#829087;font-size:11px;line-height:1.5">Panel ini hanya membaca status akun, cabang, dan pemetaan. Tidak mengirim atau mengubah transaksi.</p></section>';
   }
@@ -29,6 +30,28 @@
     else if(!state.authenticated){status.textContent="Belum login Cloud pada perangkat ini. Buka mode login Cloud dan masuk dengan akun Owner.";dot.style.background="#d5a43b"}
     else if(!state.store){status.textContent="Login Cloud terdeteksi, tetapi keanggotaan toko aktif belum ditemukan.";dot.style.background="#d5a43b"}
     else{status.textContent="Terhubung dan login Cloud berhasil. Perangkat ini mengenali akun Owner.";dot.style.background="#168b58"}
+    const branchSelect=document.querySelector("#ks-cloud-invite-form select[name=branch]");
+    if(branchSelect){
+      const previous=branchSelect.value;
+      branchSelect.innerHTML='<option value="">Pilih cabang Cloud</option>'+(state.branches||[]).map(b=>'<option value="'+esc(b.id)+'">'+esc(b.name)+'</option>').join("");
+      if((state.branches||[]).some(b=>b.id===previous))branchSelect.value=previous;
+      const form=document.getElementById("ks-cloud-invite-form");
+      if(form&&!form.dataset.bound){
+        form.dataset.bound="1";
+        form.addEventListener("submit",async event=>{
+          event.preventDefault();
+          const button=form.querySelector('button[type=submit]'),msg=document.getElementById("ks-cloud-invite-message");
+          button.disabled=true;button.textContent="Mengirim…";msg.textContent="";
+          try{
+            const result=await window.KASIRKU_CLOUD.inviteStaff(form.elements.email.value,form.elements.role.value,form.elements.branch.value);
+            msg.style.color="#168153";
+            msg.textContent=result.existing_user?"Email sudah punya akun Cloud. Minta pegawai masuk dengan email itu untuk menerima undangan.":"Undangan berhasil dikirim ke "+(result.email||form.elements.email.value)+".";
+            form.elements.email.value="";
+          }catch(error){msg.style.color="#b42318";msg.textContent=error.message||"Undangan gagal dikirim."}
+          finally{button.disabled=false;button.textContent="Kirim Undangan"}
+        });
+      }
+    }
     store.innerHTML=state.store?'<div style="padding:11px 12px;border:1px solid #e1ebe4;border-radius:12px;background:#fff"><div style="font-size:10px;color:#829087;letter-spacing:1px">TOKO CLOUD</div><b style="display:block;margin-top:3px;font-size:14px">'+esc(state.store.name||"Toko terhubung")+'</b><div style="margin-top:4px;color:#718078;font-size:11px">Peran: '+esc(state.store.role||"-")+' · '+(state.branches||[]).length+' cabang dapat diakses</div></div>':'';
     const locals=mappings.localBranches||[],saved=mappings.mappings||[];
     if(!locals.length){mapBox.innerHTML='<span style="color:#b06a25;font-size:12px">Daftar cabang lokal belum terbaca. Muat ulang aplikasi setelah login PIN.</span>';return}
