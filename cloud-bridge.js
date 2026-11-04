@@ -8,6 +8,7 @@
     getState: () => ({...state, memberships:[...state.memberships], branches:[...state.branches]}),
     refresh: refresh,
     loadCatalog: loadCatalog,
+    syncCatalog: syncCatalog,
     getLocalBranchMappings: getLocalBranchMappings
   };
   function publish(){
@@ -68,6 +69,47 @@
     if(categoriesResult.error)throw categoriesResult.error;
     if(productsResult.error)throw productsResult.error;
     return {branch:{id:branch.id,name:branch.name},categories:categoriesResult.data||[],products:productsResult.data||[]};
+  }
+  async function syncCatalog(){
+    if(!client||!state.authenticated||!state.store)throw new Error("Login Cloud Owner belum siap");
+    const localBranchId=window.KASIRKU_BRANCH_STORAGE?.activeBranch?.()||localStorage.getItem("ksecurity_active_branch")||"main";
+    const mapping=(getLocalBranchMappings().mappings||[]).find(x=>String(x.localBranchId)===String(localBranchId)&&x.storeId===state.store.id);
+    if(!mapping)throw new Error("Cabang lokal aktif belum dipasangkan ke Cloud.");
+    const branch=state.branches.find(x=>x.id===mapping.cloudBranchId);
+    if(!branch)throw new Error("Cabang Cloud pasangan tidak tersedia untuk akun ini.");
+    let localMenus,localCategories;
+    try{localMenus=JSON.parse(localStorage.getItem("kasirku_menus")||"[]");localCategories=JSON.parse(localStorage.getItem("kasirku_categories")||"[]")}catch{throw new Error("Data menu/kategori lokal tidak dapat dibaca.")}
+    if(!Array.isArray(localMenus)||!Array.isArray(localCategories))throw new Error("Format data menu lokal tidak valid.");
+    const menuMap=new Map();
+    for(const item of localMenus){
+      if(!item||item.id==null||!String(item.name||"").trim())throw new Error("Ada menu tanpa ID atau nama. Sinkronisasi dihentikan.");
+      const id=String(item.id);if(menuMap.has(id))throw new Error("ID menu lokal ganda: "+id);
+      const price=Number(item.price),stock=Number(item.stock??0);
+      if(!Number.isFinite(price)||price<0||!Number.isFinite(stock)||stock<0)throw new Error("Harga/stok tidak valid: "+item.name);
+      menuMap.set(id,item);
+    }
+    const categoryNames=[...new Set([...localCategories,...localMenus.map(x=>String(x.category||"Lainnya"))].map(x=>String(x||"").trim()).filter(Boolean))];
+    const oldCats=await client.from("menu_categories").select("id,local_id,name").eq("store_id",state.store.id).eq("branch_id",branch.id);
+    if(oldCats.error)throw oldCats.error;
+    const catMap=new Map((oldCats.data||[]).filter(x=>x.local_id).map(x=>[x.local_id,x]));
+    const catIds=new Map();let categoriesCreated=0,categoriesUpdated=0;
+    for(const name of categoryNames){
+      const localId="category:"+name.toLocaleLowerCase("id-ID"),old=catMap.get(localId);
+      if(old){catIds.set(name,old.id);if(old.name!==name){const u=await client.from("menu_categories").update({name}).eq("id",old.id);if(u.error)throw u.error;categoriesUpdated++}}
+      else{const ins=await client.from("menu_categories").insert({store_id:state.store.id,branch_id:branch.id,local_id:localId,name}).select("id").single();if(ins.error)throw ins.error;catIds.set(name,ins.data.id);categoriesCreated++}
+    }
+    const oldProducts=await client.from("products").select("id,local_id").eq("store_id",state.store.id).eq("branch_id",branch.id);
+    if(oldProducts.error)throw oldProducts.error;
+    const productMap=new Map((oldProducts.data||[]).filter(x=>x.local_id).map(x=>[String(x.local_id),x]));
+    let productsCreated=0,productsUpdated=0;
+    for(const [localId,item] of menuMap){
+      const category=String(item.category||"Lainnya").trim()||"Lainnya";
+      const payload={store_id:state.store.id,branch_id:branch.id,category_id:catIds.get(category)||null,local_id:localId,name:String(item.name).trim(),price:Number(item.price),stock_unlimited:item.stockUnlimited!==false,stock_quantity:item.stockUnlimited===false?Number(item.stock||0):0,is_active:true,updated_at:new Date().toISOString()};
+      const old=productMap.get(localId);
+      const result=old?await client.from("products").update(payload).eq("id",old.id):await client.from("products").insert(payload);
+      if(result.error)throw result.error;if(old)productsUpdated++;else productsCreated++;
+    }
+    return {branch:{id:branch.id,name:branch.name},categoriesCreated,categoriesUpdated,productsCreated,productsUpdated,totalLocalProducts:menuMap.size,totalLocalCategories:categoryNames.length};
   }
   async function refresh(){
     if(running)return window.KASIRKU_CLOUD.getState();
