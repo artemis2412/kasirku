@@ -3,15 +3,15 @@
 const STORAGE={menus:"kasirku_menus",orders:"kasirku_orders",tables:"kasirku_tables"};
 const icon=(body)=>'<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'+body+'</svg>';
 const pages=[
-["Dashboard",icon('<rect x="3" y="3" width="8" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="8" height="5" rx="1.5"/>')],
-["Kasir",icon('<circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2 3h2l2.5 12.5a2 2 0 0 0 2 1.5h9.8a2 2 0 0 0 2-1.6L22 7H5"/>')],
-["Pesanan",icon('<rect x="4" y="4" width="16" height="17" rx="2"/><path d="M9 4V3h6v3H9zM9 11h6M9 15h6"/><path d="M7 11h.01M7 15h.01"/>')],
-["Meja",icon('<path d="M5 12V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v5"/><path d="M3 12h18v6H3zM5 18v3m14-3v3"/>')],
-["Menu",icon('<path d="M3 2v7a3 3 0 0 0 6 0V2M6 2v20M14 2v7a4 4 0 0 0 4 4v9M18 2v11"/>')],
-["Dapur",icon('<path d="M6 10a4 4 0 1 1 7.5-2A4 4 0 1 1 18 10v3H6z"/><path d="M6 13v7h12v-7M6 17h12"/>')],
-["Laporan",icon('<path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 6-7"/>')],
-["Kas",icon('<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 14h.01M7 6V4h11"/>')],
-["Pengaturan",icon('<path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.5.9L16 20h-8l-.3-1.2a8 8 0 0 1-1.5-.9l-1.7.7-1.4-2.4 1.4-1.1a8 8 0 0 1 0-1.8l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.5-.9L8 4h8l.3 1.2a8 8 0 0 1 1.5.9l1.7-.7 1.4 2.4-1.4 1.1a8 8 0 0 1 0 1.8l1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.5.9L16 20"/>')]
+["Dashboard",icon('<rect x="3" y="3" width="8" height="8" rx="1.6"/><rect x="13" y="3" width="8" height="5" rx="1.6"/><rect x="13" y="10" width="8" height="11" rx="1.6"/><rect x="3" y="13" width="8" height="8" rx="1.6"/>')],
+["Kasir",icon('<circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M1.8 2.8h2.4l2.6 12.1a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 1.9-1.5L22 7H5.1"/>')],
+["Pesanan",icon('<path d="M8 4.5h8"/><path d="M9 3h6a1 1 0 0 1 1 1v2H8V4a1 1 0 0 1 1-1Z"/><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 11h6M9 15h6M9 18h3"/>')],
+["Meja",icon('<path d="M4 11V7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5V11"/><path d="M3 11h18v5H3zM5 16v4m14-4v4"/>')],
+["Menu",icon('<path d="M4 2v7a3 3 0 0 0 6 0V2M7 2v20M16 2v20M16 2c3 2 4 5 4 8h-4"/>')],
+["Dapur",icon('<path d="M3 13a5 5 0 0 1 5-5 5 5 0 0 1 9-1 4.5 4.5 0 0 1 4 6H3Z"/><path d="M5 13v7h14v-7M8 17h8"/>')],
+["Laporan",icon('<path d="M3 3v18h18"/><path d="M7 15v-3m5 3V7m5 8v-5m4 5V4"/>')],
+["Kas",icon('<rect x="2.5" y="5.5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19M16 14h5.5v3H16a1.5 1.5 0 0 1 0-3Z"/><path d="M6 5.5V4h10"/>')],
+["Pengaturan",icon('<path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Z"/><path d="m19.4 15 .1.1 1.5 1.2-1.5 2.6-1.8-.7a8.2 8.2 0 0 1-1.6.9l-.3 1.9h-3l-.3-1.9a8.2 8.2 0 0 1-1.6-.9l-1.8.7-1.5-2.6 1.5-1.2a8.5 8.5 0 0 1 0-1.9l-1.5-1.2 1.5-2.6 1.8.7a8.2 8.2 0 0 1 1.6-.9l.3-1.9h3l.3 1.9a8.2 8.2 0 0 1 1.6.9l1.8-.7 1.5 2.6-1.5 1.2a8.5 8.5 0 0 1 0 1.9Z"/>')]
 ];
 
 const defaultCategories=["Makanan","Minuman","Snack","Dessert","Lainnya"];
