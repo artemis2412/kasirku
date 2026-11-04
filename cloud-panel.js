@@ -18,7 +18,7 @@
       +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Pemetaan cabang perangkat ini</div><div id="ks-cloud-mappings" style="display:grid;gap:8px"><span style="color:#718078;font-size:12px">Memuat pemetaan…</span></div></div>'
       +'<div style="margin-top:14px;padding-top:13px;border-top:1px solid #e5eee7"><div style="font-size:13px;font-weight:800;margin-bottom:8px">Undang Pegawai Cloud</div><form id="ks-cloud-invite-form" style="display:grid;gap:9px"><input name="email" type="email" required placeholder="Email pegawai" style="box-sizing:border-box;width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;font:inherit"><select name="branch" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="">Pilih cabang Cloud</option></select><select name="role" required style="width:100%;padding:12px;border:1px solid #dce6de;border-radius:10px;background:white;font:inherit"><option value="cashier">Kasir</option><option value="admin">Admin</option></select><button type="submit" style="min-height:43px;border:0;border-radius:11px;background:#e4f2e8;color:#176b46;font:700 13px system-ui">Kirim Undangan</button><div id="ks-cloud-invite-message" role="status" style="font-size:12px;line-height:1.5;color:#718078"></div></form><p style="margin:8px 0 0;color:#829087;font-size:10px;line-height:1.45">Undangan hanya mendukung Admin dan Kasir. Email harus dikonfirmasi oleh pegawai.</p></div>'
       +'<button id="ks-cloud-refresh" type="button" style="width:100%;min-height:44px;margin-top:15px;border:0;border-radius:12px;background:linear-gradient(135deg,#188b59,#116b46);color:white;font:700 13px system-ui">↻ Periksa ulang Cloud</button>'
-      +'<p style="margin:10px 0 0;color:#829087;font-size:11px;line-height:1.5">Panel ini hanya membaca status akun, cabang, dan pemetaan. Tidak mengirim atau mengubah transaksi.</p></section>';
+      +'<p style="margin:10px 0 0;color:#829087;font-size:11px;line-height:1.5">Panel ini menampilkan status Cloud, pemetaan cabang, dan undangan pegawai. Transaksi belum disinkronkan otomatis.</p></section>';
   }
   function renderStatus(){
     const state=window.KASIRKU_CLOUD?.getState?.()||{};
@@ -29,7 +29,7 @@
     else if(state.error){status.textContent="Cloud belum dapat diperiksa: "+state.error;dot.style.background="#c44b45"}
     else if(!state.authenticated){status.textContent="Belum login Cloud pada perangkat ini. Buka mode login Cloud dan masuk dengan akun Owner.";dot.style.background="#d5a43b"}
     else if(!state.store){status.textContent="Login Cloud terdeteksi, tetapi keanggotaan toko aktif belum ditemukan.";dot.style.background="#d5a43b"}
-    else{status.textContent="Terhubung dan login Cloud berhasil. Perangkat ini mengenali akun Owner.";dot.style.background="#168b58"}
+    else{status.textContent="Akun Cloud aktif dan toko berhasil dikenali.";dot.style.background="#168b58"}
     const branchSelect=document.querySelector("#ks-cloud-invite-form select[name=branch]");
     if(branchSelect){
       const previous=branchSelect.value;
