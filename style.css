@@ -230,3 +230,37 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 
 /* Fix: keep occupied-table duration inside compact mobile cards */
 @media(max-width:650px){.table-pick{min-height:96px;padding:8px 3px;gap:5px}.table-pick-status{font-size:10px;line-height:1.2;white-space:nowrap}.table-pick-status strong{display:inline;font-size:10px;white-space:nowrap}}
+
+
+/* Redesain halaman Meja KASIRKU */
+.table-page{gap:18px}
+.table-overview{display:flex;align-items:center;gap:13px;padding:16px;border-radius:18px;background:linear-gradient(125deg,#123e2e,#176346);color:#fff;box-shadow:0 8px 20px #123e2e20}
+.table-overview-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:#ffffff1b;font-size:28px;flex-shrink:0}
+.table-overview-copy{min-width:0;flex:1}
+.table-overview-copy h2{margin:0;font-size:20px;color:#fff}
+.table-overview-copy p{margin:4px 0 0;color:#d4e7dc;font-size:12px}
+.table-overview-counts{display:flex;gap:7px}
+.table-count{min-width:55px;padding:8px 9px;border-radius:12px;display:grid;justify-items:center;gap:2px}
+.table-count strong{font-size:21px;line-height:1.1}
+.table-count span{font-size:10px;font-weight:700}
+.table-count.free-count{background:#e2f2e6;color:#174b32}
+.table-count.busy-count{background:#fff0df;color:#995016}
+.table-picker-modern{display:grid}
+.table-grid-modern{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.table-card-modern{min-width:0;min-height:142px;padding:12px 5px;border:1px solid #cfe4d4;border-radius:17px;background:linear-gradient(145deg,#f3faf4,#e5f3e8);color:#183b2a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 10px #173c2a0c;transition:transform .12s ease,box-shadow .12s ease}
+.table-card-modern:active{transform:scale(.97)}
+.table-card-modern.occupied{background:linear-gradient(145deg,#fff7ed,#ffead6);border-color:#efb16f;color:#934c17;box-shadow:0 4px 12px #a85c1717}
+.table-card-icon{font-size:18px;line-height:1;opacity:.8}
+.table-card-number{font-size:27px;line-height:1;font-weight:850;letter-spacing:.3px}
+.table-card-status{min-width:68px;padding:5px 11px;border-radius:30px;background:#d1e8d7;color:#174b32;font-size:11px;font-weight:750}
+.table-card-modern.occupied .table-card-status{background:#ed8d2d;color:#fff}
+.table-card-duration{font-size:10px;font-weight:750;white-space:nowrap;color:#965019;line-height:1.1}
+.table-legend-panel{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px;border:1px solid #e4ebe5;border-radius:16px;background:#fff;box-shadow:0 4px 14px #1c39250b}
+.table-legend-panel>div{display:flex;align-items:center;gap:9px;min-width:0}
+.table-legend-panel>div+div{border-left:1px solid #e6ece7;padding-left:12px}
+.table-legend-panel .legend-dot{width:12px;height:12px;flex-shrink:0}
+.table-legend-panel span{display:grid;gap:2px;min-width:0}
+.table-legend-panel b{font-size:12px;color:#263b30}
+.table-legend-panel small{font-size:10px;color:#7b8980}
+@media(max-width:650px){.table-page{gap:15px}.table-overview{padding:13px;gap:9px;border-radius:16px}.table-overview-icon{width:40px;height:40px;font-size:23px}.table-overview-copy h2{font-size:17px}.table-overview-copy p{font-size:11px}.table-overview-counts{gap:5px}.table-count{min-width:48px;padding:7px 6px}.table-count strong{font-size:19px}.table-count span{font-size:9px}.table-grid-modern{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.table-card-modern{min-height:128px;padding:10px 2px;gap:7px;border-radius:15px}.table-card-number{font-size:24px}.table-card-status{min-width:60px;padding:5px 8px;font-size:10px}.table-card-duration{font-size:9px}.table-legend-panel{padding:12px 10px;gap:6px}.table-legend-panel>div+div{padding-left:8px}.table-legend-panel b{font-size:11px}.table-legend-panel small{font-size:9px}}
+@media(max-width:360px){.table-card-modern{min-height:120px}.table-card-number{font-size:22px}.table-card-duration{font-size:8px}.table-overview-icon{display:none}}
