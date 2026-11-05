@@ -64,9 +64,16 @@ class CatalogRepository(
 
         val productId = draft.id?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
-        val existing = draft.id?.let { dao.getProduct(it) }
+        val existing = draft.id?.takeIf { it.isNotBlank() }?.let { dao.getProduct(it) }
+        if (!draft.id.isNullOrBlank() && existing == null) {
+            throw IllegalArgumentException("Produk yang akan diedit tidak ditemukan.")
+        }
         if (existing != null && existing.storeId != storeId) {
             throw IllegalArgumentException("Produk tidak termasuk toko aktif.")
+        }
+        if (!draft.categoryId.isNullOrBlank()) {
+            val category = dao.getActiveCategory(storeId, draft.categoryId)
+            require(category != null) { "Kategori tidak aktif atau bukan milik toko ini." }
         }
 
         val normalizedBarcodes = draft.barcodes.map(String::trim).filter(String::isNotEmpty).distinct()
