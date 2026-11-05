@@ -23,7 +23,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SaleItemEntity::class,
         SaleSyncOutboxEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class KasirkuRoomDatabase : RoomDatabase() {
@@ -47,6 +47,12 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_sale_sync_outbox_storeId_branchId_status_createdAt ON sale_sync_outbox(storeId, branchId, status, createdAt)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: KasirkuRoomDatabase? = null
 
@@ -56,7 +62,7 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
                     context.applicationContext,
                     KasirkuRoomDatabase::class.java,
                     "kasirku_room.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { INSTANCE = it }
             }
     }
 }
