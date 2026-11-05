@@ -15,3 +15,7 @@
 @media(max-height:720px){.ks-welcome{padding-top:12px;padding-bottom:16px}.ks-logo-stage{height:88px}.ks-logo-halo{width:70px;height:70px}.ks-welcome-logo{width:62px;height:62px;padding:9px}.ks-welcome h1{font-size:36px}.ks-welcome-description{margin-bottom:13px}.ks-entry-card{min-height:65px}.ks-welcome-features{margin-top:13px;padding:9px 0}.ks-welcome-footer{margin-top:11px}}
 @media(prefers-reduced-motion:reduce){.ks-welcome,.ks-welcome *{animation:none!important;transition:none!important}}
 @keyframes ksWelcomeIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes ksWelcomeCard{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes ksWelcomeFloat{0%,100%{transform:translateY(4px) rotate(4deg)}50%{transform:translateY(-4px) rotate(1deg)}}@keyframes ksWelcomeDrift{from{transform:translate3d(-8px,0,0) rotate(0)}to{transform:translate3d(20px,18px,0) rotate(12deg)}}@keyframes ksWelcomePulse{0%,100%{opacity:.45;transform:scale(.8)}50%{opacity:1;transform:scale(1.25)}}@keyframes ksOrbit{to{transform:rotate(336deg)}}
+/* Full official KASIRKU wordmark on the welcome screen */
+.ks-logo-stage-full{display:grid;place-items:center;width:min(58vw,210px);height:auto;aspect-ratio:1;margin:8px auto 10px;}
+.ks-logo-stage-full .ks-full-logo{display:block;width:100%;height:100%;object-fit:contain;border:0;border-radius:22px;box-shadow:0 18px 42px #001b1266;}
+.ks-logo-stage-full .ks-logo-halo,.ks-logo-stage-full .ks-logo-orbit{display:none}
