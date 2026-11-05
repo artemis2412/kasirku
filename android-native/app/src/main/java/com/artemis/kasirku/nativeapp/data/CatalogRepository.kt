@@ -32,6 +32,20 @@ class CatalogRepository(
         return dao.searchProducts(storeId, query.trim())
     }
 
+    fun observeBranchCatalog(storeId: String, branchId: String, query: String): Flow<List<BranchCatalogRow>> {
+        requireStore(storeId)
+        requireBranch(branchId)
+        return dao.observeBranchCatalog(storeId, branchId, query.trim())
+    }
+
+    suspend fun deactivateProduct(storeId: String, productId: String): Boolean {
+        requireStore(storeId)
+        require(productId.isNotBlank()) { "Produk tidak valid." }
+        val product = dao.getProduct(productId) ?: return false
+        require(product.storeId == storeId) { "Produk tidak termasuk toko aktif." }
+        return dao.deactivateProduct(storeId, productId, System.currentTimeMillis()) > 0
+    }
+
     fun observeCategories(storeId: String): Flow<List<CategoryEntity>> {
         requireStore(storeId)
         return dao.observeCategories(storeId)
