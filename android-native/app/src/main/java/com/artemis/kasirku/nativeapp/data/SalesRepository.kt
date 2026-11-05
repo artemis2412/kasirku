@@ -79,6 +79,6 @@ class SalesRepository(private val dao: CatalogDao) {
 
     suspend fun exportRows(tenant: VerifiedTenantContext, startAt: Long, endAt: Long): List<Pair<SaleEntity, List<SaleItemEntity>>> {
         val sales = dao.getSalesRange(tenant.storeId, tenant.branchId, startAt, endAt)
-        return sales.map { sale -> sale to dao.getSaleItems(sale.id) }
+        return sales.map { sale -> sale to dao.getSaleItems(tenant.storeId, tenant.branchId, sale.id) }
     }
 }
