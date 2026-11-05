@@ -99,7 +99,7 @@ data class SaleItemEntity(
 )
 
 
-@Entity(tableName = "sale_sync_outbox", indices = [Index(value = ["status", "createdAt"])])
+@Entity(tableName = "sale_sync_outbox", indices = [Index(value = ["status", "createdAt"]), Index(value = ["storeId", "branchId", "status", "createdAt"])])
 data class SaleSyncOutboxEntity(
     @PrimaryKey val saleId: String,
     val storeId: String,
