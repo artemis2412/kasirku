@@ -129,7 +129,7 @@ function welcome(){
  document.getElementById("ks-open-cloud").onclick=()=>{const url=new URL(location.href);url.searchParams.set("cloud-auth-preview","1");location.href=url.toString()};
 }
 function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u)startSession(u);else{sessionStorage.removeItem("ksecurity_session");welcome()}}
-function lock(){user=null;publishLocalSession();clearTimeout(timer);sessionStorage.removeItem("ksecurity_session");localStorage.removeItem("ksecurity_session");document.getElementById("ks-account")?.remove();welcome()}
+function lock(){if(window.KASIRKU_AUTH_MODE==="cloud")localStorage.removeItem("kasirku_cloud_session_active");window.KASIRKU_AUTH_MODE="pin";user=null;publishLocalSession();clearTimeout(timer);sessionStorage.removeItem("ksecurity_session");localStorage.removeItem("ksecurity_session");document.getElementById("ks-account")?.remove();welcome()}
 function reset(){clearTimeout(timer);timer=setTimeout(lock,600000)}
 const cashierPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan","Pengaturan"];
 const adminPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Laporan","Kas","Pengaturan"];
