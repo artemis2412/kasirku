@@ -46,6 +46,11 @@ import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.launch
 
+private fun formatCheckoutNominal(value: Long): String = value.toString().reversed().chunked(3).joinToString(".").reversed()
+
+private fun formatCheckoutNominalInput(value: String): String =
+    value.filter(Char::isDigit).reversed().chunked(3).joinToString(".").reversed()
+
 private data class ReceiptDraft(val saleId: String, val lines: List<CheckoutLine>, val subtotal: Long, val total: Long, val paid: Long, val change: Long)
 
 private data class CartEntry(
@@ -160,7 +165,7 @@ internal fun NativeCheckoutScreen(
                 Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(product.name, color = Color(0xFF17324D), fontWeight = FontWeight.SemiBold)
-                        Text("Rp " + (product.activeSellingPrice ?: 0L).toString() + " • Stok " + product.branchQuantity, color = Color(0xFF718096), fontSize = 12.sp)
+                        Text("Rp " + formatCheckoutNominal(product.activeSellingPrice ?: 0L) + " • Stok " + product.branchQuantity, color = Color(0xFF718096), fontSize = 12.sp)
                     }
                     Spacer(Modifier.width(8.dp))
                     Button(
@@ -186,7 +191,7 @@ internal fun NativeCheckoutScreen(
                     Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(item.name, color = Color(0xFF17324D), fontWeight = FontWeight.SemiBold)
-                            Text("Rp ${item.price} × ${item.quantity} = Rp ${item.price * item.quantity}", color = Color(0xFF718096), fontSize = 12.sp)
+                            Text("Rp ${formatCheckoutNominal(item.price)} × ${item.quantity} = Rp ${formatCheckoutNominal(item.price * item.quantity)}", color = Color(0xFF718096), fontSize = 12.sp)
                         }
                         Row {
                             TextButton(onClick = {
@@ -206,12 +211,12 @@ internal fun NativeCheckoutScreen(
             Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Subtotal", color = Color(0xFF17324D))
-                    Text("Rp $subtotal", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+                    Text("Rp ${formatCheckoutNominal(subtotal)}", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
                 }
-                OutlinedTextField(value = payment, onValueChange = { payment = it.filter(Char::isDigit) }, modifier = Modifier.fillMaxWidth(), label = { Text("Uang diterima (Rp)") }, singleLine = true)
+                OutlinedTextField(value = payment, onValueChange = { payment = formatCheckoutNominalInput(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Uang diterima (Rp)") }, singleLine = true)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Kembalian", color = Color(0xFF17324D))
-                    Text("Rp ${(paid - subtotal).coerceAtLeast(0L)}", color = Color(0xFF168C83), fontWeight = FontWeight.Bold)
+                    Text("Rp ${formatCheckoutNominal((paid - subtotal).coerceAtLeast(0L))}", color = Color(0xFF168C83), fontWeight = FontWeight.Bold)
                 }
                 Button(
                     onClick = {
