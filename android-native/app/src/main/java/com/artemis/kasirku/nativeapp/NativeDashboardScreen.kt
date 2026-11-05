@@ -15,12 +15,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
+import com.artemis.kasirku.nativeapp.data.BranchTime
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 private val HomeNavy = Color(0xFF17324D)
 private val HomeTeal = Color(0xFF168C83)
@@ -32,8 +29,9 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
     val context = LocalContext.current.applicationContext
     val dao = remember { KasirkuRoomDatabase.getInstance(context).catalogDao() }
     val repository = remember { SalesRepository(dao) }
-    val start = remember { Calendar.getInstance().apply { set(Calendar.HOUR_OF_DAY,0); set(Calendar.MINUTE,0); set(Calendar.SECOND,0); set(Calendar.MILLISECOND,0) }.timeInMillis }
-    val end = remember(start) { Calendar.getInstance().apply { timeInMillis=start; add(Calendar.DAY_OF_YEAR,1) }.timeInMillis }
+    val branchZone = remember(tenant.branchTimeZoneId) { BranchTime.zoneId(tenant) }
+    val start = remember(branchZone) { BranchTime.startOfToday(branchZone) }
+    val end = remember(start, branchZone) { BranchTime.startOfDayOffset(start, 1, branchZone) }
     val products by remember(tenant.storeId) { dao.observeActiveProductCount(tenant.storeId) }.collectAsState(initial=0)
     val stock by remember(tenant.branchId) { dao.observeBranchStockTotal(tenant.branchId) }.collectAsState(initial=0)
     val lowStock by remember(tenant.branchId) { dao.observeLowStockCount(tenant.branchId) }.collectAsState(initial=0)
@@ -69,7 +67,14 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
             Row(Modifier.fillMaxWidth().padding(13.dp), horizontalArrangement=Arrangement.SpaceBetween) {
                 Column(Modifier.weight(1f)) {
                     Text("Antrean sinkronisasi", color=HomeNavy, fontWeight=FontWeight.Bold, fontSize=12.sp)
-                    Text("Transaksi tersimpan aman di perangkat dan menunggu pengiriman cloud.", color=HomeMuted, fontSize=10.sp)
+                    Text(
+                        if (tenant.branchTimeZoneId.isNullOrBlank())
+                            "Atur zona waktu cabang di menu Akun. Transaksi tetap aman tersimpan di perangkat."
+                        else
+                            "Transaksi tersimpan aman di perangkat dan menunggu pengiriman cloud.",
+                        color=HomeMuted,
+                        fontSize=10.sp
+                    )
                 }
                 Text("$pendingSync", color=HomeTeal, fontSize=20.sp, fontWeight=FontWeight.Bold)
             }
@@ -91,7 +96,7 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
                 Row(Modifier.fillMaxWidth().padding(13.dp), horizontalArrangement=Arrangement.SpaceBetween, verticalAlignment=Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Transaksi ${sale.id.take(8).uppercase()}", color=HomeNavy, fontWeight=FontWeight.SemiBold, fontSize=12.sp)
-                        Text(SimpleDateFormat("HH:mm • dd MMM",Locale("id","ID")).format(Date(sale.createdAt))+" • "+sale.paymentMethod, color=HomeMuted, fontSize=10.sp)
+                        Text(BranchTime.format(sale.createdAt, "HH:mm • dd MMM", branchZone)+" • "+sale.paymentMethod, color=HomeMuted, fontSize=10.sp)
                     }
                     Text("Rp ${homeMoney(sale.total)}", color=HomeTeal, fontWeight=FontWeight.Bold, fontSize=12.sp)
                 }
