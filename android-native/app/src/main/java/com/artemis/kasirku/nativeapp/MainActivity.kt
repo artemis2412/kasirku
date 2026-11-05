@@ -152,7 +152,17 @@ private fun KasirkuNativeApp() {
                         onNewTransaction = { showNewTransaction = true },
                         onOpenTab = { selectedTab = it }
                     )
-                    selectedTab == 1 -> ProductsScreen(modifier = Modifier.padding(innerPadding))
+                    selectedTab == 1 -> if (verifiedTenantContext != null) {
+                        NativeProductsScreen(
+                            tenant = verifiedTenantContext!!,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    } else {
+                        CloudAccountScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onContextChanged = { verifiedTenantContext = it }
+                        )
+                    }
                     selectedTab == 2 -> SimpleFeatureScreen(
                         title = "Pesanan",
                         description = "Daftar pesanan dan transaksi harian akan ditampilkan di sini.",
