@@ -41,7 +41,7 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
     val count by remember(tenant.storeId,tenant.branchId,start,end) { repository.observeSaleCount(tenant,start,end) }.collectAsState(initial=0)
     val total by remember(tenant.storeId,tenant.branchId,start,end) { repository.observeSalesTotal(tenant,start,end) }.collectAsState(initial=0L)
     val sold by remember(tenant.storeId,tenant.branchId,start,end) { dao.observeSoldQuantity(tenant.storeId,tenant.branchId,start,end) }.collectAsState(initial=0)
-    val pendingSync by dao.observePendingSaleSyncCount().collectAsState(initial=0)
+    val pendingSync by dao.observePendingSaleSyncCount(tenant.storeId, tenant.branchId).collectAsState(initial=0)
 
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement=Arrangement.spacedBy(15.dp)) {
         Column(verticalArrangement=Arrangement.spacedBy(3.dp)) {
