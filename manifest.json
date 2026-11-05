@@ -9,7 +9,7 @@
   "description": "KASIRKU — Aplikasi Kasir Modern",
   "icons": [
     {
-      "src": "./assets/kasirku-full-logo.webp?v=3",
+      "src": "./assets/kasirku-full-logo.webp?v=4",
       "sizes": "512x512",
       "type": "image/webp",
       "purpose": "any"
