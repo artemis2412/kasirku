@@ -111,6 +111,34 @@ function logoutConfirm(){
  document.addEventListener("keydown",onKey);
  overlay.querySelector(".ks-logout-cancel").focus();
 }
+function cloudIdentityKey(localId){return "kasirku_cloud_identity_link_v1:"+encodeURIComponent(String(localId))}
+async function enrollVerifiedCloudUser({userId,email,role,name,pin}){
+ const cloudId=String(userId||"").trim(),cloudEmail=String(email||"").trim().toLowerCase(),cloudRole=String(role||"").toLowerCase(),pinValue=String(pin||"");
+ if(!cloudId||!cloudEmail||!["owner","admin","cashier"].includes(cloudRole))throw new Error("Identitas atau peran Cloud tidak valid.");
+ if(!/^\\d{6}$/.test(pinValue))throw new Error("PIN harus tepat 6 angka.");
+ const rows=read();
+ const linked=rows.find(x=>{try{return JSON.parse(localStorage.getItem(cloudIdentityKey(x.id))||"null")?.userId===cloudId}catch{return false}});
+ if(linked){
+   if(linked.active===false||linked.role!==cloudRole)throw new Error("Akun PIN yang tertaut tidak aktif atau perannya berubah.");
+   if(await hash(linked.salt,pinValue)!==linked.hash)throw new Error("PIN perangkat salah.");
+   sessionStorage.setItem("ksecurity_session",String(linked.id));startSession(linked);return {created:false,user:linked};
+ }
+ const id="cloud-"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(16).slice(2));
+ const saltValue=salt(),user={id,name:String(name||cloudEmail.split("@")[0]).slice(0,80),role:cloudRole,salt:saltValue,hash:await hash(saltValue,pinValue),active:true,createdAt:new Date().toISOString(),cloudUserId:cloudId};
+ rows.push(user);localStorage.setItem(KEY,JSON.stringify(rows));
+ localStorage.setItem(cloudIdentityKey(id),JSON.stringify({userId:cloudId,email:cloudEmail,role:cloudRole,linkedAt:new Date().toISOString()}));
+ sessionStorage.setItem("ksecurity_session",id);startSession(user);audit("Akun PIN dibuat setelah verifikasi Cloud","Akun "+user.name+" ("+cloudRole+")");
+ return {created:true,user};
+}
+async function startLinkedCloudSession({userId,pin}){
+ const cloudId=String(userId||"").trim(),pinValue=String(pin||"");
+ if(!cloudId||!/^\\d{6}$/.test(pinValue))throw new Error("Masukkan PIN 6 angka.");
+ const u=read().find(x=>{try{return JSON.parse(localStorage.getItem(cloudIdentityKey(x.id))||"null")?.userId===cloudId}catch{return false}});
+ if(!u||u.active===false)throw new Error("Akun Cloud ini belum memiliki PIN perangkat di perangkat ini.");
+ if(await hash(u.salt,pinValue)!==u.hash)throw new Error("PIN perangkat salah.");
+ sessionStorage.setItem("ksecurity_session",String(u.id));startSession(u);return u;
+}
+window.KASIRKU_AUTH={enrollVerifiedCloudUser,startLinkedCloudSession,getLocalUsers:()=>read().map(({id,name,role,active})=>({id,name,role,active}))};
 function publishLocalSession(){try{window.dispatchEvent(new CustomEvent("kasirku:local-session",{detail:user?{id:String(user.id),name:String(user.name||""),role:String(user.role||"").toLowerCase()}:null}))}catch(e){}}
 function startSession(u){user=u;publishLocalSession();const assigned=Array.isArray(u.branchIds)?u.branchIds:(u.branchId?[u.branchId]:[]);if(!["owner","admin"].includes(u.role)&&assigned.length){const current=localStorage.getItem(ACTIVE_BRANCH_KEY);if(!assigned.includes(current))localStorage.setItem(ACTIVE_BRANCH_KEY,assigned[0])}document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();document.querySelector(".topbar")?.appendChild(b);reset();apply()}
 function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u)startSession(u);else{sessionStorage.removeItem("ksecurity_session");login()}}
@@ -161,7 +189,7 @@ function apply(){
 }
 ["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p){const allowed=user.role==="owner"||user.role==="admin"?adminPages:cashierPages;if(!allowed.includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}}},true);
-document.addEventListener("DOMContentLoaded",()=>{style();if(!read().length)setup();else restoreSession();installActivityAudit()});
+document.addEventListener("DOMContentLoaded",()=>{style();if(!read().length)show("<h2>Selamat datang di KASIRKU</h2><p>Hubungkan akun Cloud untuk mengaktifkan perangkat ini.</p>");else restoreSession();installActivityAudit()});
 if(document.readyState!=="loading"){style();if(!read().length)setup();else restoreSession();installActivityAudit()}
 window.addEventListener("load",()=>{if(user)apply()});
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p)window.setTimeout(()=>{if(user)apply()},0)},false);
