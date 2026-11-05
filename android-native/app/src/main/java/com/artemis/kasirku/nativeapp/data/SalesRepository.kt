@@ -29,16 +29,10 @@ class SalesRepository(private val dao: CatalogDao) {
         require(lines.all { it.productId.isNotBlank() && it.productName.isNotBlank() && it.quantity > 0 && it.unitPrice > 0L }) {
             "Produk, jumlah, atau harga pada keranjang tidak valid."
         }
-        require(discount >= 0L) { "Diskon tidak valid." }
-        require(paymentMethod.isNotBlank()) { "Metode pembayaran wajib ditentukan." }
         val subtotal = lines.fold(0L) { total, line -> Math.addExact(total, line.lineTotal) }
-        require(discount <= subtotal) { "Diskon melebihi subtotal." }
-        val total = subtotal - discount
-        require(total > 0L) { "Total transaksi harus lebih dari nol." }
-        val normalizedMethod = paymentMethod.trim().uppercase()
-        require(normalizedMethod in setOf("CASH", "QRIS", "TRANSFER")) { "Metode pembayaran tidak dikenali." }
-        require(paid >= total) { "Uang pembayaran kurang." }
-        if (normalizedMethod != "CASH") require(paid == total) { "Pembayaran non-tunai harus sesuai total transaksi." }
+        val payment = CheckoutPaymentRules.validate(subtotal, discount, paid, paymentMethod)
+        val total = payment.total
+        val normalizedMethod = payment.method
         val saleId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val sale = SaleEntity(
