@@ -1341,3 +1341,40 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
   #sidebar{box-shadow:16px 0 38px rgba(0,0,0,.28)!important}
   #sidebar #nav .navbtn{min-height:60px!important}
 }
+
+
+/* Sidebar high-contrast palette */
+#sidebar{
+ background:linear-gradient(180deg,#09291d 0%,#0b3424 100%)!important;
+ color:#f8fff9!important;
+}
+#sidebar .branch-label{color:#c7e8d2!important}
+#sidebar .branch-name{
+ background:#214f36!important;
+ border:1px solid #6ba27d!important;
+ color:#ffffff!important;
+}
+#sidebar #nav .navbtn{
+ background:#17432f!important;
+ border:1px solid #35694b!important;
+ color:#f1fff5!important;
+}
+#sidebar #nav .navbtn .nav-icon{
+ background:#d8f4e1!important;
+ border:1px solid #f2fff5!important;
+ color:#075b37!important;
+}
+#sidebar #nav .navbtn .nav-icon svg{stroke:#075b37!important}
+#sidebar #nav .navbtn.active{
+ background:linear-gradient(100deg,#35b875 0%,#198653 100%)!important;
+ border:1px solid #9ce8b9!important;
+ color:#ffffff!important;
+ box-shadow:0 6px 18px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.24)!important;
+}
+#sidebar #nav .navbtn.active .nav-icon{
+ background:#ffffff!important;
+ border-color:#ffffff!important;
+ color:#087143!important;
+}
+#sidebar #nav .navbtn.active .nav-icon svg{stroke:#087143!important}
+#sidebar .sidebar-foot,#sidebar .brand-credit{color:#d2ead9!important}
