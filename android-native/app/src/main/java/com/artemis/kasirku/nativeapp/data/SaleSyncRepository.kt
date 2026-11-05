@@ -25,7 +25,8 @@ class SaleSyncRepository(
                     ?: throw IllegalStateException("Data transaksi lokal tidak ditemukan.")
                 val items = dao.getSaleItems(tenant.storeId, tenant.branchId, entry.saleId)
                 val payload = OrderSyncPayloadMapper.map(sale, items, zoneId)
-                cloud.uploadOrder(payload)
+                val canSyncOtherCashiers = tenant.role == StoreRole.OWNER || tenant.role == StoreRole.ADMIN
+                cloud.uploadOrder(payload, allowDelegatedCashier = canSyncOtherCashiers)
                 val marked = dao.markSaleSynced(
                     tenant.storeId, tenant.branchId, entry.saleId, System.currentTimeMillis()
                 )
