@@ -4,7 +4,7 @@
 // Preview only. This screen is intentionally isolated from the live POS
 // until cloud identity, branch mapping, and local-data migration are tested.
 const cfg = window.KASIRKU_SUPABASE_CONFIG;
-let cloudAuthClient=null, cloudAuthLocalId=null;
+let cloudAuthClient=null;
 function getLocalPinSession(){
   try{
     const id=localStorage.getItem("ksecurity_session");
@@ -14,11 +14,9 @@ function getLocalPinSession(){
   }catch{return null}
 }
 async function getIsolatedCloudClient(){
-  const local=getLocalPinSession();
-  if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu.");
   await loadSdk();
-  if(!cloudAuthClient||cloudAuthLocalId!==local.id){
-    const prefix="kasirku_supabase_auth_v1:"+encodeURIComponent(local.id)+":";
+  if(!cloudAuthClient){
+    const prefix="kasirku_supabase_cloud_auth_v1:";
     const storage={
       getItem:async key=>localStorage.getItem(prefix+key),
       setItem:async(key,value)=>localStorage.setItem(prefix+key,value),
@@ -27,9 +25,37 @@ async function getIsolatedCloudClient(){
     cloudAuthClient=window.supabase.createClient(cfg.url,cfg.publishableKey,{
       auth:{storage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
     });
-    cloudAuthLocalId=local.id;
   }
   return cloudAuthClient;
+}
+async function validateCloudIdentity(client){
+  const {data:{user},error:userError}=await client.auth.getUser();
+  if(userError)throw userError;
+  if(!user)throw new Error("Sesi Cloud tidak valid. Silakan masuk kembali.");
+  const {data:memberships,error}=await client.from("store_memberships")
+    .select("store_id,role,is_active").eq("user_id",user.id).eq("is_active",true);
+  if(error)throw error;
+  if(!memberships?.length)throw new Error("Keanggotaan toko aktif tidak ditemukan. Pastikan undangan sudah diterima atau pendaftaran toko selesai.");
+  if(memberships.length!==1)throw new Error("Akun ini memiliki lebih dari satu toko aktif. Pemilihan toko perlu diselesaikan terlebih dahulu.");
+  const membership=memberships[0],role=String(membership.role||"").toLowerCase();
+  if(!["owner","admin","cashier"].includes(role))throw new Error("Peran akun Cloud tidak dikenali.");
+  const {data:store,error:storeError}=await client.from("stores").select("id,name")
+    .eq("id",membership.store_id).maybeSingle();
+  if(storeError)throw storeError;
+  if(!store)throw new Error("Data toko tidak ditemukan atau akses ditolak.");
+  const {data:branches,error:branchError}=await client.from("branches").select("id,name,is_active")
+    .eq("store_id",membership.store_id).eq("is_active",true).order("created_at");
+  if(branchError)throw branchError;
+  let allowed=branches||[];
+  if(role!=="owner"){
+    const {data:assignments,error:assignmentError}=await client.from("branch_memberships")
+      .select("branch_id").eq("store_id",membership.store_id).eq("user_id",user.id);
+    if(assignmentError)throw assignmentError;
+    const ids=new Set((assignments||[]).map(x=>x.branch_id));
+    allowed=allowed.filter(branch=>ids.has(branch.id));
+  }
+  if(!allowed.length)throw new Error("Akun ini belum memiliki cabang aktif yang boleh diakses.");
+  return {id:user.id,email:user.email||"",name:String(user.user_metadata?.display_name||user.user_metadata?.full_name||user.email?.split("@")[0]||"Pengguna"),role,store,branches:allowed};
 }
 async function linkLocalCloudIdentity(){
   const local=getLocalPinSession();
@@ -239,40 +265,20 @@ form.addEventListener("submit",async event=>{
       client=await getIsolatedCloudClient();
     }
     if(mode==="login"){
-      const local=getLocalPinSession();
-      if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu sebelum menghubungkan akun Cloud.");
-      const {data,error}=await client.auth.signInWithPassword({email,password});
+      const {error}=await client.auth.signInWithPassword({email,password});
       if(error) throw error;
-      const {data:membership,error:membershipError}=await client.from("store_memberships")
-        .select("store_id,role,is_active").eq("user_id",data.user.id).eq("is_active",true).limit(1);
-      if(membershipError) throw membershipError;
-      if(membership?.length){
-        await linkLocalCloudIdentity();
-        sessionStorage.removeItem("kca_pending_store");
-        say("Login berhasil. Mengarahkan ke Dashboard…", "success");
-        setTimeout(returnToDashboard,650);
-      }else{
+      let identity;
+      try{identity=await validateCloudIdentity(client)}
+      catch(validationError){
         const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
-        if(!acceptError&&accepted?.status==="accepted"){
-          await linkLocalCloudIdentity();
-          say("Undangan diterima. Mengarahkan ke Dashboard…", "success");
-          setTimeout(returnToDashboard,650);
-          return;
-        }
-        const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
-        if(pending){
-          const {error:storeError}=await client.rpc("create_my_store",{
-            p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
-          });
-          if(storeError) throw storeError;
-          await linkLocalCloudIdentity();
-          sessionStorage.removeItem("kca_pending_store");
-          say("Login, toko, dan pengaitan akun berhasil. Mengarahkan ke Dashboard…", "success");
-          setTimeout(returnToDashboard,650);
-        }else{
-          say("Login berhasil, tetapi akun ini belum memiliki toko. Pendaftaran toko perlu diselesaikan terlebih dahulu.", "success");
-        }
+        if(acceptError||accepted?.status!=="accepted")throw validationError;
+        identity=await validateCloudIdentity(client);
       }
+      if(!window.KASIRKU_AUTH?.startCloudSession)throw new Error("Modul sesi KASIRKU belum siap. Muat ulang halaman lalu coba lagi.");
+      window.KASIRKU_AUTH.startCloudSession({id:identity.id,email:identity.email,name:identity.name,role:identity.role,branchIds:identity.branches.map(branch=>branch.id)});
+      sessionStorage.removeItem("kca_pending_store");
+      say("Login Cloud berhasil. Membuka Dashboard…","success");
+      setTimeout(returnToDashboard,450);
     }else{
       const local=window.KASIRKU_CLOUD.getState().localSession;
       if(!local||local.role!=="owner")throw new Error("Registrasi toko hanya dapat dilakukan setelah login PIN Owner.");
