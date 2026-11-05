@@ -81,3 +81,20 @@
   .ks-welcome-top{margin-bottom:15px!important}
   .ks-logo-stage-full{margin:8px auto 8px!important}
 }
+
+/* Pin the two welcome chips to opposite top corners of the welcome content. */
+.ks-welcome-shell{width:min(100%,480px)!important}
+.ks-welcome-top{
+  display:flex!important;
+  width:100%!important;
+  justify-content:space-between!important;
+  align-items:center!important;
+  gap:10px!important;
+  margin:0 0 18px!important;
+}
+.ks-brand-chip{margin-right:auto!important;align-self:flex-start!important}
+.ks-version-chip{margin-left:auto!important;align-self:flex-end!important}
+@media(max-width:420px){
+  .ks-welcome-top{margin-bottom:19px!important}
+  .ks-brand-chip,.ks-version-chip{max-width:49%;white-space:nowrap;letter-spacing:1px}
+}
