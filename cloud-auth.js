@@ -221,9 +221,11 @@ savePasswordButton.addEventListener("click",async()=>{
       const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
       if(acceptError) throw acceptError;
       if(accepted?.status!=="accepted") throw new Error("Kata sandi tersimpan, tetapi undangan belum diterima. Hubungi Owner.");
-      await linkLocalCloudIdentity();
+      const identity=await validateCloudIdentity(client);
+      window.KASIRKU_AUTH.startCloudSession({id:identity.id,email:identity.email,name:identity.name,role:identity.role,branchIds:identity.branches.map(branch=>branch.id)});
+      localStorage.setItem("kasirku_cloud_session_active","1");
       say("Akun pegawai aktif! Mengarahkan ke Dashboard…","success");
-      setTimeout(returnToDashboard,650);
+      setTimeout(returnToDashboard,450);
     }else{
       recoveryWrap.classList.add("kca-hidden");
       say("Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.","success");
@@ -276,6 +278,7 @@ form.addEventListener("submit",async event=>{
       }
       if(!window.KASIRKU_AUTH?.startCloudSession)throw new Error("Modul sesi KASIRKU belum siap. Muat ulang halaman lalu coba lagi.");
       window.KASIRKU_AUTH.startCloudSession({id:identity.id,email:identity.email,name:identity.name,role:identity.role,branchIds:identity.branches.map(branch=>branch.id)});
+      localStorage.setItem("kasirku_cloud_session_active","1");
       sessionStorage.removeItem("kca_pending_store");
       say("Login Cloud berhasil. Membuka Dashboard…","success");
       setTimeout(returnToDashboard,450);
