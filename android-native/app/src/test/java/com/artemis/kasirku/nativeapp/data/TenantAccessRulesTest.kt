@@ -51,11 +51,12 @@ class TenantAccessRulesTest {
                     id = "store-1",
                     name = "Toko Satu",
                     role = StoreRole.OWNER,
-                    branches = listOf(AuthorizedBranch("branch-1", "Cabang Satu"))
+                    branches = listOf(AuthorizedBranch("branch-1", "Cabang Satu", "Asia/Makassar"))
                 )
             )
         )
         assertEquals("branch-1", access.verifiedContext("store-1", "branch-1").branchId)
+        assertEquals("Asia/Makassar", access.verifiedContext("store-1", "branch-1").branchTimeZoneId)
         assertThrows(IllegalArgumentException::class.java) {
             access.verifiedContext("store-lain", "branch-1")
         }
