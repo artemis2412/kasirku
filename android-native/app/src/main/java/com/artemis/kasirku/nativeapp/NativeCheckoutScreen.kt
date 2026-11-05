@@ -152,8 +152,8 @@ internal fun NativeCheckoutScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !printing && selectedPrinter != null
             ) { Text(if (printing) "Mencetak tes…" else "Cetak tes printer") }
-            printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
         }
+        printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
         Text("Pilih produk", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
         products.filter { it.name.contains(search, ignoreCase = true) }.forEach { product ->
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(13.dp)) {
@@ -256,6 +256,7 @@ internal fun NativeCheckoutScreen(
                 Text(if (printing) "Mengirim nota…" else "Cetak nota Bluetooth")
             }
         }
+        printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
         Text("Transaksi tersimpan lokal. Cetak nota dilakukan manual setelah transaksi berhasil.", color = Color(0xFF718096), fontSize = 11.sp)
     }
 }
