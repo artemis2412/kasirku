@@ -44,3 +44,19 @@ Output awal adalah APK debug untuk pengujian internal, bukan APK rilis Play Stor
 - Harga modal sengaja tidak disalin ke tabel katalog Room; nilai aslinya tetap berada di database lama untuk penanganan khusus Owner pada tahap berikutnya.
 - Hasil impor mengembalikan jumlah sumber, berhasil, sudah pernah diimpor, dan barcode yang dilewati untuk pemeriksaan.
 - Proses ini belum dipanggil otomatis dari UI. Database lama tidak dihapus dan layar produk lama belum dialihkan.
+
+## Konteks akun, toko, dan cabang
+
+Android Native wajib menggunakan identitas Cloud yang diverifikasi, bukan menganggap sesi PIN lokal sebagai bukti akses server.
+
+Kontrak data yang sudah dipakai modul Cloud Web:
+- Supabase Auth menyediakan identitas pengguna melalui auth.getUser().
+- store_memberships menentukan toko aktif dan peran (owner, admin, cashier). Untuk tahap awal, akun dengan lebih dari satu keanggotaan aktif ditahan sampai pemilihan toko tersedia.
+- stores memvalidasi bahwa data toko dapat diakses.
+- branches menyediakan cabang aktif milik toko.
+- branch_memberships membatasi cabang untuk Admin/Kasir; Owner dapat melihat cabang aktif toko.
+- Peran PIN lokal hanya boleh dicocokkan sebagai pemeriksaan tambahan, tidak boleh menggantikan membership Cloud.
+
+Android sudah memiliki model VerifiedTenantContext dan TenantContextProvider sebagai kontrak. Belum ada provider autentikasi yang mengisinya, sehingga UI katalog Room belum boleh memakai ID toko/cabang buatan atau mengimpor data secara otomatis. Langkah integrasi berikutnya adalah menambahkan Supabase Auth Android, mengambil membership dan cabang melalui RLS, lalu baru menyediakan konteks terverifikasi ke repository.
+
+Izin jaringan Android (INTERNET) sudah ditambahkan untuk kebutuhan koneksi Supabase. Kunci publishable harus disediakan melalui konfigurasi build/runtime; jangan menanam service-role key atau secret di APK.
