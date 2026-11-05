@@ -1378,3 +1378,44 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 #sidebar .brand.brand-full{display:flex;justify-content:center;align-items:center;width:100%;min-height:0;margin:4px auto 22px;padding:0;}
 #sidebar .brand-full-image{display:block;width:164px;height:164px;max-width:78%;flex:0 0 auto;object-fit:contain;border:0;border-radius:0;box-shadow:none;}
 @media(max-width:650px){#sidebar .brand.brand-full{margin:2px auto 18px}#sidebar .brand-full-image{width:154px;height:154px;max-width:78%}}
+
+/* Fix: keep the full brand header from collapsing inside the tall mobile drawer.
+   The navigation may scroll, but the logo must keep its own reserved space. */
+#sidebar .brand.brand-full{
+  display:flex!important;
+  flex:0 0 116px!important;
+  width:100%!important;
+  height:116px!important;
+  min-height:116px!important;
+  max-height:116px!important;
+  box-sizing:border-box!important;
+  justify-content:center!important;
+  align-items:center!important;
+  margin:0 auto 14px!important;
+  padding:0!important;
+  overflow:visible!important;
+}
+#sidebar .brand.brand-full .brand-full-image{
+  display:block!important;
+  flex:0 0 108px!important;
+  width:108px!important;
+  height:108px!important;
+  max-width:100%!important;
+  max-height:108px!important;
+  object-fit:contain!important;
+  margin:0!important;
+}
+@media(max-width:650px){
+  #sidebar{padding-top:16px!important}
+  #sidebar .brand.brand-full{
+    flex:0 0 116px!important;
+    height:116px!important;
+    min-height:116px!important;
+    max-height:116px!important;
+    margin:0 auto 14px!important;
+  }
+  #sidebar .brand.brand-full .brand-full-image{
+    width:108px!important;height:108px!important;max-height:108px!important;
+  }
+  #sidebar .branch-label{margin-top:0!important;margin-bottom:7px!important}
+}
