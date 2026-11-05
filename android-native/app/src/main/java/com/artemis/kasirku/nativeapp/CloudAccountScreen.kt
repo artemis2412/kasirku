@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,7 +18,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.CloudAccountAccess
 import com.artemis.kasirku.nativeapp.data.CloudAuthRepository
+import com.artemis.kasirku.nativeapp.data.CatalogRepository
+import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.LegacyProductImporter
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
@@ -252,6 +257,71 @@ private fun SelectionCard(
         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(title, color = AccountNavy, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
             Text(subtitle, color = AccountMuted, fontSize = 11.sp)
+        }
+    }
+}
+
+
+@Composable
+internal fun NativeProductsScreen(
+    tenant: VerifiedTenantContext,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current.applicationContext
+    val repository = remember {
+        CatalogRepository(KasirkuRoomDatabase.getInstance(context).catalogDao())
+    }
+    var query by remember { mutableStateOf("") }
+    val products by remember(tenant.storeId, tenant.branchId, query) {
+        repository.observeBranchCatalog(tenant.storeId, tenant.branchId, query)
+    }.collectAsState(initial = emptyList())
+
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("KATALOG CABANG", color = AccountTeal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Text("Produk", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+        Text(tenant.storeName + " • " + tenant.branchName, color = AccountMuted, fontSize = 12.sp)
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Cari nama produk atau barcode") },
+            singleLine = true
+        )
+        if (products.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(15.dp)
+            ) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("Belum ada produk di katalog Native", color = AccountNavy, fontWeight = FontWeight.SemiBold)
+                    Text("Pilih Akun, verifikasi cabang, lalu jalankan impor produk lama jika ingin memindahkan katalog yang tersimpan di perangkat ini.", color = AccountMuted, fontSize = 12.sp)
+                }
+            }
+        } else {
+            Text("${products.size} produk", color = AccountMuted, fontSize = 12.sp)
+            products.forEach { product ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(15.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(product.name, color = AccountNavy, fontWeight = FontWeight.SemiBold)
+                            Text("Stok: ${product.branchQuantity}", color = AccountMuted, fontSize = 12.sp)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text("Rp ${product.activeSellingPrice.toString().reversed().chunked(3).joinToString(".").reversed()}", color = AccountTeal, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
     }
 }
