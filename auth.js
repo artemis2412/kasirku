@@ -154,7 +154,7 @@ function login(){
    const saltValue=salt(),newUser={id,name:displayName,role,salt:saltValue,hash:await hash(saltValue,pin),email,cloudUserId:cloudUser.id,cloudLinkedAt:new Date().toISOString()};
    const latest=read();
    if(latest.some(x=>String(x.email||"").toLowerCase()===email||String(x.cloudUserId||"")===String(cloudUser.id)))throw new Error("Akun Cloud ini sudah ditautkan ke akun PIN pada perangkat ini.");
-   latest.push(newUser);localStorage.setItem(KEY,JSON.stringify(latest));
+   latest.push(newUser);list.push(newUser);localStorage.setItem(KEY,JSON.stringify(latest));
    localStorage.setItem("kasirku_cloud_identity_link_v1:"+encodeURIComponent(id),JSON.stringify({userId:cloudUser.id,email,role,linkedAt:new Date().toISOString()}));
    await cloudClient.auth.signOut();
    register.reset();registerError.className="success";registerError.textContent="Berhasil! Akun PIN sudah terhubung dengan akun Cloud. Silakan masuk menggunakan PIN.";
@@ -187,12 +187,12 @@ function publishLocalSession(){try{window.dispatchEvent(new CustomEvent("kasirku
 function startSession(u){window.KASIRKU_AUTH_MODE="pin";user=u;publishLocalSession();const assigned=Array.isArray(u.branchIds)?u.branchIds:(u.branchId?[u.branchId]:[]);if(!["owner","admin"].includes(u.role)&&assigned.length){const current=localStorage.getItem(ACTIVE_BRANCH_KEY);if(!assigned.includes(current))localStorage.setItem(ACTIVE_BRANCH_KEY,assigned[0])}document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();document.querySelector(".topbar")?.appendChild(b);reset();apply()}
 function openPinEntry(){
  history.pushState({kasirkuEntry:"pin"},"",location.href);
- if(read().filter(x=>x.active!==false).length)login();else setup();
+ login();
 }
 window.addEventListener("popstate",event=>{
  if(user)return;
  if(event.state?.kasirkuEntry==="pin"){
-  if(read().filter(x=>x.active!==false).length)login();else setup();
+  login();
  }else welcome();
 });
 function welcome(){
