@@ -4,6 +4,8 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import java.text.NumberFormat
+import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -65,6 +67,17 @@ private val Navy = Color(0xFF17324D)
 private val Teal = Color(0xFF168C83)
 private val Canvas = Color(0xFFF5F7F9)
 private val Muted = Color(0xFF718096)
+
+private fun formatNumber(value: Long): String =
+    NumberFormat.getIntegerInstance(Locale("id", "ID")).format(value)
+
+private fun formatDigitsWithDots(value: String): String {
+    val digits = value.filter(Char::isDigit)
+    return digits.toLongOrNull()?.let(::formatNumber) ?: ""
+}
+
+private fun parseFormattedNumber(value: String): Long? =
+    value.replace(".", "").filter(Char::isDigit).toLongOrNull()
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -305,7 +318,7 @@ private fun ProductsScreen(modifier: Modifier = Modifier) {
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ProductStatCard("Total produk", products.size.toString(), Modifier.weight(1f))
-            ProductStatCard("Total stok", products.sumOf { it.stock }.toString(), Modifier.weight(1f))
+            ProductStatCard("Total stok", formatNumber(products.sumOf { it.stock }.toLong()), Modifier.weight(1f))
         }
 
         OutlinedTextField(
@@ -410,8 +423,8 @@ private fun ProductCard(product: KasirkuProduct, onEdit: () -> Unit, onDelete: (
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(product.name, color = Navy, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(product.category.ifBlank { "Tanpa kategori" }, color = Muted, fontSize = 11.sp)
-                Text("Rp ${product.sellingPrice}", color = Teal, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Text("Stok: ${product.stock}", color = Muted, fontSize = 11.sp)
+                Text("Rp ${formatNumber(product.sellingPrice)}", color = Teal, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Stok: ${formatNumber(product.stock.toLong())}", color = Muted, fontSize = 11.sp)
             }
             Column(horizontalAlignment = Alignment.End) {
                 TextButton(onClick = onEdit) { Text("Edit") }
@@ -485,21 +498,21 @@ private fun ProductFormDialog(
                 }
                 OutlinedTextField(value = name, onValueChange = { name = it; error = "" }, label = { Text("Nama produk *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Kategori") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = costPrice, onValueChange = { costPrice = it.filter(Char::isDigit) }, label = { Text("Harga modal (Rp)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = it.filter(Char::isDigit) }, label = { Text("Harga jual (Rp) *") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = stock, onValueChange = { stock = it.filter(Char::isDigit) }, label = { Text("Stok") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = costPrice, onValueChange = { costPrice = formatDigitsWithDots(it) }, label = { Text("Harga modal (Rp, opsional)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = formatDigitsWithDots(it) }, label = { Text("Harga jual (Rp) *") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = stock, onValueChange = { stock = formatDigitsWithDots(it) }, label = { Text("Stok") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = barcode, onValueChange = { barcode = it }, label = { Text("Barcode / kode produk") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 if (error.isNotBlank()) Text(error, color = Color(0xFFB42318), fontSize = 12.sp)
             }
         },
         confirmButton = {
             Button(onClick = {
-                val parsedPrice = sellingPrice.toLongOrNull()
+                val parsedPrice = parseFormattedNumber(sellingPrice)
                 if (name.isBlank()) {
                     error = "Nama produk wajib diisi."
                 } else if (parsedPrice == null || parsedPrice <= 0L) {
                     error = "Harga jual harus lebih dari 0."
-                } else if ((stock.toIntOrNull() ?: -1) < 0) {
+                } else if ((parseFormattedNumber(stock)?.takeIf { it <= Int.MAX_VALUE }?.toInt() ?: -1) < 0) {
                     error = "Stok tidak valid."
                 } else {
                     onSave(
@@ -507,9 +520,9 @@ private fun ProductFormDialog(
                             id = product?.id ?: 0L,
                             name = name.trim(),
                             category = category.trim(),
-                            costPrice = costPrice.toLongOrNull() ?: 0L,
+                            costPrice = parseFormattedNumber(costPrice) ?: 0L,
                             sellingPrice = parsedPrice,
-                            stock = stock.toIntOrNull() ?: 0,
+                            stock = parseFormattedNumber(stock)?.toInt() ?: 0,
                             barcode = barcode.trim(),
                             photoUri = photoUri
                         )
