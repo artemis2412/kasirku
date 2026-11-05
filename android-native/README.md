@@ -60,3 +60,12 @@ Kontrak data yang sudah dipakai modul Cloud Web:
 Android sudah memiliki model VerifiedTenantContext dan TenantContextProvider sebagai kontrak. Belum ada provider autentikasi yang mengisinya, sehingga UI katalog Room belum boleh memakai ID toko/cabang buatan atau mengimpor data secara otomatis. Langkah integrasi berikutnya adalah menambahkan Supabase Auth Android, mengambil membership dan cabang melalui RLS, lalu baru menyediakan konteks terverifikasi ke repository.
 
 Izin jaringan Android (INTERNET) sudah ditambahkan untuk kebutuhan koneksi Supabase. Kunci publishable harus disediakan melalui konfigurasi build/runtime; jangan menanam service-role key atau secret di APK.
+
+## Login Cloud Android
+
+- Android Native menggunakan Supabase Auth melalui SDK Kotlin (`auth-kt`) dan PostgREST (`postgrest-kt`).
+- Layar Akun menyediakan login email/kata sandi, pemulihan sesi, daftar toko yang dapat diakses, dan pilihan cabang aktif.
+- Data toko/cabang diambil setelah login dari `store_memberships`, `stores`, `branches`, dan `branch_memberships`; pembatasan server tetap mengikuti Row Level Security (RLS).
+- Akun dengan beberapa toko dapat memilih toko. Admin/Kasir hanya melihat cabang yang ditetapkan pada `branch_memberships`.
+- Kunci yang dipakai adalah publishable key (bukan service-role/secret). Untuk rilis produksi, pindahkan nilai konfigurasi build ke secret CI atau konfigurasi lokal yang tidak dikomit.
+- Pemilihan toko/cabang menghasilkan `VerifiedTenantContext`. Konteks ini belum otomatis mengalihkan layar Produk dari database lama ke Room; integrasi katalog dilakukan setelah proses login dan pemilihan cabang diuji pada perangkat.
