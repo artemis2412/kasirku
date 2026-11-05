@@ -26,6 +26,21 @@ class OrderSyncPayloadMapperTest {
     }
 
     @Test
+    fun orderDateAndTimeFollowEachBranchesOwnTimezone() {
+        val sale = sale()
+        val items = listOf(item("product-1"))
+        val jakarta = OrderSyncPayloadMapper.map(sale, items, ZoneId.of("Asia/Jakarta"))
+        val makassar = OrderSyncPayloadMapper.map(sale, items, ZoneId.of("Asia/Makassar"))
+        val jayapura = OrderSyncPayloadMapper.map(sale, items, ZoneId.of("Asia/Jayapura"))
+
+        assertEquals("21:00:00", jakarta.order.orderTime)
+        assertEquals("22:00:00", makassar.order.orderTime)
+        assertEquals("23:00:00", jayapura.order.orderTime)
+        assertEquals(jakarta.order.localId, makassar.order.localId)
+        assertEquals(makassar.order.localId, jayapura.order.localId)
+    }
+
+    @Test
     fun legacyNonUuidProductIdIsKeptAsLocalId() {
         val payload = OrderSyncPayloadMapper.map(
             sale(),
