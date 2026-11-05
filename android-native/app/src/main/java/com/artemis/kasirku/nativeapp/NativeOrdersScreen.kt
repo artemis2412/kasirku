@@ -65,7 +65,7 @@ internal fun NativeOrdersScreen(
     val context = LocalContext.current.applicationContext
     val dao = remember { KasirkuRoomDatabase.getInstance(context).catalogDao() }
     val repository = remember { SalesRepository(dao) }
-    val pendingSync by dao.observePendingSaleSyncCount().collectAsState(initial = 0)
+    val pendingSync by dao.observePendingSaleSyncCount(tenant.storeId, tenant.branchId).collectAsState(initial = 0)
     val now = remember { System.currentTimeMillis() }
     val dayStart = remember {
         Calendar.getInstance().apply {
