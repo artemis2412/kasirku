@@ -106,8 +106,8 @@ class LegacyProductImporter(
         dao.importLegacyCatalog(
             categories,
             newProducts,
-            branchPrices.filter { it.productId in newIds },
-            inventory.filter { it.productId in newIds },
+            branchPrices,
+            inventory,
             barcodes.filter { it.productId in newIds }
         )
         val after = dao.findImportedLegacyIds(storeId).toSet()
