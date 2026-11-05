@@ -141,12 +141,18 @@ private fun KasirkuNativeApp() {
                 }
             ) { innerPadding ->
                 when {
-                    showNewTransaction -> SimpleFeatureScreen(
-                        title = "Transaksi baru",
-                        description = "Halaman transaksi akan kita bangun berikutnya, termasuk keranjang, jumlah barang, diskon, pembayaran, dan cetak nota.",
-                        onBack = { showNewTransaction = false },
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    showNewTransaction -> if (verifiedTenantContext != null) {
+                        NativeCheckoutScreen(
+                            tenant = verifiedTenantContext!!,
+                            onBack = { showNewTransaction = false },
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    } else {
+                        CloudAccountScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onContextChanged = { verifiedTenantContext = it }
+                        )
+                    }
                     selectedTab == 0 -> DashboardScreen(
                         modifier = Modifier.padding(innerPadding),
                         onNewTransaction = { showNewTransaction = true },
