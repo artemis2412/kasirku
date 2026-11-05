@@ -81,6 +81,7 @@ class LegacyProductImporter(
             }
             ProductBarcodeEntity(
                 id = stableId("barcode:$storeId:${old.id}:$value"),
+                storeId = storeId,
                 productId = ids.getValue(old.id),
                 barcode = value,
                 createdAt = now
