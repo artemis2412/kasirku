@@ -147,8 +147,8 @@ class CloudAuthRepository {
     suspend fun uploadOrder(payload: OrderSyncPayload, allowDelegatedCashier: Boolean = false) = withContext(Dispatchers.IO) {
         val user = client.auth.currentUserOrNull()
             ?: throw SecurityException("Sesi Cloud tidak ditemukan. Silakan masuk kembali.")
-        require(payload.order.createdBy == user.id || allowDelegatedCashier) {
-            "Transaksi kasir lain hanya dapat disinkronkan oleh owner/admin."
+        if (payload.order.createdBy != user.id && !allowDelegatedCashier) {
+            throw SecurityException("Transaksi kasir lain hanya dapat disinkronkan oleh owner/admin.")
         }
         require(payload.order.storeId.isNotBlank() && payload.order.branchId.isNotBlank()) {
             "Identitas toko atau cabang transaksi tidak lengkap."
