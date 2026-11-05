@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -78,6 +79,7 @@ internal fun NativeCheckoutScreen(
     val cart = remember { mutableStateMapOf<String, CartEntry>() }
     val scope = rememberCoroutineScope()
     var payment by remember { mutableStateOf("") }
+    var paymentMethod by remember { mutableStateOf("CASH") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var success by remember { mutableStateOf<String?>(null) }
@@ -213,7 +215,23 @@ internal fun NativeCheckoutScreen(
                     Text("Subtotal", color = Color(0xFF17324D))
                     Text("Rp ${formatCheckoutNominal(subtotal)}", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
                 }
-                OutlinedTextField(value = payment, onValueChange = { payment = formatCheckoutNominalInput(it) }, modifier = Modifier.fillMaxWidth(), label = { Text("Uang diterima (Rp)") }, singleLine = true)
+                Text("Metode pembayaran", color = Color(0xFF17324D), fontWeight = FontWeight.SemiBold)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("CASH" to "Tunai", "QRIS" to "QRIS", "TRANSFER" to "Transfer").forEach { (method, label) ->
+                        FilterChip(
+                            selected = paymentMethod == method,
+                            onClick = { paymentMethod = method },
+                            label = { Text(label) }
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = payment,
+                    onValueChange = { payment = formatCheckoutNominalInput(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(if (paymentMethod == "CASH") "Uang diterima (Rp)" else "Nominal pembayaran (Rp)") },
+                    singleLine = true
+                )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Kembalian", color = Color(0xFF17324D))
                     Text("Rp ${formatCheckoutNominal((paid - subtotal).coerceAtLeast(0L))}", color = Color(0xFF168C83), fontWeight = FontWeight.Bold)
@@ -225,7 +243,7 @@ internal fun NativeCheckoutScreen(
                             error = null
                             val receiptLines = cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }
                             runCatching {
-                                sales.checkout(tenant, receiptLines, paid)
+                                sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod)
                             }.onSuccess { result ->
                                 receiptDraft = ReceiptDraft(result.saleId, receiptLines, subtotal, result.total, paid, result.change)
                                 success = "Transaksi tersimpan. Total Rp ${result.total}, kembalian Rp ${result.change}."
