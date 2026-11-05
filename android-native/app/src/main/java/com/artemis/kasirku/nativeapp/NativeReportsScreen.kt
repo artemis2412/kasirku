@@ -30,7 +30,8 @@ private val ReportTeal = Color(0xFF168C83)
 private val ReportMuted = Color(0xFF718096)
 private fun reportMoney(value: Long) = value.toString().reversed().chunked(3).joinToString(".").reversed()
 private fun reportCsvCell(value: String): String {
-    val guarded = if (value.firstOrNull() in listOf('=', '+', '-', '@', '\t', '\r')) "'$value" else value
+    val firstMeaningful = value.trimStart().firstOrNull()
+    val guarded = if (firstMeaningful in listOf('=', '+', '-', '@', '\t', '\r')) "'$value" else value
     val escaped = guarded.replace("\"", "\"\"")
     return if (escaped.contains(';') || escaped.contains('\"') || escaped.contains('\n')) "\"$escaped\"" else escaped
 }
@@ -63,11 +64,7 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
                         val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
                         rows.forEach { (sale, items) -> items.forEach { item ->
                             val values = listOf(dateFormat.format(Date(sale.createdAt)), timeFormat.format(Date(sale.createdAt)), sale.id, sale.cashierUserId, sale.paymentMethod, item.productName, item.quantity.toString(), item.unitPrice.toString(), item.lineTotal.toString(), sale.subtotal.toString(), sale.discount.toString(), sale.total.toString(), sale.paid.toString(), sale.change.toString())
-                            val line = values.joinToString(";") { value ->
-                                val escaped = value.replace("\"", "\"\"")
-                                if (escaped.contains(';') || escaped.contains('"') || escaped.contains('\n')) "\"$escaped\"" else escaped
-                            }
-                            writer.write(line + "\n")
+                            writer.write(values.joinToString(";") { reportCsvCell(it) } + "\n")
                         } }
                         writer.flush()
                     }
