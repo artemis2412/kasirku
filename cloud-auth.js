@@ -256,7 +256,13 @@ async function finishPendingStore(session){
     const {data:membership,error:membershipError}=await client.from("store_memberships")
       .select("store_id").eq("user_id",session.user.id).eq("is_active",true).limit(1);
     if(membershipError)throw membershipError;
-    if(membership?.length){sessionStorage.removeItem("kca_pending_store");return;}
+    if(membership?.length){
+      sessionStorage.removeItem("kca_pending_store");
+      const {data:existingMemberships,error:existingError}=await client.from("store_memberships").select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
+      if(existingError)throw existingError;
+      await showPinEnrollment(session.user,existingMemberships||[]);
+      return;
+    }
     const {error}=await client.rpc("create_my_store",{
       p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
     });
@@ -327,13 +333,7 @@ form.addEventListener("submit",async event=>{
       if(!data.session){
         say("Akun dibuat. Buka tautan konfirmasi yang dikirim ke email untuk mengaktifkan akun dan menyelesaikan pendaftaran toko.","success");
       }else{
-        const {data:store,error:storeError}=await client.rpc("create_my_store",{
-          p_store_name:storeName,p_branch_name:branchName,p_display_name:displayName
-        });
-        if(storeError) throw storeError;
-        const {data:memberships,error:membershipError}=await client.from("store_memberships").select("store_id,role,is_active").eq("user_id",data.user.id).eq("is_active",true);
-        if(membershipError)throw membershipError;
-        await showPinEnrollment(data.user,memberships||[]);
+        await finishPendingStore(data.session);
       }
     }
   }catch(error){
