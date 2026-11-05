@@ -47,6 +47,28 @@ begin
     raise exception 'Hanya owner/admin yang dapat menyinkronkan transaksi kasir lain';
   end if;
 
+  -- The recorded cashier must be an active member of this store and,
+  -- unless owner/admin, assigned to the exact branch that owns the sale.
+  if not exists (
+    select 1
+    from public.store_memberships as creator
+    where creator.store_id = (p_order->>'store_id')::uuid
+      and creator.user_id = v_created_by
+      and creator.is_active = true
+      and (
+        creator.role in ('owner', 'admin')
+        or exists (
+          select 1
+          from public.branch_memberships as bm
+          where bm.store_id = creator.store_id
+            and bm.branch_id = (p_order->>'branch_id')::uuid
+            and bm.user_id = creator.user_id
+        )
+      )
+  ) then
+    raise exception 'Kasir transaksi tidak memiliki akses aktif ke cabang ini';
+  end if;
+
   if coalesce((p_order->>'subtotal')::numeric, -1) < 0
      or coalesce((p_order->>'discount_amount')::numeric, -1) < 0
      or coalesce((p_order->>'total')::numeric, -1) <= 0
