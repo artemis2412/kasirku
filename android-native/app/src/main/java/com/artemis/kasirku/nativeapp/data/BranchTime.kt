@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 object BranchTime {
     fun zoneId(tenant: VerifiedTenantContext): ZoneId =
@@ -20,5 +21,5 @@ object BranchTime {
     }
 
     fun format(epochMillis: Long, pattern: String, zoneId: ZoneId): String =
-        DateTimeFormatter.ofPattern(pattern).withZone(zoneId).format(Instant.ofEpochMilli(epochMillis))
+        DateTimeFormatter.ofPattern(pattern, Locale("id", "ID")).withZone(zoneId).format(Instant.ofEpochMilli(epochMillis))
 }
