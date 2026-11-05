@@ -303,7 +303,7 @@ form.addEventListener("submit",async event=>{
       });
       if(error) throw error;
       if(!data.session){
-        say("Akun dibuat. Buka tautan konfirmasi yang dikirim ke email untuk mengaktifkan akun dan menyelesaikan pendaftaran toko.","success");
+        say("Akun dibuat. Buka tautan konfirmasi dari email di perangkat ini agar pendaftaran toko dapat diselesaikan.","success");
       }else{
         await finishPendingStore(data.session);
       }
