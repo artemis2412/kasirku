@@ -200,7 +200,7 @@ internal fun CloudAccountScreen(
                 }
             }
 
-            verifiedContext?.let { tenant ->
+            verifiedContext?.takeIf { it.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER || it.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN }?.let { tenant ->
                 Button(
                     onClick = {
                         scope.launch {
