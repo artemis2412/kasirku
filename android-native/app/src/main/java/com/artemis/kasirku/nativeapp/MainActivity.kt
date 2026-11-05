@@ -4,8 +4,6 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
-import java.text.NumberFormat
-import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -68,12 +66,21 @@ private val Teal = Color(0xFF168C83)
 private val Canvas = Color(0xFFF5F7F9)
 private val Muted = Color(0xFF718096)
 
-private fun formatNumber(value: Long): String =
-    NumberFormat.getIntegerInstance(Locale("id", "ID")).format(value)
+private fun formatNumber(value: Long): String {
+    val digits = value.toString()
+    return digits.reversed()
+        .chunked(3)
+        .joinToString(".")
+        .reversed()
+}
 
 private fun formatDigitsWithDots(value: String): String {
     val digits = value.filter(Char::isDigit)
-    return digits.toLongOrNull()?.let(::formatNumber) ?: ""
+    if (digits.isEmpty()) return ""
+    return digits.reversed()
+        .chunked(3)
+        .joinToString(".")
+        .reversed()
 }
 
 private fun parseFormattedNumber(value: String): Long? =
