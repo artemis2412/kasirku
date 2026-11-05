@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -32,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.CloudAccountAccess
 import com.artemis.kasirku.nativeapp.data.CloudAuthRepository
+import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
+import com.artemis.kasirku.nativeapp.data.LegacyProductImporter
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.launch
 
@@ -45,6 +48,7 @@ internal fun CloudAccountScreen(
     onContextChanged: (VerifiedTenantContext?) -> Unit
 ) {
     val repository = remember { CloudAuthRepository() }
+    val appContext = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -55,12 +59,14 @@ internal fun CloudAccountScreen(
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("Masuk menggunakan akun Cloud Kasirku.") }
     var isError by remember { mutableStateOf(false) }
+    var importSummary by remember { mutableStateOf<String?>(null) }
 
     fun applyAccess(result: CloudAccountAccess) {
         access = result
         selectedStoreId = result.stores.singleOrNull()?.id
         selectedBranchId = result.stores.singleOrNull()?.branches?.singleOrNull()?.id
         verifiedContext = null
+        importSummary = null
         onContextChanged(null)
         message = if (result.stores.size > 1) {
             "Pilih toko yang akan digunakan."
@@ -171,6 +177,36 @@ internal fun CloudAccountScreen(
                         Text(context.branchName + " • " + context.role.name.lowercase(), color = AccountMuted, fontSize = 12.sp)
                         Text("Akses harga modal/laba: " + if (context.role.canViewCostAndProfit()) "Owner" else "Tidak diizinkan", color = AccountMuted, fontSize = 12.sp)
                     }
+                }
+            }
+
+            verifiedContext?.let { tenant ->
+                Button(
+                    onClick = {
+                        scope.launch {
+                            busy = true
+                            importSummary = null
+                            runCatching {
+                                val room = KasirkuRoomDatabase.getInstance(appContext)
+                                LegacyProductImporter(appContext, room).import(tenant.storeId, tenant.branchId)
+                            }.onSuccess { result ->
+                                importSummary = "Impor selesai: ${result.importedCount} produk baru, ${result.alreadyImportedCount} sudah ada, ${result.skippedBarcodeCount} barcode dilewati."
+                                message = if (result.countVerified) "Jumlah data sumber dan hasil impor terverifikasi." else "Perhatian: jumlah data perlu diperiksa."
+                                isError = !result.countVerified
+                            }.onFailure {
+                                message = it.message ?: "Impor produk gagal."
+                                isError = true
+                            }
+                            busy = false
+                        }
+                    },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(13.dp)
+                ) { Text(if (busy) "Mengimpor…" else "Impor produk lama ke Room") }
+                importSummary?.let { summary ->
+                    Text(summary, color = AccountMuted, fontSize = 12.sp)
+                    Text("Data lama tidak dihapus. Harga modal tetap berada di database lama.", color = AccountMuted, fontSize = 11.sp)
                 }
             }
 
