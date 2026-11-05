@@ -31,12 +31,14 @@ data class VerifiedTenantContext(
 enum class StoreRole {
     OWNER,
     ADMIN,
+    SUPERVISOR,
     CASHIER;
 
     companion object {
         fun fromCloud(value: String): StoreRole = when (value.trim().lowercase()) {
             "owner" -> OWNER
             "admin" -> ADMIN
+            "supervisor" -> SUPERVISOR
             "cashier" -> CASHIER
             else -> throw IllegalArgumentException("Peran akun Cloud tidak dikenali.")
         }
