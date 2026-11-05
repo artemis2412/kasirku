@@ -46,6 +46,8 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 
 
+private fun formatOrderNominal(value: Long): String = value.toString().reversed().chunked(3).joinToString(".").reversed()
+
 private fun csvCell(value: String): String {
     val safe = value.replace("\"", "\"\"")
     return if (safe.contains(';') || safe.contains('"') || safe.contains('\n')) "\"$safe\"" else safe
@@ -163,7 +165,7 @@ internal fun NativeOrdersScreen(
             Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(15.dp)) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Total penjualan", color = OrdersMuted, fontSize = 11.sp)
-                    Text("Rp ${total}", color = OrdersTeal, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Rp ${formatOrderNominal(total)}", color = OrdersTeal, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -196,7 +198,7 @@ internal fun NativeOrdersScreen(
                             Text(timeFormatter.format(Date(sale.createdAt)) + " • ${sale.paymentMethod}", color = OrdersMuted, fontSize = 11.sp)
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text("Rp ${sale.total}", color = OrdersTeal, fontWeight = FontWeight.Bold)
+                        Text("Rp ${formatOrderNominal(sale.total)}", color = OrdersTeal, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -217,13 +219,13 @@ internal fun NativeOrdersScreen(
                     selectedItems.forEach { item ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("${item.productName} × ${item.quantity}", color = OrdersNavy, modifier = Modifier.weight(1f))
-                            Text("Rp ${item.lineTotal}", color = OrdersNavy, fontWeight = FontWeight.SemiBold)
+                            Text("Rp ${formatOrderNominal(item.lineTotal)}", color = OrdersNavy, fontWeight = FontWeight.SemiBold)
                         }
                     }
-                    Text("Subtotal: Rp ${sale.subtotal}", color = OrdersMuted, fontSize = 12.sp)
-                    Text("Diskon: Rp ${sale.discount}", color = OrdersMuted, fontSize = 12.sp)
-                    Text("Total: Rp ${sale.total}", color = OrdersTeal, fontWeight = FontWeight.Bold)
-                    Text("Dibayar: Rp ${sale.paid} • Kembalian: Rp ${sale.change}", color = OrdersMuted, fontSize = 11.sp)
+                    Text("Subtotal: Rp ${formatOrderNominal(sale.subtotal)}", color = OrdersMuted, fontSize = 12.sp)
+                    Text("Diskon: Rp ${formatOrderNominal(sale.discount)}", color = OrdersMuted, fontSize = 12.sp)
+                    Text("Total: Rp ${formatOrderNominal(sale.total)}", color = OrdersTeal, fontWeight = FontWeight.Bold)
+                    Text("Dibayar: Rp ${formatOrderNominal(sale.paid)} • Kembalian: Rp ${formatOrderNominal(sale.change)}", color = OrdersMuted, fontSize = 11.sp)
                 }
             },
             confirmButton = { TextButton(onClick = { selectedSale = null }) { Text("Tutup") } }
