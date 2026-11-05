@@ -239,6 +239,8 @@ async function finishPendingStore(session){
       sessionStorage.removeItem("kca_pending_store");
       const {data:existingMemberships,error:existingError}=await client.from("store_memberships").select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
       if(existingError)throw existingError;
+      const {error:metadataError}=await client.auth.updateUser({data:{pending_store_name:null,pending_branch_name:null}});
+      if(metadataError)throw metadataError;
       await showPinEnrollment(session.user,existingMemberships||[]);
       return;
     }
@@ -249,6 +251,8 @@ async function finishPendingStore(session){
     sessionStorage.removeItem("kca_pending_store");
     const {data:memberships,error:membershipError2}=await client.from("store_memberships").select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
     if(membershipError2)throw membershipError2;
+    const {error:metadataError}=await client.auth.updateUser({data:{pending_store_name:null,pending_branch_name:null}});
+    if(metadataError)throw metadataError;
     await showPinEnrollment(session.user,memberships||[]);
   }catch(error){console.error("KASIRKU store setup:",error);say(error.message||"Konfirmasi berhasil, tetapi pembuatan toko belum selesai. Silakan masuk kembali.","error");}
   finally{storeSetupInProgress=false;}
