@@ -1475,3 +1475,27 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
     width:78px!important;height:78px!important;max-height:78px!important;
   }
 }
+
+/* Final sidebar logo cleanup: remove the stray frame and sharp wrapper edges. */
+#sidebar .brand.brand-full{
+  border:0!important;
+  outline:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  border-radius:0!important;
+  overflow:visible!important;
+}
+#sidebar .brand.brand-full::before,
+#sidebar .brand.brand-full::after{
+  content:none!important;
+  display:none!important;
+}
+#sidebar .brand.brand-full .brand-full-image{
+  display:block!important;
+  border:0!important;
+  outline:0!important;
+  border-radius:17px!important;
+  box-shadow:0 5px 14px rgba(0,0,0,.16)!important;
+  object-fit:contain!important;
+  background:transparent!important;
+}
