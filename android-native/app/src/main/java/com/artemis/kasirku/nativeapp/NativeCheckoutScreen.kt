@@ -72,7 +72,7 @@ internal fun NativeCheckoutScreen(
     val catalog = remember { CatalogRepository(database.catalogDao()) }
     val sales = remember { SalesRepository(database.catalogDao()) }
     val products by remember(tenant.storeId, tenant.branchId) {
-        catalog.observeBranchCatalog(tenant.storeId, tenant.branchId, "")
+        catalog.observeBranchCatalog(tenant.storeId, tenant.branchId, search)
     }.collectAsState(initial = emptyList())
     val cart = remember { mutableStateMapOf<String, CartEntry>() }
     val scope = rememberCoroutineScope()
@@ -102,7 +102,7 @@ internal fun NativeCheckoutScreen(
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
         ) printerList = BluetoothReceiptPrinter.pairedPrinters(context)
     }
-    val subtotal = cart.values.sumOf { it.price * it.quantity }
+    val subtotal = runCatching { cart.values.fold(0L) { total, item -> Math.addExact(total, Math.multiplyExact(item.price, item.quantity.toLong())) } }.getOrElse { Long.MAX_VALUE }
     val paid = payment.filter(Char::isDigit).toLongOrNull() ?: 0L
 
     Column(
@@ -160,7 +160,7 @@ internal fun NativeCheckoutScreen(
         }
         printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
         Text("Pilih produk", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
-        products.filter { it.activeSellingPrice != null && it.name.contains(search, ignoreCase = true) }.forEach { product ->
+        products.filter { it.activeSellingPrice != null }.forEach { product ->
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(13.dp)) {
                 Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -191,7 +191,7 @@ internal fun NativeCheckoutScreen(
                     Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(item.name, color = Color(0xFF17324D), fontWeight = FontWeight.SemiBold)
-                            Text("Rp ${formatCheckoutNominal(item.price)} × ${item.quantity} = Rp ${formatCheckoutNominal(item.price * item.quantity)}", color = Color(0xFF718096), fontSize = 12.sp)
+                            Text("Rp ${formatCheckoutNominal(item.price)} × ${item.quantity} = " + runCatching { "Rp ${formatCheckoutNominal(Math.multiplyExact(item.price, item.quantity.toLong()))}" }.getOrDefault("Nilai terlalu besar"), color = Color(0xFF718096), fontSize = 12.sp)
                         }
                         Row {
                             TextButton(onClick = {
