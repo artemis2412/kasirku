@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.serialization.encodeToJsonElement
+import kotlinx.serialization.builtins.ListSerializer
 
 @Serializable
 private data class StoreMembershipDto(
@@ -152,8 +152,8 @@ class CloudAuthRepository {
         client.postgrest.rpc(
             function = "sync_order",
             parameters = buildJsonObject {
-                put("p_order", Json.encodeToJsonElement(payload.order))
-                put("p_items", Json.encodeToJsonElement(payload.items))
+                put("p_order", Json.encodeToJsonElement(OrderSyncDto.serializer(), payload.order))
+                put("p_items", Json.encodeToJsonElement(ListSerializer(OrderItemSyncDto.serializer()), payload.items))
             }
         )
     }
