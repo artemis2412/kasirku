@@ -1271,3 +1271,28 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
     flex:0 0 auto!important;
   }
 }
+
+
+/* KASIRKU mobile bottom navigation refresh */
+#bottom-nav .navbtn .nav-icon{display:grid;place-items:center;width:28px;height:28px;flex:0 0 28px;font-size:0;line-height:1}
+#bottom-nav .navbtn .nav-icon svg{display:block;width:24px;height:24px}
+#bottom-nav .navbtn{position:relative;min-width:0!important;flex:1 1 0!important;min-height:62px;padding:7px 3px!important;gap:4px!important;border-radius:14px!important;color:#718078;font-size:10px!important;font-weight:650;line-height:1.15}
+#bottom-nav .navbtn.active{background:#eaf5ed!important;color:#16784d!important}
+#bottom-nav .navbtn.active:before{content:"";position:absolute;top:0;left:50%;width:22px;height:3px;border-radius:0 0 4px 4px;background:#198653;transform:translateX(-50%)}
+#bottom-nav .navbtn.active .nav-icon svg{stroke-width:2.2}
+.bottom-more-wrap{position:relative;display:flex;flex:1 1 0;min-width:0}
+.bottom-more-wrap>.navbtn{width:100%}
+.bottom-more-menu{position:absolute;right:0;bottom:calc(100% + 12px);width:min(220px,70vw);padding:8px;background:#fff;border:1px solid #e0e9e2;border-radius:17px;box-shadow:0 12px 35px rgba(18,55,35,.18);display:grid;gap:3px;z-index:70}
+.bottom-more-menu[hidden]{display:none!important}
+.bottom-more-item{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:8px 12px;border:0;border-radius:11px;background:transparent;color:#40564a;text-align:left;font:inherit;font-weight:650}
+.bottom-more-item .nav-icon{display:grid;place-items:center;width:28px;height:28px;color:#287b52}
+.bottom-more-item .nav-icon svg{width:22px;height:22px}
+.bottom-more-item.active{background:#eaf5ed;color:#16784d}
+@media(max-width:650px){
+ #bottom-nav{height:76px!important;justify-content:space-around!important;gap:5px!important;padding:7px 10px calc(7px + env(safe-area-inset-bottom,0px))!important;background:rgba(255,255,255,.97)!important;border-top:1px solid #e2eae3!important;box-shadow:0 -7px 24px rgba(20,47,37,.08)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+ #bottom-nav .navbtn{font-size:10px!important;letter-spacing:-.1px}
+ #bottom-nav .navbtn .nav-icon{width:29px;height:29px;flex-basis:29px}
+ #bottom-nav .navbtn .nav-icon svg{width:25px;height:25px}
+ #view{padding-bottom:calc(76px + 34px + env(safe-area-inset-bottom,0px))!important}
+}
+@media(max-width:360px){#bottom-nav{padding-left:6px!important;padding-right:6px!important;gap:2px!important}#bottom-nav .navbtn{font-size:9px!important}}
