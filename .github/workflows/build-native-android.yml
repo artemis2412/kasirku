@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - native-android-foundation
+      - native-room-foundation
     paths:
       - "android-native/**"
       - ".github/workflows/build-native-android.yml"
