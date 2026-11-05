@@ -225,7 +225,7 @@ internal fun NativeOrdersScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text("ID: ${sale.id}", color = OrdersMuted, fontSize = 10.sp)
-                    Text(BranchTime.format(sale.createdAt, "dd MMM yyyy", branchZone) + " • " + timeFormatter.format(Date(sale.createdAt)), color = OrdersMuted, fontSize = 11.sp)
+                    Text(BranchTime.format(sale.createdAt, "dd MMM yyyy", branchZone) + " • " + BranchTime.format(sale.createdAt, "HH:mm", branchZone), color = OrdersMuted, fontSize = 11.sp)
                     if (loadingDetail) Text("Memuat rincian…", color = OrdersMuted)
                     selectedItems.forEach { item ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
