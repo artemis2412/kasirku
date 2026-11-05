@@ -97,3 +97,16 @@ data class SaleItemEntity(
     val unitPrice: Long,
     val lineTotal: Long
 )
+
+
+@Entity(tableName = "sale_sync_outbox", indices = [Index(value = ["status", "createdAt"])])
+data class SaleSyncOutboxEntity(
+    @PrimaryKey val saleId: String,
+    val storeId: String,
+    val branchId: String,
+    val status: String = "PENDING",
+    val attempts: Int = 0,
+    val lastError: String? = null,
+    val createdAt: Long,
+    val updatedAt: Long
+)
