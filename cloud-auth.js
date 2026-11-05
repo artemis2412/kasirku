@@ -221,7 +221,14 @@ async function showPinEnrollment(cloudUser,memberships){
 }
 async function finishPendingStore(session){
   if(!session?.user||storeSetupInProgress)return;
-  const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
+  let pending=null;
+  try{pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null")}catch{}
+  if(!pending){
+    const meta=session.user.user_metadata||{};
+    if(meta.pending_store_name&&meta.pending_branch_name&&meta.display_name){
+      pending={storeName:String(meta.pending_store_name),branchName:String(meta.pending_branch_name),displayName:String(meta.display_name)};
+    }
+  }
   if(!pending)return;
   storeSetupInProgress=true;
   try{
@@ -297,7 +304,7 @@ form.addEventListener("submit",async event=>{
       const {data,error}=await client.auth.signUp({
         email,password,
         options:{
-          data:{display_name:displayName},
+          data:{display_name:displayName,pending_store_name:storeName,pending_branch_name:branchName},
           emailRedirectTo: window.location.origin + window.location.pathname + "?cloud-auth-preview"
         }
       });
