@@ -12,6 +12,46 @@ interface CatalogDao {
     @Query("SELECT * FROM catalog_products WHERE storeId = :storeId AND isActive = 1 ORDER BY name COLLATE NOCASE")
     fun observeProducts(storeId: String): Flow<List<ProductEntity>>
 
+
+    @Query("""
+        SELECT p.* FROM catalog_products AS p
+        WHERE p.storeId = :storeId AND p.isActive = 1
+          AND (:query = '' OR p.name LIKE '%' || :query || '%' COLLATE NOCASE
+               OR EXISTS (
+                   SELECT 1 FROM product_barcodes AS b
+                   WHERE b.productId = p.id AND b.storeId = :storeId
+                     AND b.barcode LIKE '%' || :query || '%'
+               ))
+        ORDER BY p.name COLLATE NOCASE
+    """)
+    fun searchProducts(storeId: String, query: String): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM product_barcodes WHERE productId = :productId AND storeId = :storeId")
+    suspend fun getBarcodes(storeId: String, productId: String): List<ProductBarcodeEntity>
+
+    @Transaction
+    suspend fun saveProductForBranch(
+        product: ProductEntity,
+        branchPrice: BranchProductPriceEntity,
+        inventory: BranchInventoryEntity,
+        barcodes: List<ProductBarcodeEntity>
+    ) {
+        require(product.storeId.isNotBlank()) { "Store wajib ditentukan." }
+        require(branchPrice.branchId.isNotBlank() && inventory.branchId == branchPrice.branchId) {
+            "Cabang harga dan stok harus sama."
+        }
+        require(branchPrice.productId == product.id && inventory.productId == product.id) {
+            "Relasi produk tidak cocok."
+        }
+        require(barcodes.all { it.storeId == product.storeId && it.productId == product.id }) {
+            "Barcode harus berasal dari toko dan produk yang sama."
+        }
+        upsertProduct(product)
+        upsertBranchPrice(branchPrice)
+        upsertInventory(inventory)
+        if (barcodes.isNotEmpty()) insertBarcodes(barcodes)
+    }
+
     @Query("SELECT * FROM catalog_products WHERE id = :productId LIMIT 1")
     suspend fun getProduct(productId: String): ProductEntity?
 
