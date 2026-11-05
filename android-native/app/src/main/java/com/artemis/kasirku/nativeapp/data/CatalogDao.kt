@@ -45,6 +45,9 @@ interface CatalogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBranchPrice(price: BranchProductPriceEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertBranchPrices(prices: List<BranchProductPriceEntity>)
+
     @Query("SELECT * FROM product_barcodes WHERE storeId = :storeId AND barcode = :barcode LIMIT 1")
     suspend fun findByBarcode(storeId: String, barcode: String): ProductBarcodeEntity?
 
@@ -55,11 +58,13 @@ interface CatalogDao {
     suspend fun importLegacyCatalog(
         categories: List<CategoryEntity>,
         products: List<ProductEntity>,
+        prices: List<BranchProductPriceEntity>,
         inventory: List<BranchInventoryEntity>,
         barcodes: List<ProductBarcodeEntity>
     ) {
         if (categories.isNotEmpty()) upsertCategories(categories)
         if (products.isNotEmpty()) upsertProducts(products)
+        if (prices.isNotEmpty()) upsertBranchPrices(prices)
         if (inventory.isNotEmpty()) upsertInventories(inventory)
         if (barcodes.isNotEmpty()) insertBarcodes(barcodes)
     }
