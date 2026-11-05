@@ -81,6 +81,7 @@ internal fun NativeCheckoutScreen(
     var selectedPrinter by remember { mutableStateOf(BluetoothReceiptPrinter.selectedAddress(context)) }
     var receiptDraft by remember { mutableStateOf<ReceiptDraft?>(null) }
     var printing by remember { mutableStateOf(false) }
+    var showPrinterSettings by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) printerList = BluetoothReceiptPrinter.pairedPrinters(context)
         else printerError = "Izin Bluetooth diperlukan untuk membaca printer yang sudah dipasangkan."
@@ -112,20 +113,47 @@ internal fun NativeCheckoutScreen(
             TextButton(onClick = onBack) { Text("Kembali") }
         }
         OutlinedTextField(value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Cari produk") }, singleLine = true)
-        Text("Printer nota Bluetooth", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
-        Text(selectedPrinter?.let { address -> printerList.firstOrNull { it.address == address }?.name ?: address } ?: "Belum ada printer dipilih", color = Color(0xFF718096), fontSize = 12.sp)
-        OutlinedButton(onClick = { loadPrinters(); printerError = null }, modifier = Modifier.fillMaxWidth()) { Text("Muat printer yang sudah dipasangkan") }
-        printerList.forEach { printer ->
-            OutlinedButton(onClick = {
-                selectedPrinter = printer.address
-                BluetoothReceiptPrinter.saveSelectedAddress(context, printer.address)
-                printerError = null
-            }, modifier = Modifier.fillMaxWidth(), enabled = selectedPrinter != printer.address) {
-                Text((if (selectedPrinter == printer.address) "✓ " else "") + printer.name + " • " + printer.address)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Printer nota", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+                Text(selectedPrinter?.let { address -> printerList.firstOrNull { it.address == address }?.name ?: address } ?: "Belum ada printer dipilih", color = Color(0xFF718096), fontSize = 12.sp)
+            }
+            TextButton(onClick = { showPrinterSettings = !showPrinterSettings; if (!showPrinterSettings) loadPrinters() }) {
+                Text(if (showPrinterSettings) "Tutup" else "Atur")
             }
         }
-        printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
-        Text("Pasangkan printer melalui Pengaturan Bluetooth HP terlebih dahulu.", color = Color(0xFF718096), fontSize = 11.sp)
+        if (showPrinterSettings) {
+            OutlinedButton(onClick = { loadPrinters(); printerError = null }, modifier = Modifier.fillMaxWidth()) { Text("Muat ulang printer terpasang") }
+            if (printerList.isEmpty()) Text("Belum ada printer terpasang. Pasangkan printer dari Pengaturan Bluetooth HP.", color = Color(0xFF718096), fontSize = 11.sp)
+            printerList.forEach { printer ->
+                OutlinedButton(onClick = {
+                    selectedPrinter = printer.address
+                    BluetoothReceiptPrinter.saveSelectedAddress(context, printer.address)
+                    printerError = null
+                }, modifier = Modifier.fillMaxWidth(), enabled = selectedPrinter != printer.address) {
+                    Text((if (selectedPrinter == printer.address) "✓ " else "") + printer.name + " • " + printer.address)
+                }
+            }
+            OutlinedButton(
+                onClick = {
+                    val address = selectedPrinter
+                    if (address == null) printerError = "Pilih printer terlebih dahulu."
+                    else scope.launch {
+                        printing = true
+                        printerError = null
+                        runCatching {
+                            BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
+                                "TES-PRINTER", listOf(CheckoutLine("test", "Tes cetak Kasirku", 1, 1000L)),
+                                1000L, 1000L, 2000L, 1000L)
+                        }.onFailure { printerError = it.message ?: "Tes printer gagal." }
+                        printing = false
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !printing && selectedPrinter != null
+            ) { Text(if (printing) "Mencetak tes…" else "Cetak tes printer") }
+            printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
+        }
         Text("Pilih produk", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
         products.filter { it.name.contains(search, ignoreCase = true) }.forEach { product ->
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(13.dp)) {
