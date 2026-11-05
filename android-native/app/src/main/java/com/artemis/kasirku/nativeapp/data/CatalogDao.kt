@@ -29,6 +29,9 @@ interface CatalogDao {
     @Query("SELECT * FROM product_barcodes WHERE productId = :productId AND storeId = :storeId")
     suspend fun getBarcodes(storeId: String, productId: String): List<ProductBarcodeEntity>
 
+    @Query("DELETE FROM product_barcodes WHERE productId = :productId AND storeId = :storeId")
+    suspend fun deleteBarcodesForProduct(storeId: String, productId: String)
+
     @Transaction
     suspend fun saveProductForBranch(
         product: ProductEntity,
@@ -49,6 +52,7 @@ interface CatalogDao {
         upsertProduct(product)
         upsertBranchPrice(branchPrice)
         upsertInventory(inventory)
+        deleteBarcodesForProduct(product.storeId, product.id)
         if (barcodes.isNotEmpty()) insertBarcodes(barcodes)
     }
 
