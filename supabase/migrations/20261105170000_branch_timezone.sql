@@ -8,6 +8,34 @@ COMMENT ON COLUMN public.branches.timezone_id IS
   'IANA timezone identifier for business dates, e.g. Asia/Makassar, Asia/Jakarta, or Asia/Jayapura. NULL means not configured; clients must not guess.';
 
 
+
+-- Existing branch SELECT RLS remains in force; writes are limited to owner/admin.
+DROP POLICY IF EXISTS "branches_timezone_update_owner_admin" ON public.branches;
+CREATE POLICY "branches_timezone_update_owner_admin"
+ON public.branches
+FOR UPDATE
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.store_memberships AS sm
+    WHERE sm.store_id = branches.store_id
+      AND sm.user_id = (SELECT auth.uid())
+      AND sm.is_active = true
+      AND sm.role IN ('owner', 'admin')
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.store_memberships AS sm
+    WHERE sm.store_id = branches.store_id
+      AND sm.user_id = (SELECT auth.uid())
+      AND sm.is_active = true
+      AND sm.role IN ('owner', 'admin')
+  )
+);
+
+GRANT UPDATE (timezone_id, updated_at) ON public.branches TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.set_branch_timezone(
   p_store_id uuid,
   p_branch_id uuid,
@@ -15,7 +43,7 @@ CREATE OR REPLACE FUNCTION public.set_branch_timezone(
 )
 RETURNS void
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = ''
 AS $$
 BEGIN
