@@ -1419,3 +1419,32 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
   }
   #sidebar .branch-label{margin-top:0!important;margin-bottom:7px!important}
 }
+
+/* Refined KASIRKU brand mark: smaller, softer corners, subtle depth */
+#sidebar .brand.brand-full{
+  flex:0 0 96px!important;
+  height:96px!important;
+  min-height:96px!important;
+  max-height:96px!important;
+  margin:0 auto 12px!important;
+}
+#sidebar .brand.brand-full .brand-full-image{
+  width:86px!important;
+  height:86px!important;
+  max-height:86px!important;
+  border-radius:22px!important;
+  object-fit:cover!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.24),0 0 0 1px rgba(188,255,211,.18)!important;
+}
+@media(max-width:650px){
+  #sidebar .brand.brand-full{
+    flex:0 0 96px!important;
+    height:96px!important;
+    min-height:96px!important;
+    max-height:96px!important;
+    margin:0 auto 12px!important;
+  }
+  #sidebar .brand.brand-full .brand-full-image{
+    width:86px!important;height:86px!important;max-height:86px!important;
+  }
+}
