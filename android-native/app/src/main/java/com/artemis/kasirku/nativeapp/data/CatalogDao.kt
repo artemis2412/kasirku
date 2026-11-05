@@ -82,6 +82,9 @@ interface CatalogDao {
     @Query("SELECT * FROM catalog_products WHERE id = :productId LIMIT 1")
     suspend fun getProduct(productId: String): ProductEntity?
 
+    @Query("SELECT * FROM catalog_categories WHERE id = :categoryId AND storeId = :storeId AND isActive = 1 LIMIT 1")
+    suspend fun getActiveCategory(storeId: String, categoryId: String): CategoryEntity?
+
     @Query("SELECT legacySourceId FROM catalog_products WHERE storeId = :storeId AND legacySourceId IS NOT NULL")
     suspend fun findImportedLegacyIds(storeId: String): List<Long>
 
