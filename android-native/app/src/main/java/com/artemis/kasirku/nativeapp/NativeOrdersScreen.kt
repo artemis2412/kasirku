@@ -1,5 +1,8 @@
 package com.artemis.kasirku.nativeapp
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.OutlinedButton
@@ -34,11 +38,19 @@ import com.artemis.kasirku.nativeapp.data.SaleEntity
 import com.artemis.kasirku.nativeapp.data.SaleItemEntity
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
+import java.io.OutputStreamWriter
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.Calendar
 import kotlinx.coroutines.launch
+
+
+private fun csvCell(value: String): String {
+    val safe = value.replace("\"", "\"\"")
+    return if (safe.contains(';') || safe.contains('"') || safe.contains('\\n')) "\"$safe\"" else safe
+}
 
 private val OrdersNavy = Color(0xFF17324D)
 private val OrdersTeal = Color(0xFF168C83)
@@ -80,6 +92,48 @@ internal fun NativeOrdersScreen(
     var selectedSale by remember { mutableStateOf<SaleEntity?>(null) }
     var selectedItems by remember { mutableStateOf<List<SaleItemEntity>>(emptyList()) }
     var loadingDetail by remember { mutableStateOf(false) }
+    var archiveMessage by remember { mutableStateOf<String?>(null) }
+    var archiveBusy by remember { mutableStateOf(false) }
+    val archiveStart = remember {
+        Calendar.getInstance().apply {
+            timeInMillis = dayStart
+            add(Calendar.DAY_OF_YEAR, -29)
+        }.timeInMillis
+    }
+    val archiveEnd = dayEnd
+    val archiveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri: Uri? ->
+        if (uri != null) {
+            scope.launch {
+                archiveBusy = true
+                archiveMessage = null
+                runCatching {
+                    val rows = repository.exportRows(tenant, archiveStart, archiveEnd)
+                    context.contentResolver.openOutputStream(uri)?.use { stream ->
+                        OutputStreamWriter(stream, Charsets.UTF_8).use { writer ->
+                            writer.write("Tanggal;Jam;ID Transaksi;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\\n")
+                            val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                            val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.US)
+                            rows.forEach { (sale, items) ->
+                                items.forEach { item ->
+                                    val values = listOf(
+                                        dateFmt.format(Date(sale.createdAt)), timeFmt.format(Date(sale.createdAt)), sale.id,
+                                        sale.paymentMethod, item.productName, item.quantity.toString(), item.unitPrice.toString(),
+                                        item.lineTotal.toString(), sale.subtotal.toString(), sale.discount.toString(),
+                                        sale.total.toString(), sale.paid.toString(), sale.change.toString()
+                                    )
+                                    writer.write(values.joinToString(";") { csvCell(it) } + "\\n")
+                                }
+                            }
+                            writer.flush()
+                        }
+                    } ?: error("File tidak dapat dibuat di lokasi pilihan.")
+                    rows.size
+                }.onSuccess { size -> archiveMessage = "Arsip berhasil disimpan: $size transaksi (30 hari)." }
+                    .onFailure { archiveMessage = it.message ?: "Gagal membuat arsip." }
+                archiveBusy = false
+            }
+        }
+    }
     val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale("id", "ID")) }
     val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale("id", "ID")) }
 
@@ -91,6 +145,14 @@ internal fun NativeOrdersScreen(
         Text("Pesanan", color = OrdersNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = OrdersMuted, fontSize = 12.sp)
         Text("Hari ini • ${dateFormatter.format(Date(dayStart))}", color = OrdersMuted, fontSize = 12.sp)
+        Button(
+            onClick = { archiveLauncher.launch("Kasirku_Arsip_30_Hari_${SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(dayStart))}.csv") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !archiveBusy,
+            shape = RoundedCornerShape(12.dp)
+        ) { Text(if (archiveBusy) "Menyiapkan arsip…" else "Unduh arsip 30 hari") }
+        Text("Arsip mencakup 30 hari terakhir sampai hari ini. Data tetap tersimpan di aplikasi.", color = OrdersMuted, fontSize = 11.sp)
+        archiveMessage?.let { Text(it, color = OrdersTeal, fontSize = 12.sp) }
 
         Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
             Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(15.dp)) {
