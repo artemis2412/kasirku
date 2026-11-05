@@ -225,6 +225,11 @@ interface CatalogDao {
         require(sale.paymentMethod in setOf("CASH", "QRIS", "TRANSFER")) {
             "Metode pembayaran tidak dikenali."
         }
+        if (sale.paymentMethod != "CASH") {
+            require(sale.paid == sale.total && sale.change == 0L) {
+                "Pembayaran non-tunai harus sesuai total transaksi."
+            }
+        }
 
         var calculatedSubtotal = 0L
         items.forEach { item ->
