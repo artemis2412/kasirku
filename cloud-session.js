@@ -51,7 +51,7 @@ async function signOut(){
 }
 window.KASIRKU_CLOUD_SESSION={signOut};
 async function restore(){
- if(localStorage.getItem(MARKER)!=="1")return;
+ if(localStorage.getItem(MARKER)!=="1"||sessionStorage.getItem("ksecurity_session"))return;
  try{
   client=await getClient();
   const identity=await validate(client);
