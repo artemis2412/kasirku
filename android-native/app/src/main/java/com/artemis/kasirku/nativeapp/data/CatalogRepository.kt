@@ -13,7 +13,7 @@ data class CatalogProductDraft(
     val categoryId: String? = null,
     val description: String = "",
     val basePrice: Long,
-    val sellingPrice: Long,
+    val sellingPrice: Long?,
     val quantity: Int,
     val photoUri: String? = null,
     val barcodes: List<String> = emptyList()
@@ -59,7 +59,8 @@ class CatalogRepository(
         requireStore(storeId)
         requireBranch(branchId)
         require(draft.name.isNotBlank()) { "Nama produk wajib diisi." }
-        require(draft.basePrice >= 0L && draft.sellingPrice > 0L) { "Harga produk tidak valid." }
+        require(draft.basePrice > 0L) { "Harga dasar wajib lebih dari nol." }
+        require(draft.sellingPrice == null || draft.sellingPrice > 0L) { "Harga jual cabang harus lebih dari nol jika diisi." }
         require(draft.quantity >= 0) { "Stok tidak boleh negatif." }
 
         val productId = draft.id?.takeIf { it.isNotBlank() } ?: UUID.randomUUID().toString()
@@ -114,7 +115,7 @@ class CatalogRepository(
 
         dao.saveProductForBranch(
             product = product,
-            branchPrice = BranchProductPriceEntity(branchId, productId, draft.sellingPrice, now),
+            branchPrice = draft.sellingPrice?.let { BranchProductPriceEntity(branchId, productId, it, now) },
             inventory = BranchInventoryEntity(branchId, productId, draft.quantity, now),
             barcodes = barcodes
         )
