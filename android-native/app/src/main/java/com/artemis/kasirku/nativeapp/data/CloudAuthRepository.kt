@@ -144,11 +144,11 @@ class CloudAuthRepository {
      * Upload one sale through the atomic, idempotent database RPC.
      * The server still enforces the caller's existing tenant RLS policies.
      */
-    suspend fun uploadOrder(payload: OrderSyncPayload) = withContext(Dispatchers.IO) {
+    suspend fun uploadOrder(payload: OrderSyncPayload, allowDelegatedCashier: Boolean = false) = withContext(Dispatchers.IO) {
         val user = client.auth.currentUserOrNull()
             ?: throw SecurityException("Sesi Cloud tidak ditemukan. Silakan masuk kembali.")
-        require(payload.order.createdBy == user.id) {
-            "Kasir transaksi tidak sesuai dengan akun Cloud yang sedang masuk."
+        require(payload.order.createdBy == user.id || allowDelegatedCashier) {
+            "Transaksi kasir lain hanya dapat disinkronkan oleh owner/admin."
         }
         require(payload.order.storeId.isNotBlank() && payload.order.branchId.isNotBlank()) {
             "Identitas toko atau cabang transaksi tidak lengkap."
