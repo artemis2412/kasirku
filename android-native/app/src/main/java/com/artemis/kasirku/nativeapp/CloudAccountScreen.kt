@@ -68,6 +68,7 @@ internal fun CloudAccountScreen(
     var message by remember { mutableStateOf("Masuk menggunakan akun Cloud Kasirku.") }
     var isError by remember { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<String?>(null) }
+    var timeZoneInput by remember { mutableStateOf("") }
 
     fun applyAccess(result: CloudAccountAccess) {
         access = result
@@ -82,6 +83,7 @@ internal fun CloudAccountScreen(
         verifiedContext = if (store != null && branch != null) {
             result.verifiedContext(store.id, branch.id)
         } else null
+        timeZoneInput = verifiedContext?.branchTimeZoneId.orEmpty()
         importSummary = null
         onContextChanged(verifiedContext)
         message = if (verifiedContext != null) {
@@ -178,6 +180,7 @@ internal fun CloudAccountScreen(
                             selectedBranchId = branch.id
                             selectionPrefs.edit().putString("store_id", selectedStore.id).putString("branch_id", branch.id).apply()
                             verifiedContext = access!!.verifiedContext(selectedStore.id, branch.id)
+                            timeZoneInput = verifiedContext?.branchTimeZoneId.orEmpty()
                             onContextChanged(verifiedContext)
                             message = "Akses toko dan cabang berhasil diverifikasi."
                             isError = false
@@ -196,6 +199,45 @@ internal fun CloudAccountScreen(
                         Text(context.storeName, color = AccountNavy, fontWeight = FontWeight.Bold)
                         Text(context.branchName + " • " + context.role.name.lowercase(), color = AccountMuted, fontSize = 12.sp)
                         Text("Akses harga modal/laba: " + if (context.role.canViewCostAndProfit()) "Owner" else "Tidak diizinkan", color = AccountMuted, fontSize = 12.sp)
+                        Text(
+                            "Zona waktu cabang: " + (context.branchTimeZoneId ?: "Belum diatur"),
+                            color = if (context.branchTimeZoneId.isNullOrBlank()) Color(0xFFB54708) else AccountMuted,
+                            fontSize = 12.sp
+                        )
+                        if (context.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER ||
+                            context.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
+                        ) {
+                            OutlinedTextField(
+                                value = timeZoneInput,
+                                onValueChange = { timeZoneInput = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("Zona waktu IANA cabang") },
+                                placeholder = { Text("Contoh: Asia/Makassar") },
+                                singleLine = true
+                            )
+                            Text("Gunakan zona waktu lokasi toko, bukan pengaturan HP kasir.", color = AccountMuted, fontSize = 11.sp)
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        busy = true
+                                        runCatching {
+                                            repository.setBranchTimeZone(context.storeId, context.branchId, timeZoneInput)
+                                        }.onSuccess { updated ->
+                                            applyAccess(updated)
+                                            message = "Zona waktu cabang berhasil disimpan."
+                                            isError = false
+                                        }.onFailure {
+                                            message = it.message ?: "Gagal menyimpan zona waktu cabang."
+                                            isError = true
+                                        }
+                                        busy = false
+                                    }
+                                },
+                                enabled = !busy && timeZoneInput.isNotBlank(),
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(13.dp)
+                            ) { Text(if (busy) "Menyimpan…" else "Simpan zona waktu cabang") }
+                        }
                     }
                 }
             }
