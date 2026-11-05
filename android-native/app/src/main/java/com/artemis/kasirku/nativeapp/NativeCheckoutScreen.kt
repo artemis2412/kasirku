@@ -155,12 +155,12 @@ internal fun NativeCheckoutScreen(
         }
         printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
         Text("Pilih produk", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
-        products.filter { it.name.contains(search, ignoreCase = true) }.forEach { product ->
+        products.filter { it.activeSellingPrice != null && it.name.contains(search, ignoreCase = true) }.forEach { product ->
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(13.dp)) {
                 Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(product.name, color = Color(0xFF17324D), fontWeight = FontWeight.SemiBold)
-                        Text("Rp " + product.activeSellingPrice.toString() + " • Stok " + product.branchQuantity, color = Color(0xFF718096), fontSize = 12.sp)
+                        Text("Rp " + (product.activeSellingPrice ?: 0L).toString() + " • Stok " + product.branchQuantity, color = Color(0xFF718096), fontSize = 12.sp)
                     }
                     Spacer(Modifier.width(8.dp))
                     Button(
@@ -168,7 +168,7 @@ internal fun NativeCheckoutScreen(
                             val old = cart[product.id]
                             val current = old?.quantity ?: 0
                             if (current < product.branchQuantity) {
-                                cart[product.id] = CartEntry(product.id, product.name, product.activeSellingPrice, product.branchQuantity, current + 1)
+                                cart[product.id] = CartEntry(product.id, product.name, product.activeSellingPrice ?: 0L, product.branchQuantity, current + 1)
                                 error = null
                             } else error = "Stok produk tidak mencukupi."
                         },
