@@ -167,8 +167,8 @@ interface CatalogDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun enqueueSaleSync(item: SaleSyncOutboxEntity)
 
-    @Query("SELECT * FROM sale_sync_outbox WHERE status IN ('PENDING', 'RETRY') ORDER BY createdAt ASC")
-    suspend fun getPendingSaleSync(): List<SaleSyncOutboxEntity>
+    @Query("SELECT * FROM sale_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY') ORDER BY createdAt ASC")
+    suspend fun getPendingSaleSync(storeId: String, branchId: String): List<SaleSyncOutboxEntity>
 
     @Query("SELECT COUNT(*) FROM sale_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY')")
     fun observePendingSaleSyncCount(storeId: String, branchId: String): Flow<Int>
@@ -182,11 +182,11 @@ interface CatalogDao {
     """)
     fun observeSaleSyncQueue(storeId: String, branchId: String): Flow<List<SaleSyncOutboxEntity>>
 
-    @Query("UPDATE sale_sync_outbox SET status = :status, attempts = attempts + 1, lastError = :error, updatedAt = :updatedAt WHERE saleId = :saleId")
-    suspend fun updateSaleSyncStatus(saleId: String, status: String, error: String?, updatedAt: Long)
+    @Query("UPDATE sale_sync_outbox SET status = :status, attempts = attempts + 1, lastError = :error, updatedAt = :updatedAt WHERE saleId = :saleId AND storeId = :storeId AND branchId = :branchId")
+    suspend fun updateSaleSyncStatus(storeId: String, branchId: String, saleId: String, status: String, error: String?, updatedAt: Long): Int
 
-    @Query("UPDATE sale_sync_outbox SET status = 'SYNCED', lastError = NULL, updatedAt = :updatedAt WHERE saleId = :saleId")
-    suspend fun markSaleSynced(saleId: String, updatedAt: Long)
+    @Query("UPDATE sale_sync_outbox SET status = 'SYNCED', lastError = NULL, updatedAt = :updatedAt WHERE saleId = :saleId AND storeId = :storeId AND branchId = :branchId")
+    suspend fun markSaleSynced(storeId: String, branchId: String, saleId: String, updatedAt: Long): Int
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSale(sale: SaleEntity)
