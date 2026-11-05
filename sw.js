@@ -1,4 +1,4 @@
-const CACHE_VERSION="kasirku-v32-login-caption-supervisor";
+const CACHE_VERSION="kasirku-v33-dashboard-greeting";
 const APP_FILES=["./","./index.html","./style.css","./mobile-layout-fixes.css","./mobile-drawer.css","./welcome.css","./app.js","./branch-storage.js","./cloud-panel.js","./cloud-bridge.js","./cloud-auth.js","./cloud-session.js","./auth.js","./cloud-catalog-sync.js","./update-checker.js","./manifest.json","./assets/table-icon.svg","./assets/kasirku-mark.svg","./assets/kasirku-full-logo.webp","./assets/kasirku-icons.webp"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE_VERSION).then(cache=>cache.addAll(APP_FILES)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith("kasirku-")&&k!==CACHE_VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
