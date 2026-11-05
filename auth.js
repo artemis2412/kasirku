@@ -138,7 +138,21 @@ async function startLinkedCloudSession({userId,pin}){
  if(await hash(u.salt,pinValue)!==u.hash)throw new Error("PIN perangkat salah.");
  sessionStorage.setItem("ksecurity_session",String(u.id));startSession(u);return u;
 }
-window.KASIRKU_AUTH={enrollVerifiedCloudUser,startLinkedCloudSession,getLocalUsers:()=>read().map(({id,name,role,active})=>({id,name,role,active}))};
+async function linkExistingLocalUser({localId,userId,email,role,pin}){
+ const cloudId=String(userId||"").trim(),id=String(localId||"").trim(),cloudEmail=String(email||"").trim().toLowerCase(),cloudRole=String(role||"").toLowerCase(),pinValue=String(pin||"");
+ if(!cloudId||!id||!["owner","admin","cashier"].includes(cloudRole)||!/^\\d{6}$/.test(pinValue))throw new Error("Data pengaitan tidak valid.");
+ const rows=read(),u=rows.find(x=>String(x.id)===id&&x.active!==false);
+ if(!u)throw new Error("Akun lokal lama tidak ditemukan atau tidak aktif.");
+ if(u.role!==cloudRole)throw new Error("Peran akun lokal tidak sama dengan peran akun Cloud.");
+ const current=(()=>{try{return JSON.parse(localStorage.getItem(cloudIdentityKey(id))||"null")}catch{return null}})();
+ if(current&&current.userId!==cloudId)throw new Error("Akun PIN ini sudah terhubung ke akun Cloud lain.");
+ for(const other of rows){if(String(other.id)===id)continue;try{if(JSON.parse(localStorage.getItem(cloudIdentityKey(other.id))||"null")?.userId===cloudId)throw new Error("Akun Cloud ini sudah terhubung ke akun PIN lain.");}catch(error){if(error instanceof Error&&error.message.includes("sudah terhubung"))throw error;}}
+ if(await hash(u.salt,pinValue)!==u.hash)throw new Error("PIN lokal lama salah.");
+ localStorage.setItem(cloudIdentityKey(id),JSON.stringify({userId:cloudId,email:cloudEmail,role:cloudRole,linkedAt:new Date().toISOString()}));
+ sessionStorage.setItem("ksecurity_session",id);startSession(u);audit("Akun lokal lama ditautkan ke Cloud","Akun "+u.name+" ("+cloudRole+")");
+ return u;
+}
+window.KASIRKU_AUTH={enrollVerifiedCloudUser,startLinkedCloudSession,linkExistingLocalUser,getLocalUsers:()=>read().map(({id,name,role,active})=>({id,name,role,active}))};
 function publishLocalSession(){try{window.dispatchEvent(new CustomEvent("kasirku:local-session",{detail:user?{id:String(user.id),name:String(user.name||""),role:String(user.role||"").toLowerCase()}:null}))}catch(e){}}
 function startSession(u){user=u;publishLocalSession();const assigned=Array.isArray(u.branchIds)?u.branchIds:(u.branchId?[u.branchId]:[]);if(!["owner","admin"].includes(u.role)&&assigned.length){const current=localStorage.getItem(ACTIVE_BRANCH_KEY);if(!assigned.includes(current))localStorage.setItem(ACTIVE_BRANCH_KEY,assigned[0])}document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();document.querySelector(".topbar")?.appendChild(b);reset();apply()}
 function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u)startSession(u);else{sessionStorage.removeItem("ksecurity_session");login()}}
