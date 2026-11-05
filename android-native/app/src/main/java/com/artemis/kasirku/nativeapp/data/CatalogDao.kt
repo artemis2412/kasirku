@@ -80,6 +80,15 @@ interface CatalogDao {
     """)
     suspend fun deactivateProduct(storeId: String, productId: String, updatedAt: Long): Int
 
+    @Query("SELECT COUNT(*) FROM catalog_products WHERE storeId = :storeId AND isActive = 1")
+    fun observeActiveProductCount(storeId: String): Flow<Int>
+
+    @Query("SELECT COALESCE(SUM(quantity), 0) FROM branch_inventory WHERE branchId = :branchId")
+    fun observeBranchStockTotal(branchId: String): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM branch_inventory WHERE branchId = :branchId AND quantity <= :threshold")
+    fun observeLowStockCount(branchId: String, threshold: Int = 5): Flow<Int>
+
     @Query("SELECT * FROM catalog_products WHERE id = :productId LIMIT 1")
     suspend fun getProduct(productId: String): ProductEntity?
 
