@@ -9,9 +9,55 @@ as $$
 declare
   v_order_id uuid;
 begin
+  if auth.uid() is null then
+    raise exception 'Harus login terlebih dahulu';
+  end if;
+
   if jsonb_typeof(p_order) <> 'object' or jsonb_typeof(p_items) <> 'array'
      or jsonb_array_length(p_items) = 0 then
     raise exception 'Payload transaksi tidak valid';
+  end if;
+
+  -- Do not allow an authenticated branch member to attribute a sale to another user.
+  if nullif(p_order->>'created_by', '')::uuid is distinct from auth.uid() then
+    raise exception 'Kasir transaksi tidak sesuai akun yang login';
+  end if;
+
+  if nullif(p_order->>'store_id', '') is null
+     or nullif(p_order->>'branch_id', '') is null
+     or nullif(p_order->>'local_id', '') is null then
+    raise exception 'Identitas toko, cabang, atau transaksi tidak lengkap';
+  end if;
+
+  if coalesce((p_order->>'subtotal')::numeric, -1) < 0
+     or coalesce((p_order->>'discount_amount')::numeric, -1) < 0
+     or coalesce((p_order->>'total')::numeric, -1) <= 0
+     or (p_order->>'total')::numeric <>
+        (p_order->>'subtotal')::numeric - coalesce((p_order->>'discount_amount')::numeric, 0)
+     or coalesce((p_order->>'paid_amount')::numeric, -1) < (p_order->>'total')::numeric
+     or coalesce((p_order->>'change_amount')::numeric, -1) <>
+        (p_order->>'paid_amount')::numeric - (p_order->>'total')::numeric then
+    raise exception 'Nominal transaksi tidak valid';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_items) as item
+    where jsonb_typeof(item) <> 'object'
+       or coalesce((item->>'quantity')::numeric, 0) <= 0
+       or coalesce((item->>'unit_price')::numeric, -1) < 0
+       or coalesce((item->>'line_total')::numeric, -1) < 0
+       or (item->>'line_total')::numeric <>
+          (item->>'quantity')::numeric * (item->>'unit_price')::numeric
+  ) then
+    raise exception 'Rincian transaksi tidak valid';
+  end if;
+
+  if (
+    select coalesce(sum((item->>'line_total')::numeric), 0)
+    from jsonb_array_elements(p_items) as item
+  ) <> (p_order->>'subtotal')::numeric then
+    raise exception 'Subtotal tidak cocok dengan rincian transaksi';
   end if;
 
   insert into public.orders (
