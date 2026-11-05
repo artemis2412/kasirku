@@ -24,34 +24,6 @@ async function getIsolatedCloudClient(){
   }
   return cloudAuthClient;
 }
-async function linkLocalCloudIdentity(){
-  const local=getLocalPinSession();
-  if(!local)throw new Error("Sesi PIN lokal tidak ditemukan.");
-  const client=await getIsolatedCloudClient();
-  const {data:{session},error:sessionError}=await client.auth.getSession();
-  if(sessionError)throw sessionError;
-  if(!session?.user)throw new Error("Akun Cloud belum login.");
-  const {data:memberships,error}=await client.from("store_memberships")
-    .select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
-  if(error)throw error;
-  if(!memberships?.length)throw new Error("Keanggotaan Cloud aktif tidak ditemukan.");
-  if(memberships.length!==1)throw new Error("Akun Cloud memiliki lebih dari satu keanggotaan toko. Pengaitan ditahan.");
-  const expected=local.role==="owner"?"owner":local.role==="admin"?"admin":"cashier";
-  const actual=String(memberships[0].role||"").toLowerCase();
-  if(actual!==expected)throw new Error("Peran tidak cocok: PIN lokal "+expected+" tetapi akun Cloud "+actual+". Pengaitan dibatalkan.");
-  const linkKey="kasirku_cloud_identity_link_v1:"+encodeURIComponent(local.id);
-  const old=(()=>{try{return JSON.parse(localStorage.getItem(linkKey)||"null")}catch{return null}})();
-  if(old&&old.userId!==session.user.id)throw new Error("Akun PIN ini sudah ditautkan ke akun Cloud lain.");
-  const users=(()=>{try{return JSON.parse(localStorage.getItem("ksecurity_users")||"[]")}catch{return []}})();
-  for(const other of users){
-    if(!other?.id||String(other.id)===local.id)continue;
-    const otherLink=(()=>{try{return JSON.parse(localStorage.getItem("kasirku_cloud_identity_link_v1:"+encodeURIComponent(String(other.id))||"null"))}catch{return null}})();
-    if(otherLink?.userId===session.user.id)throw new Error("Akun Cloud ini sudah ditautkan ke akun PIN lain pada perangkat ini.");
-  }
-  localStorage.setItem(linkKey,JSON.stringify({userId:session.user.id,email:String(session.user.email||"").toLowerCase(),role:actual,linkedAt:new Date().toISOString()}));
-  if(window.KASIRKU_CLOUD?.refresh)await window.KASIRKU_CLOUD.refresh();
-  return true;
-}
 function ensureCloudBridge(){
   if(typeof window.KASIRKU_CLOUD?.refresh==="function")return Promise.resolve();
   return new Promise((resolve,reject)=>{
