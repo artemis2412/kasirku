@@ -8,7 +8,7 @@ data class CheckoutLine(
     val quantity: Int,
     val unitPrice: Long
 ) {
-    val lineTotal: Long get() = quantity.toLong() * unitPrice
+    val lineTotal: Long get() = Math.multiplyExact(quantity.toLong(), unitPrice)
 }
 
 data class CheckoutResult(
@@ -28,7 +28,8 @@ class SalesRepository(private val dao: CatalogDao) {
         require(lines.isNotEmpty()) { "Keranjang masih kosong." }
         require(lines.all { it.quantity > 0 && it.unitPrice > 0L }) { "Isi keranjang tidak valid." }
         require(discount >= 0L) { "Diskon tidak valid." }
-        val subtotal = lines.sumOf { it.lineTotal }
+        require(paymentMethod.isNotBlank()) { "Metode pembayaran wajib ditentukan." }
+        val subtotal = lines.fold(0L) { total, line -> Math.addExact(total, line.lineTotal) }
         require(discount <= subtotal) { "Diskon melebihi subtotal." }
         val total = subtotal - discount
         require(total > 0L) { "Total transaksi harus lebih dari nol." }
@@ -45,7 +46,7 @@ class SalesRepository(private val dao: CatalogDao) {
             total = total,
             paid = paid,
             change = paid - total,
-            paymentMethod = paymentMethod,
+            paymentMethod = paymentMethod.trim().uppercase(),
             createdAt = now
         )
         val items = lines.map { line ->
