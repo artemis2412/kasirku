@@ -50,3 +50,24 @@ data class BranchInventoryEntity(
 data class ProductBarcodeEntity(
     @PrimaryKey val id: String, val storeId: String, val productId: String, val barcode: String, val createdAt: Long
 )
+
+
+/**
+ * Read model returned by CatalogDao.observeBranchCatalog.
+ * Selling price and stock are resolved for the selected branch.
+ */
+data class BranchCatalogRow(
+    val id: String,
+    val storeId: String,
+    val categoryId: String?,
+    val name: String,
+    val description: String,
+    val basePrice: Long,
+    val photoUri: String?,
+    val legacySourceId: Long?,
+    val isActive: Boolean,
+    val createdAt: Long,
+    val updatedAt: Long,
+    @androidx.room.ColumnInfo(name = "activeSellingPrice") val activeSellingPrice: Long,
+    @androidx.room.ColumnInfo(name = "branchQuantity") val branchQuantity: Int
+)
