@@ -267,8 +267,13 @@ interface CatalogDao {
     """)
     fun observeSoldQuantity(storeId: String, branchId: String, startAt: Long, endAt: Long): Flow<Int>
 
-    @Query("SELECT * FROM sale_items WHERE saleId = :saleId ORDER BY productName COLLATE NOCASE")
-    suspend fun getSaleItems(saleId: String): List<SaleItemEntity>
+    @Query("""
+        SELECT i.* FROM sale_items AS i
+        INNER JOIN sales AS s ON s.id = i.saleId
+        WHERE i.saleId = :saleId AND s.storeId = :storeId AND s.branchId = :branchId
+        ORDER BY i.productName COLLATE NOCASE
+    """)
+    suspend fun getSaleItems(storeId: String, branchId: String, saleId: String): List<SaleItemEntity>
 
     @Query("""
         SELECT COUNT(*) FROM sales
