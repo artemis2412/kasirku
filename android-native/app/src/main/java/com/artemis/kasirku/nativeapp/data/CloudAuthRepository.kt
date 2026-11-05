@@ -161,6 +161,23 @@ class CloudAuthRepository {
         )
     }
 
+    suspend fun setBranchTimeZone(
+        storeId: String,
+        branchId: String,
+        timeZoneId: String
+    ): CloudAccountAccess = withContext(Dispatchers.IO) {
+        require(timeZoneId.isNotBlank()) { "Zona waktu wajib diisi." }
+        client.postgrest.rpc(
+            function = "set_branch_timezone",
+            parameters = buildJsonObject {
+                put("p_store_id", storeId)
+                put("p_branch_id", branchId)
+                put("p_timezone_id", timeZoneId.trim())
+            }
+        )
+        loadAuthorizedAccess()
+    }
+
     suspend fun signOut() = withContext(Dispatchers.IO) {
         client.auth.signOut()
     }
