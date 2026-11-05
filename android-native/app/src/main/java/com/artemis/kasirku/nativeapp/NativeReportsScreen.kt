@@ -29,6 +29,11 @@ private val ReportNavy = Color(0xFF17324D)
 private val ReportTeal = Color(0xFF168C83)
 private val ReportMuted = Color(0xFF718096)
 private fun reportMoney(value: Long) = value.toString().reversed().chunked(3).joinToString(".").reversed()
+private fun reportCsvCell(value: String): String {
+    val guarded = if (value.firstOrNull() in listOf('=', '+', '-', '@', '\\t', '\\r')) "'$value" else value
+    val escaped = guarded.replace("\"", "\"\"")
+    return if (escaped.contains(';') || escaped.contains('\"') || escaped.contains('\\n')) "\"$escaped\"" else escaped
+}
 
 @Composable
 internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifier = Modifier) {
