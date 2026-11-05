@@ -222,7 +222,9 @@ interface CatalogDao {
         require(sale.paid >= sale.total && sale.change == sale.paid - sale.total) {
             "Pembayaran atau uang kembalian tidak valid."
         }
-        require(sale.paymentMethod.isNotBlank()) { "Metode pembayaran wajib ditentukan." }
+        require(sale.paymentMethod in setOf("CASH", "QRIS", "TRANSFER")) {
+            "Metode pembayaran tidak dikenali."
+        }
 
         var calculatedSubtotal = 0L
         items.forEach { item ->
@@ -238,6 +240,9 @@ interface CatalogDao {
             val product = getProduct(item.productId)
             require(product != null && product.storeId == sale.storeId && product.isActive) {
                 "Produk tidak tersedia di toko aktif."
+            }
+            require(item.productName == product.name) {
+                "Nama produk pada transaksi tidak sesuai katalog."
             }
             val branchPrice = getBranchPrice(sale.branchId, item.productId)
             val expectedPrice = branchPrice?.sellingPrice ?: product.basePrice
