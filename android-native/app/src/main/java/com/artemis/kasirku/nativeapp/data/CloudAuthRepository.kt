@@ -147,7 +147,7 @@ class CloudAuthRepository {
                 }
             }.decodeList<BranchDto>().filter { it.isActive }
 
-            val allowedBranches = if (role == StoreRole.OWNER) {
+            val allowedBranches = if (role == StoreRole.OWNER || role == StoreRole.ADMIN) {
                 activeBranches
             } else {
                 val assignments = client.from("branch_memberships").select {
