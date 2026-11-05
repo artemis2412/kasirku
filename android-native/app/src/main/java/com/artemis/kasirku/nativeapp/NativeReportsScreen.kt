@@ -16,14 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
+import com.artemis.kasirku.nativeapp.data.BranchTime
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 private val ReportNavy = Color(0xFF17324D)
 private val ReportTeal = Color(0xFF168C83)
@@ -44,12 +41,13 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
     val scope = rememberCoroutineScope()
     var exporting by remember { mutableStateOf(false) }
     var exportMessage by remember { mutableStateOf<String?>(null) }
-    val endAt = remember(period) { Calendar.getInstance().apply {
-        timeInMillis = System.currentTimeMillis()
-        add(Calendar.DAY_OF_YEAR, 1)
-        set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-    }.timeInMillis }
-    val startAt = remember(period, endAt) { Calendar.getInstance().apply { timeInMillis = endAt; add(Calendar.DAY_OF_YEAR, -period) }.timeInMillis }
+    val branchZone = remember(tenant.branchTimeZoneId) { BranchTime.zoneId(tenant) }
+    val endAt = remember(branchZone) {
+        BranchTime.startOfDayOffset(BranchTime.startOfToday(branchZone), 1, branchZone)
+    }
+    val startAt = remember(period, endAt, branchZone) {
+        BranchTime.startOfDayOffset(endAt, -period.toLong(), branchZone)
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri: Uri? ->
         if (uri != null) scope.launch {
@@ -60,10 +58,8 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
                 context.contentResolver.openOutputStream(uri)?.use { output ->
                     OutputStreamWriter(output, Charsets.UTF_8).use { writer ->
                         writer.write("\uFEFFTanggal;Jam;ID Transaksi;Kasir;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\n")
-                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
                         rows.forEach { (sale, items) -> items.forEach { item ->
-                            val values = listOf(dateFormat.format(Date(sale.createdAt)), timeFormat.format(Date(sale.createdAt)), sale.id, sale.cashierUserId, sale.paymentMethod, item.productName, item.quantity.toString(), item.unitPrice.toString(), item.lineTotal.toString(), sale.subtotal.toString(), sale.discount.toString(), sale.total.toString(), sale.paid.toString(), sale.change.toString())
+                            val values = listOf(BranchTime.format(sale.createdAt, "yyyy-MM-dd", branchZone), BranchTime.format(sale.createdAt, "HH:mm:ss", branchZone), sale.id, sale.cashierUserId, sale.paymentMethod, item.productName, item.quantity.toString(), item.unitPrice.toString(), item.lineTotal.toString(), sale.subtotal.toString(), sale.discount.toString(), sale.total.toString(), sale.paid.toString(), sale.change.toString())
                             writer.write(values.joinToString(";") { reportCsvCell(it) } + "\n")
                         } }
                         writer.flush()
