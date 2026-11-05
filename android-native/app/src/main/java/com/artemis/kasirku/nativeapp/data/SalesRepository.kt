@@ -76,4 +76,9 @@ class SalesRepository(private val dao: CatalogDao) {
         require(saleId.isNotBlank()) { "Transaksi tidak valid." }
         return dao.getSaleItems(saleId)
     }
+
+    suspend fun exportRows(tenant: VerifiedTenantContext, startAt: Long, endAt: Long): List<Pair<SaleEntity, List<SaleItemEntity>>> {
+        val sales = dao.getSalesRange(tenant.storeId, tenant.branchId, startAt, endAt)
+        return sales.map { sale -> sale to dao.getSaleItems(sale.id) }
+    }
 }
