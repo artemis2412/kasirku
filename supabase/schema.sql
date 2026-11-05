@@ -434,6 +434,7 @@ begin
   end if;
 
   if nullif(p_order->>'order_number', '') is null
+     or p_order->>'payment_method' is null
      or p_order->>'payment_method' not in ('CASH', 'QRIS', 'TRANSFER') then
     raise exception 'Nomor atau metode pembayaran transaksi tidak valid';
   end if;
