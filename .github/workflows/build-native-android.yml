@@ -52,6 +52,14 @@ jobs:
       - name: Run unit tests
         run: gradle -p android-native testDebugUnitTest
 
+      - name: Run Room instrumentation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          script: gradle -p android-native connectedDebugAndroidTest
+
       - name: Build debug APK
         run: gradle -p android-native assembleDebug
 
