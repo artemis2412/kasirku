@@ -4,30 +4,23 @@
 // Preview only. This screen is intentionally isolated from the live POS
 // until cloud identity, branch mapping, and local-data migration are tested.
 const cfg = window.KASIRKU_SUPABASE_CONFIG;
-let cloudAuthClient=null, cloudAuthLocalId=null;
-function getLocalPinSession(){
-  try{
-    const id=localStorage.getItem("ksecurity_session");
-    const users=JSON.parse(localStorage.getItem("ksecurity_users")||"[]");
-    const u=Array.isArray(users)?users.find(x=>String(x?.id)===String(id)&&x?.active!==false):null;
-    return u?{id:String(u.id),name:String(u.name||""),role:String(u.role||"").toLowerCase()}:null;
-  }catch{return null}
+let cloudAuthClient=null;
+const CLOUD_AUTH_PREFIX="kasirku_cloud_auth_v1:";
+function cloudAuthStorage(){
+  const legacyId=(()=>{try{return sessionStorage.getItem("ksecurity_session")||localStorage.getItem("ksecurity_session")}catch{return null}})();
+  const legacyPrefix=legacyId?"kasirku_supabase_auth_v1:"+encodeURIComponent(String(legacyId))+":":null;
+  return {
+    getItem:async key=>{const current=localStorage.getItem(CLOUD_AUTH_PREFIX+key);if(current!==null)return current;return legacyPrefix?localStorage.getItem(legacyPrefix+key):null},
+    setItem:async(key,value)=>localStorage.setItem(CLOUD_AUTH_PREFIX+key,value),
+    removeItem:async key=>{localStorage.removeItem(CLOUD_AUTH_PREFIX+key);if(legacyPrefix)localStorage.removeItem(legacyPrefix+key)}
+  };
 }
 async function getIsolatedCloudClient(){
-  const local=getLocalPinSession();
-  if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu.");
   await loadSdk();
-  if(!cloudAuthClient||cloudAuthLocalId!==local.id){
-    const prefix="kasirku_supabase_auth_v1:"+encodeURIComponent(local.id)+":";
-    const storage={
-      getItem:async key=>localStorage.getItem(prefix+key),
-      setItem:async(key,value)=>localStorage.setItem(prefix+key,value),
-      removeItem:async key=>localStorage.removeItem(prefix+key)
-    };
+  if(!cloudAuthClient){
     cloudAuthClient=window.supabase.createClient(cfg.url,cfg.publishableKey,{
-      auth:{storage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+      auth:{storage:cloudAuthStorage(),persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
     });
-    cloudAuthLocalId=local.id;
   }
   return cloudAuthClient;
 }
