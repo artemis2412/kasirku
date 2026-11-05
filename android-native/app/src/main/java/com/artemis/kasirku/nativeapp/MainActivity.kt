@@ -1,8 +1,14 @@
 package com.artemis.kasirku.nativeapp
 
+import android.content.Intent
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,10 +21,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,20 +35,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,14 +93,16 @@ private fun KasirkuNativeApp() {
             surface = Color.White,
             onPrimary = Color.White,
             onBackground = Navy,
-            onSurface = Navy
+            onSurface = Navy,
+            secondaryContainer = Color(0xFFE5F1F0),
+            onSecondaryContainer = Teal
         )
     ) {
         Surface(modifier = Modifier.fillMaxSize(), color = Canvas) {
             Scaffold(
                 containerColor = Canvas,
                 bottomBar = {
-                    NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
+                    NavigationBar(containerColor = Color.White, tonalElevation = 2.dp) {
                         KasirkuTab.values().forEachIndexed { index, tab ->
                             NavigationBarItem(
                                 selected = selectedTab == index && !showNewTransaction,
@@ -110,11 +129,7 @@ private fun KasirkuNativeApp() {
                         onNewTransaction = { showNewTransaction = true },
                         onOpenTab = { selectedTab = it }
                     )
-                    selectedTab == 1 -> SimpleFeatureScreen(
-                        title = "Produk",
-                        description = "Tempat mengelola daftar barang, harga jual, stok, barcode, dan kategori.",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    selectedTab == 1 -> ProductsScreen(modifier = Modifier.padding(innerPadding))
                     selectedTab == 2 -> SimpleFeatureScreen(
                         title = "Pesanan",
                         description = "Daftar pesanan dan transaksi harian akan ditampilkan di sini.",
@@ -138,11 +153,8 @@ private fun DashboardScreen(
     onOpenTab: (Int) -> Unit
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 18.dp)
-            .padding(top = 18.dp, bottom = 22.dp),
+        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp).padding(top = 18.dp, bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -152,21 +164,15 @@ private fun DashboardScreen(
                 Text("Selamat datang!", color = Navy, fontSize = 21.sp, fontWeight = FontWeight.Bold)
                 Text("Ringkasan tokomu hari ini", color = Muted, fontSize = 13.sp)
             }
-            Box(
-                modifier = Modifier.size(46.dp).background(Color(0xFFE5F1F0), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.size(46.dp).background(Color(0xFFE5F1F0), CircleShape), contentAlignment = Alignment.Center) {
                 Text("T", color = Teal, fontSize = 19.sp, fontWeight = FontWeight.Bold)
             }
         }
-
         SalesSummaryCard()
-
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             MetricCard("Transaksi", "0", "Hari ini", "▤", Modifier.weight(1f))
             MetricCard("Produk", "0", "Terdaftar", "▦", Modifier.weight(1f))
         }
-
         Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
             SectionHeading("Menu cepat", "Akses fitur utama")
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -178,22 +184,14 @@ private fun DashboardScreen(
                 QuickAction("▥", "Laporan", "Lihat penjualan", Modifier.weight(1f), onClick = { onOpenTab(3) })
             }
         }
-
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             SectionHeading("Aktivitas terbaru", "Transaksi terakhir")
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(18.dp)) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier.size(48.dp).background(Canvas, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.size(48.dp).background(Canvas, CircleShape), contentAlignment = Alignment.Center) {
                         Text("▤", color = Muted, fontSize = 22.sp)
                     }
                     Spacer(Modifier.height(10.dp))
@@ -203,31 +201,18 @@ private fun DashboardScreen(
                 }
             }
         }
-
-        Text(
-            "Kasirku Native • Versi 0.2.0",
-            color = Muted,
-            fontSize = 11.sp,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
+        Text("Kasirku Native • Versi 0.3.0", color = Muted, fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
     }
 }
 
 @Composable
 private fun SalesSummaryCard() {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Navy),
-        shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(13.dp)
-        ) {
+    Card(colors = CardDefaults.cardColors(containerColor = Navy), shape = RoundedCornerShape(22.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("PENJUALAN HARI INI", color = Color(0xFFD3DFE9), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
                 Spacer(Modifier.weight(1f))
-                Text("● LIVE", color = Color(0xFF8DE0C9), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("HARI INI", color = Color(0xFF8DE0C9), fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
             Text("Rp0", color = Color.White, fontSize = 31.sp, fontWeight = FontWeight.Bold)
             Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF3A5268)))
@@ -246,19 +231,8 @@ private fun SalesSummaryCard() {
 }
 
 @Composable
-private fun MetricCard(
-    title: String,
-    value: String,
-    subtitle: String,
-    symbol: String,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
+private fun MetricCard(title: String, value: String, subtitle: String, symbol: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(18.dp)) {
         Column(modifier = Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(symbol, color = Teal, fontSize = 20.sp)
             Text(value, color = Navy, fontSize = 23.sp, fontWeight = FontWeight.Bold)
@@ -286,18 +260,265 @@ private fun QuickAction(
     onClick: () -> Unit
 ) {
     val background = if (emphasized) Color(0xFFE8F4F2) else Color.White
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = background),
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
+    Card(modifier = modifier.clickable(onClick = onClick), colors = CardDefaults.cardColors(containerColor = background), shape = RoundedCornerShape(18.dp)) {
         Column(modifier = Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Text(symbol, color = if (emphasized) Teal else Navy, fontSize = 23.sp, fontWeight = FontWeight.Bold)
             Text(title, color = Navy, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(subtitle, color = Muted, fontSize = 11.sp)
         }
     }
+}
+
+@Composable
+private fun ProductsScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val database = remember { ProductDatabase(context.applicationContext) }
+    val products = remember { mutableStateListOf<KasirkuProduct>() }
+    var search by remember { mutableStateOf("") }
+    var editingProduct by remember { mutableStateOf<KasirkuProduct?>(null) }
+    var showForm by remember { mutableStateOf(false) }
+    var deleteTarget by remember { mutableStateOf<KasirkuProduct?>(null) }
+
+    fun refreshProducts() {
+        products.clear()
+        products.addAll(database.getAllProducts())
+    }
+
+    LaunchedEffect(Unit) { refreshProducts() }
+
+    val filteredProducts = products.filter {
+        it.name.contains(search, ignoreCase = true) ||
+            it.category.contains(search, ignoreCase = true) ||
+            it.barcode.contains(search, ignoreCase = true)
+    }
+
+    Column(
+        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp).padding(top = 18.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(15.dp)
+    ) {
+        Column {
+            Text("KELOLA TOKO", color = Teal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            Text("Produk", color = Navy, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text("Atur barang, harga, dan persediaan tokomu.", color = Muted, fontSize = 13.sp)
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ProductStatCard("Total produk", products.size.toString(), Modifier.weight(1f))
+            ProductStatCard("Total stok", products.sumOf { it.stock }.toString(), Modifier.weight(1f))
+        }
+
+        OutlinedTextField(
+            value = search,
+            onValueChange = { search = it },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            placeholder = { Text("Cari nama, kategori, barcode...") },
+            leadingIcon = { Text("⌕", color = Muted, fontSize = 22.sp) },
+            shape = RoundedCornerShape(14.dp)
+        )
+
+        Button(
+            onClick = { editingProduct = null; showForm = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Text("+  Tambah produk", modifier = Modifier.padding(vertical = 4.dp), fontWeight = FontWeight.Bold)
+        }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Daftar produk", color = Navy, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("${filteredProducts.size} barang", color = Muted, fontSize = 12.sp)
+        }
+
+        if (filteredProducts.isEmpty()) {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(18.dp)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("▦", color = Teal, fontSize = 34.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(if (search.isBlank()) "Belum ada produk" else "Produk tidak ditemukan", color = Navy, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (search.isBlank()) "Tambahkan barang pertama tokomu." else "Coba kata pencarian yang lain.",
+                        color = Muted,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        } else {
+            filteredProducts.forEach { product ->
+                ProductCard(
+                    product = product,
+                    onEdit = { editingProduct = product; showForm = true },
+                    onDelete = { deleteTarget = product }
+                )
+            }
+        }
+    }
+
+    if (showForm) {
+        ProductFormDialog(
+            product = editingProduct,
+            onDismiss = { showForm = false },
+            onSave = { product ->
+                database.saveProduct(product)
+                refreshProducts()
+                showForm = false
+            }
+        )
+    }
+
+    deleteTarget?.let { product ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text("Hapus produk?") },
+            text = { Text("Produk \"${product.name}\" akan dihapus dari perangkat ini.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    database.deleteProduct(product.id)
+                    refreshProducts()
+                    deleteTarget = null
+                }) { Text("Hapus", color = Color(0xFFB42318)) }
+            },
+            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Batal") } }
+        )
+    }
+}
+
+@Composable
+private fun ProductStatCard(title: String, value: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
+        Column(modifier = Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Text(value, color = Navy, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+            Text(title, color = Muted, fontSize = 11.sp)
+        }
+    }
+}
+
+@Composable
+private fun ProductCard(product: KasirkuProduct, onEdit: () -> Unit, onDelete: () -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(17.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(13.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ProductPhoto(product.photoUri, Modifier.size(66.dp))
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(product.name, color = Navy, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(product.category.ifBlank { "Tanpa kategori" }, color = Muted, fontSize = 11.sp)
+                Text("Rp ${product.sellingPrice}", color = Teal, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                Text("Stok: ${product.stock}", color = Muted, fontSize = 11.sp)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = onEdit) { Text("Edit") }
+                TextButton(onClick = onDelete) { Text("Hapus", color = Color(0xFFB42318)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductPhoto(uriString: String, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val bitmap = remember(uriString) {
+        if (uriString.isBlank()) null else runCatching {
+            context.contentResolver.openInputStream(Uri.parse(uriString))?.use {
+                BitmapFactory.decodeStream(it)?.asImageBitmap()
+            }
+        }.getOrNull()
+    }
+    Box(modifier = modifier.background(Color(0xFFEAF1F3), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+        if (bitmap != null) {
+            Image(bitmap = bitmap, contentDescription = "Foto produk", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Text("▦", color = Teal, fontSize = 25.sp)
+        }
+    }
+}
+
+@Composable
+private fun ProductFormDialog(
+    product: KasirkuProduct?,
+    onDismiss: () -> Unit,
+    onSave: (KasirkuProduct) -> Unit
+) {
+    val context = LocalContext.current
+    var name by remember(product?.id) { mutableStateOf(product?.name ?: "") }
+    var category by remember(product?.id) { mutableStateOf(product?.category ?: "") }
+    var costPrice by remember(product?.id) { mutableStateOf(product?.costPrice?.toString() ?: "") }
+    var sellingPrice by remember(product?.id) { mutableStateOf(product?.sellingPrice?.toString() ?: "") }
+    var stock by remember(product?.id) { mutableStateOf(product?.stock?.toString() ?: "0") }
+    var barcode by remember(product?.id) { mutableStateOf(product?.barcode ?: "") }
+    var photoUri by remember(product?.id) { mutableStateOf(product?.photoUri ?: "") }
+    var error by remember(product?.id) { mutableStateOf("") }
+
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            photoUri = uri.toString()
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (product == null) "Tambah produk" else "Edit produk", color = Navy, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth().height(470.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ProductPhoto(photoUri, Modifier.size(58.dp))
+                    Spacer(Modifier.width(12.dp))
+                    OutlinedButton(onClick = { photoPicker.launch(arrayOf("image/*")) }) {
+                        Text(if (photoUri.isBlank()) "Pilih foto" else "Ganti foto")
+                    }
+                    if (photoUri.isNotBlank()) {
+                        TextButton(onClick = { photoUri = "" }) { Text("Hapus") }
+                    }
+                }
+                OutlinedTextField(value = name, onValueChange = { name = it; error = "" }, label = { Text("Nama produk *") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = category, onValueChange = { category = it }, label = { Text("Kategori") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = costPrice, onValueChange = { costPrice = it.filter(Char::isDigit) }, label = { Text("Harga modal (Rp)") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = it.filter(Char::isDigit) }, label = { Text("Harga jual (Rp) *") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = stock, onValueChange = { stock = it.filter(Char::isDigit) }, label = { Text("Stok") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = barcode, onValueChange = { barcode = it }, label = { Text("Barcode / kode produk") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (error.isNotBlank()) Text(error, color = Color(0xFFB42318), fontSize = 12.sp)
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val parsedPrice = sellingPrice.toLongOrNull()
+                if (name.isBlank()) {
+                    error = "Nama produk wajib diisi."
+                } else if (parsedPrice == null || parsedPrice <= 0L) {
+                    error = "Harga jual harus lebih dari 0."
+                } else if ((stock.toIntOrNull() ?: -1) < 0) {
+                    error = "Stok tidak valid."
+                } else {
+                    onSave(
+                        KasirkuProduct(
+                            id = product?.id ?: 0L,
+                            name = name.trim(),
+                            category = category.trim(),
+                            costPrice = costPrice.toLongOrNull() ?: 0L,
+                            sellingPrice = parsedPrice,
+                            stock = stock.toIntOrNull() ?: 0,
+                            barcode = barcode.trim(),
+                            photoUri = photoUri
+                        )
+                    )
+                }
+            }) { Text("Simpan") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } }
+    )
 }
 
 @Composable
@@ -316,7 +537,7 @@ private fun SimpleFeatureScreen(
         Spacer(Modifier.height(12.dp))
         Text(title, color = Navy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
-        Text(description, color = Muted, fontSize = 14.sp, lineHeight = 22.sp)
+        Text(description, color = Muted, fontSize = 14.sp)
         Spacer(Modifier.height(22.dp))
         if (onBack != null) {
             OutlinedButton(onClick = onBack) { Text("Kembali ke dashboard") }
