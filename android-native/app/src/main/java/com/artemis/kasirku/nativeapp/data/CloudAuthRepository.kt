@@ -18,6 +18,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.builtins.ListSerializer
+import java.time.ZoneId
 
 @Serializable
 private data class StoreMembershipDto(
@@ -167,6 +168,9 @@ class CloudAuthRepository {
         timeZoneId: String
     ): CloudAccountAccess = withContext(Dispatchers.IO) {
         require(timeZoneId.isNotBlank()) { "Zona waktu wajib diisi." }
+        require(runCatching { ZoneId.of(timeZoneId.trim()) }.isSuccess) {
+            "Gunakan zona waktu IANA yang valid, misalnya Asia/Makassar."
+        }
         client.postgrest.rpc(
             function = "set_branch_timezone",
             parameters = buildJsonObject {
