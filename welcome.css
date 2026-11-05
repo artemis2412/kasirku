@@ -1,0 +1,39 @@
+#ks-layer:has(.ks-welcome){padding:0;background:#0d3023;overflow:hidden}
+#ks-layer:has(.ks-welcome) #ks-card{width:100%;max-width:none;min-height:100%;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;display:grid;place-items:center;overflow:hidden}
+.ks-welcome{position:relative;isolation:isolate;display:grid;place-items:center;width:100%;min-height:100vh;min-height:100dvh;padding:34px 22px;color:#fff;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,#2d7650 0%,transparent 45%),linear-gradient(145deg,#0b281d 0%,#12452f 54%,#09271e 100%)}
+.ks-welcome:before,.ks-welcome:after{content:"";position:absolute;z-index:-1;border:1px solid #ffffff16;border-radius:50%;pointer-events:none}
+.ks-welcome:before{width:min(90vw,680px);aspect-ratio:1;top:-38%;left:-28%;animation:ksWelcomeDrift 18s ease-in-out infinite alternate}
+.ks-welcome:after{width:min(75vw,520px);aspect-ratio:1;right:-23%;bottom:-35%;animation:ksWelcomeDrift 22s ease-in-out infinite alternate-reverse}
+.ks-welcome-content{position:relative;width:min(100%,490px);margin:auto;text-align:center;animation:ksWelcomeIn .8s cubic-bezier(.2,.8,.2,1) both}
+.ks-welcome-glow{position:absolute;z-index:-1;width:220px;height:220px;border-radius:50%;filter:blur(55px);opacity:.25;pointer-events:none}
+.ks-welcome-glow-a{background:#72d99d;top:2%;left:-25%;animation:ksWelcomeGlow 7s ease-in-out infinite}
+.ks-welcome-glow-b{background:#c2e8c8;right:-25%;bottom:4%;animation:ksWelcomeGlow 9s ease-in-out infinite reverse}
+.ks-welcome-logo{width:82px;height:82px;margin:0 auto 18px;padding:13px;border-radius:25px;background:linear-gradient(145deg,#fff,#e4f3e9);box-shadow:0 15px 42px #03170f55;animation:ksWelcomeFloat 5s ease-in-out infinite}
+.ks-welcome-logo img{display:block;width:100%;height:100%;object-fit:contain}
+.ks-welcome-kicker{font-size:10px;font-weight:800;letter-spacing:3.4px;color:#b7d8c3}
+.ks-welcome h1{margin:14px 0 12px;font-size:clamp(34px,8vw,48px);line-height:1.08;letter-spacing:-1.6px;font-weight:850;color:#fff}
+.ks-welcome h1 span{color:#b8e6c6}
+.ks-welcome-content>p{max-width:370px;margin:0 auto 28px;color:#d1e4d7;font-size:14px;line-height:1.65}
+.ks-welcome-actions{display:grid;gap:13px;text-align:left}
+.ks-entry-card{position:relative;display:flex;align-items:center;gap:15px;width:100%;min-height:88px;padding:16px 18px;border:1px solid #ffffff35;border-radius:19px;background:linear-gradient(115deg,#ffffff 0%,#f2f8f3 100%);color:#193b29;text-align:left;box-shadow:0 12px 30px #03170f24;transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;animation:ksWelcomeCard .65s cubic-bezier(.2,.8,.2,1) both}
+.ks-entry-card:nth-child(2){animation-delay:.12s}
+.ks-entry-card:focus-visible{outline:3px solid #a9e5bd;outline-offset:4px}
+.ks-entry-card:active{transform:scale(.985)}
+.ks-entry-icon{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:15px;background:#e4f2e8;color:#176b46}
+.ks-entry-icon svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ks-entry-copy{display:grid;gap:4px;min-width:0}
+.ks-entry-copy strong{font-size:17px;font-weight:800;letter-spacing:-.2px}
+.ks-entry-copy small{font-size:12px;color:#6d8074;line-height:1.4}
+.ks-entry-arrow{margin-left:auto;color:#248457;font-size:24px;transition:transform .2s ease}
+.ks-entry-cloud{background:linear-gradient(115deg,#e8f5ec,#fff);border-color:#b5d9c1}
+.ks-welcome-footer{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:28px;color:#b8d2c1;font-size:11px;letter-spacing:1.2px}
+.ks-footer-dot{width:7px;height:7px;border-radius:50%;background:#8de0a9;box-shadow:0 0 12px #8de0a9;animation:ksWelcomePulse 2s ease-in-out infinite}
+@media(hover:hover){.ks-entry-card:hover{transform:translateY(-3px);box-shadow:0 18px 36px #03170f38;border-color:#a8d8b7}.ks-entry-card:hover .ks-entry-arrow{transform:translateX(4px)}}
+@media(max-width:420px){.ks-welcome{padding:26px 18px}.ks-welcome-logo{width:72px;height:72px;border-radius:22px}.ks-welcome-content>p{font-size:13px;margin-bottom:24px}.ks-entry-card{min-height:82px;padding:14px}.ks-entry-icon{flex-basis:44px;width:44px;height:44px}.ks-entry-copy strong{font-size:16px}}
+@media(prefers-reduced-motion:reduce){.ks-welcome,.ks-welcome *{animation:none!important;transition:none!important}}
+@keyframes ksWelcomeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ksWelcomeCard{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ksWelcomeFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-7px) rotate(1deg)}}
+@keyframes ksWelcomeDrift{from{transform:translate3d(-10px,0,0) rotate(0)}to{transform:translate3d(22px,18px,0) rotate(12deg)}}
+@keyframes ksWelcomeGlow{0%,100%{opacity:.18;transform:scale(.9)}50%{opacity:.34;transform:scale(1.15)}}
+@keyframes ksWelcomePulse{0%,100%{opacity:.6;transform:scale(.85)}50%{opacity:1;transform:scale(1.2)}}
