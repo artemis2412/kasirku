@@ -50,7 +50,7 @@ import kotlinx.coroutines.launch
 private fun formatOrderNominal(value: Long): String = value.toString().reversed().chunked(3).joinToString(".").reversed()
 
 private fun csvCell(value: String): String {
-    val guarded = if (value.firstOrNull() in listOf('=', '+', '-', '@', '\\t', '\\r')) "'$value" else value
+    val guarded = if (value.firstOrNull() in listOf('=', '+', '-', '@', '\t', '\r')) "'$value" else value
     val safe = guarded.replace("\"", "\"\"")
     return if (safe.contains(';') || safe.contains('"') || safe.contains('\n')) "\"$safe\"" else safe
 }
