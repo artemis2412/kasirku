@@ -267,6 +267,9 @@ interface CatalogDao {
     }
 
 
+    @Query("SELECT * FROM sales WHERE id = :saleId AND storeId = :storeId AND branchId = :branchId LIMIT 1")
+    suspend fun getSaleForSync(storeId: String, branchId: String, saleId: String): SaleEntity?
+
     @Query("""
         SELECT * FROM sales
         WHERE storeId = :storeId AND branchId = :branchId
