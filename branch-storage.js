@@ -1,6 +1,6 @@
 (() => {
 "use strict";
-const KEYS = new Set(["kasirku_menus","kasirku_orders","kasirku_tables","kasirku_categories","kasirku_cash_audit","kasirku_cash_entries","kasirku_cash_closures","kasirku_store_name","kasirku_store_logo"]);
+const KEYS = new Set(["kasirku_menus","kasirku_orders","kasirku_tables","kasirku_categories","kasirku_cash_audit","kasirku_cash_entries","kasirku_cash_closures","kasirku_archives","kasirku_store_name","kasirku_store_logo"]);
 const nativeGet=Storage.prototype.getItem,nativeSet=Storage.prototype.setItem,nativeRemove=Storage.prototype.removeItem;
 const activeId=()=>{try{const id=nativeGet.call(localStorage,"ksecurity_active_branch");return /^[a-zA-Z0-9_-]{1,80}$/.test(id||"")?id:"main"}catch{return "main"}};
 const scopedKey=key=>{const k=String(key);return KEYS.has(k)?"kasirku_branch_"+activeId()+"__"+k:k};
