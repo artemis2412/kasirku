@@ -33,3 +33,14 @@ Build otomatis dijalankan melalui GitHub Actions workflow:
 `.github/workflows/build-native-android.yml`
 
 Output awal adalah APK debug untuk pengujian internal, bukan APK rilis Play Store.
+
+## Import produk lama ke Room
+
+`LegacyProductImporter` menyalin katalog dari `kasirku_local.db` setelah aplikasi memberikan `storeId` dan `branchId` dari konteks akun/cabang yang sudah terverifikasi.
+
+- ID produk Room dibuat deterministik dari ID lama dan toko, sehingga proses dapat diulang tanpa menggandakan produk.
+- Kategori, harga jual, foto URI, stok cabang, dan barcode unik ikut disalin.
+- Barcode duplikat diabaikan saat insert agar tidak menggagalkan seluruh impor.
+- Harga modal sengaja tidak disalin ke tabel katalog Room; nilai aslinya tetap berada di database lama untuk penanganan khusus Owner pada tahap berikutnya.
+- Hasil impor mengembalikan jumlah sumber, berhasil, sudah pernah diimpor, dan barcode yang dilewati untuk pemeriksaan.
+- Proses ini belum dipanggil otomatis dari UI. Database lama tidak dihapus dan layar produk lama belum dialihkan.
