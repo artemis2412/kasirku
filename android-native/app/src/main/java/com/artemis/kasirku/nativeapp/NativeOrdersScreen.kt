@@ -63,7 +63,9 @@ internal fun NativeOrdersScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current.applicationContext
-    val repository = remember { SalesRepository(KasirkuRoomDatabase.getInstance(context).catalogDao()) }
+    val dao = remember { KasirkuRoomDatabase.getInstance(context).catalogDao() }
+    val repository = remember { SalesRepository(dao) }
+    val pendingSync by dao.observePendingSaleSyncCount().collectAsState(initial = 0)
     val now = remember { System.currentTimeMillis() }
     val dayStart = remember {
         Calendar.getInstance().apply {
@@ -146,6 +148,15 @@ internal fun NativeOrdersScreen(
         Text("Pesanan", color = OrdersNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = OrdersMuted, fontSize = 12.sp)
         Text("Hari ini • ${dateFormatter.format(Date(dayStart))}", color = OrdersMuted, fontSize = 12.sp)
+        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF1F3)), shape = RoundedCornerShape(13.dp)) {
+            Row(Modifier.fillMaxWidth().padding(13.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text("Menunggu sinkronisasi cloud", color = OrdersNavy, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                    Text("Transaksi lokal tetap tersimpan meski internet terputus.", color = OrdersMuted, fontSize = 10.sp)
+                }
+                Text(pendingSync.toString(), color = OrdersTeal, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+            }
+        }
         Button(
             onClick = { archiveLauncher.launch("Kasirku_Arsip_30_Hari_${SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(dayStart))}.csv") },
             modifier = Modifier.fillMaxWidth(),
