@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SaleEntity
 import com.artemis.kasirku.nativeapp.data.SaleItemEntity
+import com.artemis.kasirku.nativeapp.data.SaleSyncOutboxEntity
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
@@ -66,6 +67,7 @@ internal fun NativeOrdersScreen(
     val dao = remember { KasirkuRoomDatabase.getInstance(context).catalogDao() }
     val repository = remember { SalesRepository(dao) }
     val pendingSync by dao.observePendingSaleSyncCount(tenant.storeId, tenant.branchId).collectAsState(initial = 0)
+    val syncQueue by dao.observeSaleSyncQueue(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
     val now = remember { System.currentTimeMillis() }
     val dayStart = remember {
         Calendar.getInstance().apply {
@@ -155,6 +157,23 @@ internal fun NativeOrdersScreen(
                     Text("Transaksi lokal tetap tersimpan meski internet terputus.", color = OrdersMuted, fontSize = 10.sp)
                 }
                 Text(pendingSync.toString(), color = OrdersTeal, fontWeight = FontWeight.Bold, fontSize = 19.sp)
+            }
+        }
+        if (syncQueue.isNotEmpty()) {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(13.dp)) {
+                Column(Modifier.fillMaxWidth().padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text("Rincian antrean terakhir", color = OrdersNavy, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    syncQueue.forEach { item ->
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(item.saleId.take(8).uppercase(), color = OrdersNavy, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                Text(if (item.status == "FAILED") "Gagal" else "Menunggu", color = if (item.status == "FAILED") Color(0xFFB45309) else OrdersTeal, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Text("Percobaan: ${item.attempts} • ${dateFormatter.format(Date(item.createdAt))}", color = OrdersMuted, fontSize = 10.sp)
+                            item.lastError?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color(0xFFB45309), fontSize = 10.sp) }
+                        }
+                    }
+                }
             }
         }
         Button(
