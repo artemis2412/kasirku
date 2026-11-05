@@ -298,6 +298,7 @@ internal fun NativeProductsScreen(
     var formError by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    val canManageCatalog = tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER || tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
     val products by remember(tenant.storeId, tenant.branchId, query) {
         repository.observeBranchCatalog(tenant.storeId, tenant.branchId, query)
     }.collectAsState(initial = emptyList())
@@ -320,6 +321,7 @@ internal fun NativeProductsScreen(
         Text("Produk", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = AccountMuted, fontSize = 12.sp)
 
+        if (canManageCatalog) {
         Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(15.dp)) {
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 Text(if (editingId == null) "Tambah produk" else "Edit produk", color = AccountNavy, fontWeight = FontWeight.Bold)
@@ -374,6 +376,11 @@ internal fun NativeProductsScreen(
             }
         }
 
+        } else {
+            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF1F3)), shape = RoundedCornerShape(15.dp)) {
+                Text("Akses lihat katalog saja. Hanya owner dan admin yang dapat menambah atau mengubah produk.", modifier = Modifier.padding(14.dp), color = AccountMuted, fontSize = 12.sp)
+            }
+        }
         notice?.let { Text(it, color = AccountTeal, fontSize = 12.sp) }
         OutlinedTextField(
             value = query,
@@ -410,7 +417,7 @@ internal fun NativeProductsScreen(
                             Spacer(Modifier.width(12.dp))
                             Text(product.activeSellingPrice?.let { "Rp ${it.toString().reversed().chunked(3).joinToString(".").reversed()}" } ?: "Tidak dijual di cabang", color = if (product.activeSellingPrice == null) AccountMuted else AccountTeal, fontWeight = FontWeight.Bold)
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (canManageCatalog) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(onClick = {
                                 editingId = product.id
                                 name = product.name
