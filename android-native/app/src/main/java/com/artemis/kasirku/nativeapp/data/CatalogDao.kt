@@ -173,6 +173,15 @@ interface CatalogDao {
     @Query("SELECT COUNT(*) FROM sale_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY')")
     fun observePendingSaleSyncCount(storeId: String, branchId: String): Flow<Int>
 
+    @Query("""
+        SELECT * FROM sale_sync_outbox
+        WHERE storeId = :storeId AND branchId = :branchId
+          AND status IN ('PENDING', 'RETRY', 'FAILED')
+        ORDER BY createdAt DESC
+        LIMIT 10
+    """)
+    fun observeSaleSyncQueue(storeId: String, branchId: String): Flow<List<SaleSyncOutboxEntity>>
+
     @Query("UPDATE sale_sync_outbox SET status = :status, attempts = attempts + 1, lastError = :error, updatedAt = :updatedAt WHERE saleId = :saleId")
     suspend fun updateSaleSyncStatus(saleId: String, status: String, error: String?, updatedAt: Long)
 
