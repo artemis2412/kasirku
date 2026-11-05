@@ -5,11 +5,13 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -114,8 +116,20 @@ class CloudAuthRepository {
         }
 
     suspend fun restoreSession(): CloudAccountAccess? = withContext(Dispatchers.IO) {
-        val user = client.auth.currentUserOrNull() ?: return@withContext null
-        loadAuthorizedAccess(user.id, user.email.orEmpty())
+        // Wait until persisted Android credentials have finished loading.
+        // Reading currentUser too early can incorrectly show the login screen.
+        val status = client.auth.sessionStatus.first { it !is SessionStatus.Initializing }
+        when (status) {
+            is SessionStatus.Authenticated -> {
+                val user = status.session.user
+                    ?: throw SecurityException("Sesi Cloud tidak memiliki identitas pengguna.")
+                loadAuthorizedAccess(user.id, user.email.orEmpty())
+            }
+            is SessionStatus.NotAuthenticated -> null
+            is SessionStatus.RefreshFailure ->
+                throw IllegalStateException("Sesi Cloud perlu diperbarui. Silakan masuk kembali.")
+            SessionStatus.Initializing -> error("Status sesi belum siap.")
+        }
     }
 
     suspend fun signOut() = withContext(Dispatchers.IO) {
