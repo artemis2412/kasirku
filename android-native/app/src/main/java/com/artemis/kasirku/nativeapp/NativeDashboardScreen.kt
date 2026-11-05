@@ -41,6 +41,7 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
     val count by remember(tenant.storeId,tenant.branchId,start,end) { repository.observeSaleCount(tenant,start,end) }.collectAsState(initial=0)
     val total by remember(tenant.storeId,tenant.branchId,start,end) { repository.observeSalesTotal(tenant,start,end) }.collectAsState(initial=0L)
     val sold by remember(tenant.storeId,tenant.branchId,start,end) { dao.observeSoldQuantity(tenant.storeId,tenant.branchId,start,end) }.collectAsState(initial=0)
+    val pendingSync by dao.observePendingSaleSyncCount().collectAsState(initial=0)
 
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement=Arrangement.spacedBy(15.dp)) {
         Column(verticalArrangement=Arrangement.spacedBy(3.dp)) {
@@ -63,6 +64,15 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
             Metric("Produk",products.toString(),Modifier.weight(1f))
             Metric("Stok",stock.toString(),Modifier.weight(1f))
             Metric("Menipis",lowStock.toString(),Modifier.weight(1f))
+        }
+        Card(colors=CardDefaults.cardColors(containerColor=Color(0xFFEAF1F3)), shape=RoundedCornerShape(13.dp)) {
+            Row(Modifier.fillMaxWidth().padding(13.dp), horizontalArrangement=Arrangement.SpaceBetween) {
+                Column(Modifier.weight(1f)) {
+                    Text("Antrean sinkronisasi", color=HomeNavy, fontWeight=FontWeight.Bold, fontSize=12.sp)
+                    Text("Transaksi tersimpan aman di perangkat dan menunggu pengiriman cloud.", color=HomeMuted, fontSize=10.sp)
+                }
+                Text("$pendingSync", color=HomeTeal, fontSize=20.sp, fontWeight=FontWeight.Bold)
+            }
         }
         Button(onClick=onNewTransaction, modifier=Modifier.fillMaxWidth(), shape=RoundedCornerShape(12.dp)) { Text("+ Transaksi baru") }
         Text("Menu cepat", color=HomeNavy, fontSize=16.sp, fontWeight=FontWeight.Bold)
