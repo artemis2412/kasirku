@@ -308,8 +308,8 @@ internal fun NativeProductsScreen(
                 Text(if (editingId == null) "Tambah produk" else "Edit produk", color = AccountNavy, fontWeight = FontWeight.Bold)
                 OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nama produk *") }, singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = basePrice, onValueChange = { basePrice = it.filter(Char::isDigit) }, modifier = Modifier.weight(1f), label = { Text("Harga dasar") }, singleLine = true)
-                    OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = it.filter(Char::isDigit) }, modifier = Modifier.weight(1f), label = { Text("Harga jual cabang *") }, singleLine = true)
+                    OutlinedTextField(value = basePrice, onValueChange = { basePrice = it.filter(Char::isDigit) }, modifier = Modifier.weight(1f), label = { Text("Harga dasar *") }, singleLine = true)
+                    OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = it.filter(Char::isDigit) }, modifier = Modifier.weight(1f), label = { Text("Harga jual cabang (opsional)") }, singleLine = true)
                 }
                 OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit) }, modifier = Modifier.fillMaxWidth(), label = { Text("Stok cabang") }, singleLine = true)
                 OutlinedTextField(value = barcode, onValueChange = { barcode = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Barcode (opsional)") }, singleLine = true)
@@ -320,8 +320,8 @@ internal fun NativeProductsScreen(
                             val parsedBase = basePrice.toLongOrNull() ?: 0L
                             val parsedSelling = sellingPrice.toLongOrNull()
                             val parsedQuantity = quantity.toIntOrNull()
-                            if (name.isBlank() || parsedSelling == null || parsedQuantity == null) {
-                                formError = "Nama, harga jual, dan stok harus diisi dengan benar."
+                            if (name.isBlank() || parsedBase <= 0L || (sellingPrice.isNotBlank() && parsedSelling == null) || parsedQuantity == null) {
+                                formError = "Nama, harga dasar, dan stok harus diisi dengan benar. Harga jual cabang boleh dikosongkan."
                             } else {
                                 scope.launch {
                                     saving = true
@@ -391,7 +391,7 @@ internal fun NativeProductsScreen(
                                 Text("Stok: ${product.branchQuantity}", color = AccountMuted, fontSize = 12.sp)
                             }
                             Spacer(Modifier.width(12.dp))
-                            Text("Rp ${product.activeSellingPrice.toString().reversed().chunked(3).joinToString(".").reversed()}", color = AccountTeal, fontWeight = FontWeight.Bold)
+                            Text(product.activeSellingPrice?.let { "Rp ${it.toString().reversed().chunked(3).joinToString(".").reversed()}" } ?: "Tidak dijual di cabang", color = if (product.activeSellingPrice == null) AccountMuted else AccountTeal, fontWeight = FontWeight.Bold)
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(onClick = {
