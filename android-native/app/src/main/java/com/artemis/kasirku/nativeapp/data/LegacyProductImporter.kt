@@ -63,6 +63,14 @@ class LegacyProductImporter(
             )
         }
         val ids = source.associate { it.id to stableId("product:$storeId:legacy:${it.id}") }
+        val branchPrices = source.map { old ->
+            BranchProductPriceEntity(
+                branchId = branchId,
+                productId = ids.getValue(old.id),
+                sellingPrice = old.sellingPrice.coerceAtLeast(0L),
+                updatedAt = now
+            )
+        }
         val inventory = source.map { old ->
             BranchInventoryEntity(
                 branchId = branchId,
@@ -98,6 +106,7 @@ class LegacyProductImporter(
         dao.importLegacyCatalog(
             categories,
             newProducts,
+            branchPrices.filter { it.productId in newIds },
             inventory.filter { it.productId in newIds },
             barcodes.filter { it.productId in newIds }
         )
