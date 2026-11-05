@@ -122,8 +122,6 @@ internal fun NativeOrdersScreen(
             }
         }
     }
-    val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale("id", "ID")) }
-    val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale("id", "ID")) }
 
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 18.dp),
@@ -132,7 +130,7 @@ internal fun NativeOrdersScreen(
         Text("RIWAYAT PENJUALAN", color = OrdersTeal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
         Text("Pesanan", color = OrdersNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = OrdersMuted, fontSize = 12.sp)
-        Text("Hari ini • ${dateFormatter.format(Date(dayStart))}", color = OrdersMuted, fontSize = 12.sp)
+        Text("Hari ini • ${BranchTime.format(dayStart, "dd MMM yyyy", branchZone)}", color = OrdersMuted, fontSize = 12.sp)
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF1F3)), shape = RoundedCornerShape(13.dp)) {
             Row(Modifier.fillMaxWidth().padding(13.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -152,7 +150,7 @@ internal fun NativeOrdersScreen(
                                 Text(item.saleId.take(8).uppercase(), color = OrdersNavy, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                                 Text(if (item.status == "FAILED") "Gagal" else "Menunggu", color = if (item.status == "FAILED") Color(0xFFB45309) else OrdersTeal, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
-                            Text("Percobaan: ${item.attempts} • ${dateFormatter.format(Date(item.createdAt))}", color = OrdersMuted, fontSize = 10.sp)
+                            Text("Percobaan: ${item.attempts} • ${BranchTime.format(item.createdAt, "dd MMM yyyy", branchZone)}", color = OrdersMuted, fontSize = 10.sp)
                             item.lastError?.takeIf { it.isNotBlank() }?.let { Text(it, color = Color(0xFFB45309), fontSize = 10.sp) }
                         }
                     }
@@ -160,7 +158,7 @@ internal fun NativeOrdersScreen(
             }
         }
         Button(
-            onClick = { archiveLauncher.launch("Kasirku_Arsip_30_Hari_${SimpleDateFormat("yyyyMMdd", Locale.US).format(Date(dayStart))}.csv") },
+            onClick = { archiveLauncher.launch("Kasirku_Arsip_30_Hari_${BranchTime.format(dayStart, "yyyyMMdd", branchZone)}.csv") },
             modifier = Modifier.fillMaxWidth(),
             enabled = !archiveBusy,
             shape = RoundedCornerShape(12.dp)
@@ -208,7 +206,7 @@ internal fun NativeOrdersScreen(
                     Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("Transaksi ${sale.id.take(8).uppercase()}", color = OrdersNavy, fontWeight = FontWeight.SemiBold)
-                            Text(timeFormatter.format(Date(sale.createdAt)) + " • ${sale.paymentMethod}", color = OrdersMuted, fontSize = 11.sp)
+                            Text(BranchTime.format(sale.createdAt, "HH:mm", branchZone) + " • ${sale.paymentMethod}", color = OrdersMuted, fontSize = 11.sp)
                         }
                         Spacer(Modifier.width(8.dp))
                         Text("Rp ${formatOrderNominal(sale.total)}", color = OrdersTeal, fontWeight = FontWeight.Bold)
@@ -227,7 +225,7 @@ internal fun NativeOrdersScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text("ID: ${sale.id}", color = OrdersMuted, fontSize = 10.sp)
-                    Text(dateFormatter.format(Date(sale.createdAt)) + " • " + timeFormatter.format(Date(sale.createdAt)), color = OrdersMuted, fontSize = 11.sp)
+                    Text(BranchTime.format(sale.createdAt, "dd MMM yyyy", branchZone) + " • " + timeFormatter.format(Date(sale.createdAt)), color = OrdersMuted, fontSize = 11.sp)
                     if (loadingDetail) Text("Memuat rincian…", color = OrdersMuted)
                     selectedItems.forEach { item ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
