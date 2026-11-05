@@ -61,6 +61,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
+import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 
 private val Navy = Color(0xFF17324D)
 private val Teal = Color(0xFF168C83)
@@ -104,9 +105,16 @@ private enum class KasirkuTab(val title: String, val symbol: String) {
 
 @Composable
 private fun KasirkuNativeApp() {
+    val appContext = LocalContext.current.applicationContext
     var selectedTab by remember { mutableIntStateOf(0) }
     var showNewTransaction by remember { mutableStateOf(false) }
     var verifiedTenantContext by remember { mutableStateOf<VerifiedTenantContext?>(null) }
+
+    LaunchedEffect(verifiedTenantContext?.storeId, verifiedTenantContext?.branchId, verifiedTenantContext?.branchTimeZoneId) {
+        verifiedTenantContext?.takeIf { !it.branchTimeZoneId.isNullOrBlank() }?.let {
+            SaleSyncWorker.enqueue(appContext, it)
+        }
+    }
 
     MaterialTheme(
         colorScheme = lightColorScheme(
