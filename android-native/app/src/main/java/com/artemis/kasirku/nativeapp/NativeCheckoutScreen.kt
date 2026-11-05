@@ -105,7 +105,7 @@ internal fun NativeCheckoutScreen(
         ) printerList = BluetoothReceiptPrinter.pairedPrinters(context)
     }
     val subtotal = runCatching { cart.values.fold(0L) { total, item -> Math.addExact(total, Math.multiplyExact(item.price, item.quantity.toLong())) } }.getOrElse { Long.MAX_VALUE }
-    val paid = payment.filter(Char::isDigit).toLongOrNull() ?: 0L
+    val paid = if (paymentMethod == "CASH") payment.filter(Char::isDigit).toLongOrNull() ?: 0L else subtotal
 
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 16.dp),
@@ -220,18 +220,22 @@ internal fun NativeCheckoutScreen(
                     listOf("CASH" to "Tunai", "QRIS" to "QRIS", "TRANSFER" to "Transfer").forEach { (method, label) ->
                         FilterChip(
                             selected = paymentMethod == method,
-                            onClick = { paymentMethod = method },
+                            onClick = { paymentMethod = method; payment = "" },
                             label = { Text(label) }
                         )
                     }
                 }
-                OutlinedTextField(
-                    value = payment,
-                    onValueChange = { payment = formatCheckoutNominalInput(it) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text(if (paymentMethod == "CASH") "Uang diterima (Rp)" else "Nominal pembayaran (Rp)") },
-                    singleLine = true
-                )
+                if (paymentMethod == "CASH") {
+                    OutlinedTextField(
+                        value = payment,
+                        onValueChange = { payment = formatCheckoutNominalInput(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Uang diterima (Rp)") },
+                        singleLine = true
+                    )
+                } else {
+                    Text("Pembayaran $paymentMethod dicatat sesuai total transaksi. Pastikan pembayaran sudah diterima.", color = Color(0xFF718096), fontSize = 12.sp)
+                }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Kembalian", color = Color(0xFF17324D))
                     Text("Rp ${formatCheckoutNominal((paid - subtotal).coerceAtLeast(0L))}", color = Color(0xFF168C83), fontWeight = FontWeight.Bold)
