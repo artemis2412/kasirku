@@ -68,7 +68,7 @@ data class BranchCatalogRow(
     val isActive: Boolean,
     val createdAt: Long,
     val updatedAt: Long,
-    @androidx.room.ColumnInfo(name = "activeSellingPrice") val activeSellingPrice: Long,
+    @androidx.room.ColumnInfo(name = "activeSellingPrice") val activeSellingPrice: Long?,
     @androidx.room.ColumnInfo(name = "branchQuantity") val branchQuantity: Int
 )
 
