@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
@@ -149,4 +150,37 @@ interface CatalogDao {
         if (products.isNotEmpty()) upsertProducts(products)
         if (inventory.isNotEmpty()) upsertInventories(inventory)
     }
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertSale(sale: SaleEntity)
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertSaleItems(items: List<SaleItemEntity>)
+
+    @Query("""
+        UPDATE branch_inventory
+        SET quantity = quantity - :quantity, updatedAt = :updatedAt
+        WHERE branchId = :branchId AND productId = :productId AND quantity >= :quantity
+    """)
+    suspend fun deductStock(branchId: String, productId: String, quantity: Int, updatedAt: Long): Int
+
+    @Transaction
+    suspend fun completeSale(sale: SaleEntity, items: List<SaleItemEntity>) {
+        require(items.isNotEmpty()) { "Keranjang masih kosong." }
+        require(sale.total > 0L && sale.paid >= sale.total) { "Pembayaran belum mencukupi." }
+        items.forEach { item ->
+            require(item.saleId == sale.id && item.quantity > 0 && item.unitPrice > 0L) {
+                "Detail transaksi tidak valid."
+            }
+            val product = getProduct(item.productId)
+            require(product != null && product.storeId == sale.storeId && product.isActive) {
+                "Produk tidak tersedia di toko aktif."
+            }
+            val changed = deductStock(sale.branchId, item.productId, item.quantity, sale.createdAt)
+            if (changed == 0) throw IllegalStateException("Stok produk tidak mencukupi.")
+        }
+        insertSale(sale)
+        insertSaleItems(items)
+    }
+
 }
