@@ -208,4 +208,12 @@ interface CatalogDao {
           AND createdAt >= :startAt AND createdAt < :endAt
     """)
     fun observeSalesTotal(storeId: String, branchId: String, startAt: Long, endAt: Long): Flow<Long>
+
+    @Query("""
+        SELECT * FROM sales
+        WHERE storeId = :storeId AND branchId = :branchId
+          AND createdAt >= :startAt AND createdAt < :endAt
+        ORDER BY createdAt ASC
+    """)
+    suspend fun getSalesRange(storeId: String, branchId: String, startAt: Long, endAt: Long): List<SaleEntity>
 }
