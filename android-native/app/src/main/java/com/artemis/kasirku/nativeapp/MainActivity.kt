@@ -180,11 +180,17 @@ private fun KasirkuNativeApp() {
                             onContextChanged = { verifiedTenantContext = it }
                         )
                     }
-                    selectedTab == 3 -> SimpleFeatureScreen(
-                        title = "Laporan",
-                        description = "Ringkasan penjualan, riwayat harian, dan unduhan laporan akan tersedia di sini.",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    selectedTab == 3 -> if (verifiedTenantContext != null) {
+                        NativeReportsScreen(
+                            tenant = verifiedTenantContext!!,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    } else {
+                        CloudAccountScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onContextChanged = { verifiedTenantContext = it }
+                        )
+                    }
                     else -> CloudAccountScreen(
                         modifier = Modifier.padding(innerPadding),
                         onContextChanged = { verifiedTenantContext = it }
