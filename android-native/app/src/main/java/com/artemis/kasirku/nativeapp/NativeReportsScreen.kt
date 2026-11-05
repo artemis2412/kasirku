@@ -87,7 +87,7 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
             OutlinedButton(onClick = { period = 30 }, shape = RoundedCornerShape(12.dp)) { Text(if (period == 30) "✓ 30 hari" else "30 hari") }
         }
         Button(
-            onClick = { exportLauncher.launch("Kasirku_Laporan_\${period}Hari.csv") },
+            onClick = { exportLauncher.launch("Kasirku_Laporan_" + period + "Hari.csv") },
             modifier = Modifier.fillMaxWidth(),
             enabled = !exporting,
             shape = RoundedCornerShape(12.dp)
