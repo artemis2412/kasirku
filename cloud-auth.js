@@ -109,7 +109,7 @@ layer.innerHTML = `
     #ks-cloud-auth{position:fixed;inset:0;z-index:100000;background:radial-gradient(ellipse at 20% 15%,#285c43 0,transparent 38%),linear-gradient(145deg,#10271e,#174b36 55%,#0d3024);display:grid;place-items:center;padding:18px;overflow:auto;font-family:system-ui,-apple-system,sans-serif;color:#20352a}
     #ks-cloud-auth *{box-sizing:border-box}
     .kca-card{width:min(100%,430px);background:#fff;border:1px solid #ffffff80;border-radius:25px;padding:26px 23px 22px;box-shadow:0 24px 70px #0004}
-    .kca-brand{text-align:center;margin-bottom:22px}.kca-logo{width:62px;height:62px;border-radius:19px;margin:0 auto 13px;background:linear-gradient(145deg,#e3f3e8,#b8ddc5);display:grid;place-items:center;color:#176c48;font-size:27px;font-weight:900;box-shadow:0 8px 22px #176c4820}
+    .kca-brand{text-align:center;margin-bottom:22px}.kca-logo{display:block;width:62px;height:62px;object-fit:cover;border:0;border-radius:19px;margin:0 auto 13px;background:transparent;box-shadow:0 8px 22px #176c4820}
     .kca-brand small{display:block;color:#7d9485;font-size:10px;letter-spacing:3px;font-weight:800}.kca-brand h1{margin:6px 0 4px;font-size:27px;letter-spacing:1px;color:#203b2d}.kca-brand p{margin:0;color:#7b8981;font-size:13px}
     .kca-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:#f0f5f1;border-radius:12px;margin:0 0 18px}
     .kca-tabs button{border:0;border-radius:9px;padding:11px;background:transparent;color:#63776a;font:inherit;font-size:13px;font-weight:750}
@@ -128,7 +128,7 @@ layer.innerHTML = `
   </style>
   <section class="kca-card" aria-label="Akun KASIRKU">
     <header class="kca-brand">
-      <div class="kca-logo">K</div><small>SISTEM KASIR MODERN</small>
+      <img class="kca-logo" src="./assets/kasirku-full-logo.webp?v=4" alt="Logo KASIRKU"><small>SISTEM KASIR MODERN</small>
       <h1>KASIRKU</h1><p id="kca-subtitle">Masuk ke akun tokomu</p>
     </header>
     <div class="kca-tabs">
