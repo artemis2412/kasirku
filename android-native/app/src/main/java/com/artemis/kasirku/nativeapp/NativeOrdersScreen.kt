@@ -34,16 +34,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
+import com.artemis.kasirku.nativeapp.data.BranchTime
 import com.artemis.kasirku.nativeapp.data.SaleEntity
 import com.artemis.kasirku.nativeapp.data.SaleItemEntity
 import com.artemis.kasirku.nativeapp.data.SaleSyncOutboxEntity
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.launch
 
 
@@ -70,21 +67,10 @@ internal fun NativeOrdersScreen(
     val repository = remember { SalesRepository(dao) }
     val pendingSync by dao.observePendingSaleSyncCount(tenant.storeId, tenant.branchId).collectAsState(initial = 0)
     val syncQueue by dao.observeSaleSyncQueue(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
-    val now = remember { System.currentTimeMillis() }
-    val dayStart = remember {
-        Calendar.getInstance().apply {
-            timeInMillis = now
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-    }
-    val dayEnd = remember {
-        Calendar.getInstance().apply {
-            timeInMillis = dayStart
-            add(Calendar.DAY_OF_YEAR, 1)
-        }.timeInMillis
+    val branchZone = remember(tenant.branchTimeZoneId) { BranchTime.zoneId(tenant) }
+    val dayStart = remember(branchZone) { BranchTime.startOfToday(branchZone) }
+    val dayEnd = remember(dayStart, branchZone) {
+        BranchTime.startOfDayOffset(dayStart, 1, branchZone)
     }
     val sales by remember(tenant.storeId, tenant.branchId, dayStart, dayEnd) {
         repository.observeSales(tenant, dayStart, dayEnd)
@@ -101,11 +87,8 @@ internal fun NativeOrdersScreen(
     var loadingDetail by remember { mutableStateOf(false) }
     var archiveMessage by remember { mutableStateOf<String?>(null) }
     var archiveBusy by remember { mutableStateOf(false) }
-    val archiveStart = remember {
-        Calendar.getInstance().apply {
-            timeInMillis = dayStart
-            add(Calendar.DAY_OF_YEAR, -29)
-        }.timeInMillis
+    val archiveStart = remember(dayStart, branchZone) {
+        BranchTime.startOfDayOffset(dayStart, -29, branchZone)
     }
     val archiveEnd = dayEnd
     val archiveLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri: Uri? ->
@@ -118,12 +101,10 @@ internal fun NativeOrdersScreen(
                     context.contentResolver.openOutputStream(uri)?.use { stream ->
                         OutputStreamWriter(stream, Charsets.UTF_8).use { writer ->
                             writer.write("\uFEFFTanggal;Jam;ID Transaksi;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\n")
-                            val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                            val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.US)
-                            rows.forEach { (sale, items) ->
+                                                        rows.forEach { (sale, items) ->
                                 items.forEach { item ->
                                     val values = listOf(
-                                        dateFmt.format(Date(sale.createdAt)), timeFmt.format(Date(sale.createdAt)), sale.id,
+                                        BranchTime.format(sale.createdAt, "yyyy-MM-dd", branchZone), BranchTime.format(sale.createdAt, "HH:mm:ss", branchZone), sale.id,
                                         sale.paymentMethod, item.productName, item.quantity.toString(), item.unitPrice.toString(),
                                         item.lineTotal.toString(), sale.subtotal.toString(), sale.discount.toString(),
                                         sale.total.toString(), sale.paid.toString(), sale.change.toString()
