@@ -44,3 +44,10 @@
   }
   body.sidebar-open { overflow: hidden !important; }
 }
+
+/* Reserve a non-shrinking header row for the official logo. */
+@media(max-width:650px){
+  #sidebar .brand.brand-full{flex-shrink:0!important;position:relative!important;z-index:1!important}
+  #sidebar .brand.brand-full .brand-full-image{flex-shrink:0!important}
+  #sidebar .branch-label,#sidebar .branch-name{flex-shrink:0!important}
+}
