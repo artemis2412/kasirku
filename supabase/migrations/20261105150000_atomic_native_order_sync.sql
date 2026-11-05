@@ -13,9 +13,13 @@ begin
     raise exception 'Harus login terlebih dahulu';
   end if;
 
-  if jsonb_typeof(p_order) <> 'object' or jsonb_typeof(p_items) <> 'array'
-     or jsonb_array_length(p_items) = 0 then
+  if jsonb_typeof(p_order) is distinct from 'object'
+     or jsonb_typeof(p_items) is distinct from 'array' then
     raise exception 'Payload transaksi tidak valid';
+  end if;
+
+  if jsonb_array_length(p_items) = 0 then
+    raise exception 'Rincian transaksi tidak boleh kosong';
   end if;
 
   -- Do not allow an authenticated branch member to attribute a sale to another user.
@@ -42,10 +46,10 @@ begin
 
   if exists (
     select 1
-    from jsonb_array_elements(p_items) as item
+    from jsonb_array_elements(p_items) as entries(item)
     where jsonb_typeof(item) <> 'object'
        or coalesce((item->>'quantity')::numeric, 0) <= 0
-       or coalesce((item->>'unit_price')::numeric, -1) < 0
+       or coalesce((item->>'unit_price')::numeric, -1) <= 0
        or coalesce((item->>'line_total')::numeric, -1) < 0
        or (item->>'line_total')::numeric <>
           (item->>'quantity')::numeric * (item->>'unit_price')::numeric
