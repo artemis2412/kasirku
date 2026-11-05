@@ -24,6 +24,7 @@ create table if not exists public.branches (
   store_id uuid not null references public.stores(id) on delete cascade,
   name text not null,
   is_active boolean not null default true,
+  timezone_id text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (store_id, id),
