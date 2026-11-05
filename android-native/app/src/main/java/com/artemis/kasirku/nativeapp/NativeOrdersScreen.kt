@@ -43,13 +43,12 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.Calendar
 import kotlinx.coroutines.launch
 
 
 private fun csvCell(value: String): String {
     val safe = value.replace("\"", "\"\"")
-    return if (safe.contains(';') || safe.contains('"') || safe.contains('\\n')) "\"$safe\"" else safe
+    return if (safe.contains(';') || safe.contains('"') || safe.contains('\n')) "\"$safe\"" else safe
 }
 
 private val OrdersNavy = Color(0xFF17324D)
@@ -110,7 +109,7 @@ internal fun NativeOrdersScreen(
                     val rows = repository.exportRows(tenant, archiveStart, archiveEnd)
                     context.contentResolver.openOutputStream(uri)?.use { stream ->
                         OutputStreamWriter(stream, Charsets.UTF_8).use { writer ->
-                            writer.write("Tanggal;Jam;ID Transaksi;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\\n")
+                            writer.write("\uFEFFTanggal;Jam;ID Transaksi;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\n")
                             val dateFmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                             val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.US)
                             rows.forEach { (sale, items) ->
@@ -121,7 +120,7 @@ internal fun NativeOrdersScreen(
                                         item.lineTotal.toString(), sale.subtotal.toString(), sale.discount.toString(),
                                         sale.total.toString(), sale.paid.toString(), sale.change.toString()
                                     )
-                                    writer.write(values.joinToString(";") { csvCell(it) } + "\\n")
+                                    writer.write(values.joinToString(";") { csvCell(it) } + "\n")
                                 }
                             }
                             writer.flush()
