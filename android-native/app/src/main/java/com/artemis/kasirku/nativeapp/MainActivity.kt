@@ -153,11 +153,19 @@ private fun KasirkuNativeApp() {
                             onContextChanged = { verifiedTenantContext = it }
                         )
                     }
-                    selectedTab == 0 -> DashboardScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        onNewTransaction = { showNewTransaction = true },
-                        onOpenTab = { selectedTab = it }
-                    )
+                    selectedTab == 0 -> if (verifiedTenantContext != null) {
+                        NativeDashboardScreen(
+                            tenant = verifiedTenantContext!!,
+                            modifier = Modifier.padding(innerPadding),
+                            onNewTransaction = { showNewTransaction = true },
+                            onOpenTab = { selectedTab = it }
+                        )
+                    } else {
+                        CloudAccountScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onContextChanged = { verifiedTenantContext = it }
+                        )
+                    }
                     selectedTab == 1 -> if (verifiedTenantContext != null) {
                         NativeProductsScreen(
                             tenant = verifiedTenantContext!!,
