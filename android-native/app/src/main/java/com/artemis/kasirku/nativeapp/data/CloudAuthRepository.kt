@@ -14,6 +14,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.encodeToJsonElement
 
 @Serializable
 private data class StoreMembershipDto(
@@ -130,6 +134,28 @@ class CloudAuthRepository {
                 throw IllegalStateException("Sesi Cloud perlu diperbarui. Silakan masuk kembali.")
             SessionStatus.Initializing -> error("Status sesi belum siap.")
         }
+    }
+
+    /**
+     * Upload one sale through the atomic, idempotent database RPC.
+     * The server still enforces the caller's existing tenant RLS policies.
+     */
+    suspend fun uploadOrder(payload: OrderSyncPayload) = withContext(Dispatchers.IO) {
+        val user = client.auth.currentUserOrNull()
+            ?: throw SecurityException("Sesi Cloud tidak ditemukan. Silakan masuk kembali.")
+        require(payload.order.createdBy == user.id) {
+            "Kasir transaksi tidak sesuai dengan akun Cloud yang sedang masuk."
+        }
+        require(payload.order.storeId.isNotBlank() && payload.order.branchId.isNotBlank()) {
+            "Identitas toko atau cabang transaksi tidak lengkap."
+        }
+        client.postgrest.rpc(
+            function = "sync_order",
+            parameters = buildJsonObject {
+                put("p_order", Json.encodeToJsonElement(payload.order))
+                put("p_items", Json.encodeToJsonElement(payload.items))
+            }
+        )
     }
 
     suspend fun signOut() = withContext(Dispatchers.IO) {
