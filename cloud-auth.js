@@ -209,7 +209,7 @@ async function showPinEnrollment(cloudUser,memberships){
   panel.addEventListener("submit",async event=>{
     event.preventDefault();
     const pin=String(panel.elements.pin.value||""),confirm=String(panel.elements.confirm.value||"");
-    if(!/^\\d{6}$/.test(pin)){say("PIN harus tepat 6 angka.","error");return;}
+    if(!/^\d{6}$/.test(pin)){say("PIN harus tepat 6 angka.","error");return;}
     if(pin!==confirm){say("Ulangi PIN harus sama.","error");return;}
     const button=panel.querySelector("button");button.disabled=true;say("Mengaktifkan perangkat…");
     try{
