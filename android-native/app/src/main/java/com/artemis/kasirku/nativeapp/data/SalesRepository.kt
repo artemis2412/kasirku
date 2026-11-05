@@ -35,7 +35,10 @@ class SalesRepository(private val dao: CatalogDao) {
         require(discount <= subtotal) { "Diskon melebihi subtotal." }
         val total = subtotal - discount
         require(total > 0L) { "Total transaksi harus lebih dari nol." }
+        val normalizedMethod = paymentMethod.trim().uppercase()
+        require(normalizedMethod in setOf("CASH", "QRIS", "TRANSFER")) { "Metode pembayaran tidak dikenali." }
         require(paid >= total) { "Uang pembayaran kurang." }
+        if (normalizedMethod != "CASH") require(paid == total) { "Pembayaran non-tunai harus sesuai total transaksi." }
         val saleId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val sale = SaleEntity(
@@ -48,7 +51,7 @@ class SalesRepository(private val dao: CatalogDao) {
             total = total,
             paid = paid,
             change = paid - total,
-            paymentMethod = paymentMethod.trim().uppercase(),
+            paymentMethod = normalizedMethod,
             createdAt = now
         )
         val items = lines.map { line ->
