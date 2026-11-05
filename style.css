@@ -1205,12 +1205,7 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 @media(max-width:650px){#bottom-nav .navbtn{min-width:68px;flex:1 0 68px;min-height:70px;gap:5px;padding:5px 3px;border-radius:13px;color:#526d5e;font-size:11px}#bottom-nav .nav-icon{width:39px;height:39px;flex:0 0 39px;border-radius:12px;background:linear-gradient(150deg,#f0fff5 0%,#c9f0d9 58%,#a7e4c1 100%);color:#075b37;border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff,inset 0 -3px 0 rgba(20,128,75,.1),0 3px 8px rgba(8,83,48,.12)}#bottom-nav .nav-icon svg{width:25px;height:25px;stroke:#075b37;stroke-width:2}#bottom-nav .navbtn.active{background:#e5f7eb;color:#12633e}#bottom-nav .navbtn.active .nav-icon{background:linear-gradient(150deg,#bff3d2,#62ce8d);color:#06482c}}
 
 
-/* Settings icon: clean dimensional gear, matching the KASIRKU mint tiles */
-.navbtn[data-page="Pengaturan"] .nav-icon svg{width:29px;height:29px;fill:none;stroke:none;filter:drop-shadow(0 2px 1px rgba(0,70,38,.14))}
-.navbtn[data-page="Pengaturan"] .nav-icon .gear-body{fill:#15965b;stroke:#075b37;stroke-width:1.45;stroke-linejoin:round}
-.navbtn[data-page="Pengaturan"] .nav-icon .gear-hole{fill:#eafff1;stroke:#075b37;stroke-width:1.35}
-#bottom-nav .navbtn[data-page="Pengaturan"] .nav-icon svg{width:27px;height:27px}
-
+/* Settings icon uses the same clean SVG stroke style as the other navigation icons. */
 
 /* Approved KASIRKU illustrated icon set */
 .navbtn .nav-icon{width:62px;height:62px;flex:0 0 62px;display:block;background:none;border:0;box-shadow:none;border-radius:0;color:inherit}
