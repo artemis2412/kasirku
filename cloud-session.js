@@ -1,6 +1,8 @@
 (() => {
 "use strict";
 const MARKER="kasirku_cloud_session_active";
+const ACTIVITY_KEY="kasirku_last_activity";
+const IDLE_TIMEOUT=10*60*1000;
 const PREFIX="kasirku_supabase_cloud_auth_v1:";
 let client=null;
 function loadSdk(){
@@ -51,7 +53,9 @@ async function signOut(){
 }
 window.KASIRKU_CLOUD_SESSION={signOut};
 async function restore(){
- if(localStorage.getItem(MARKER)!=="1"||sessionStorage.getItem("ksecurity_session"))return;
+ if(localStorage.getItem(MARKER)!=="1"||localStorage.getItem("ksecurity_session"))return;
+ const last=Number(localStorage.getItem(ACTIVITY_KEY));
+ if(!Number.isFinite(last)||last<=0||Date.now()-last>=IDLE_TIMEOUT){await signOut();localStorage.removeItem(ACTIVITY_KEY);window.KASIRKU_AUTH?.showWelcome?.();return}
  try{
   client=await getClient();
   const identity=await validate(client);
