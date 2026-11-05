@@ -111,10 +111,57 @@ function logoutConfirm(){
  document.addEventListener("keydown",onKey);
  overlay.querySelector(".ks-logout-cancel").focus();
 }
+function cloudIdentityKey(localId){return "kasirku_cloud_identity_link_v1:"+encodeURIComponent(String(localId))}
+async function enrollVerifiedCloudUser({userId,email,role,name,pin}){
+ const cloudId=String(userId||"").trim(),cloudEmail=String(email||"").trim().toLowerCase(),cloudRole=String(role||"").toLowerCase(),pinValue=String(pin||"");
+ if(!cloudId||!cloudEmail||!["owner","admin","cashier"].includes(cloudRole))throw new Error("Identitas atau peran Cloud tidak valid.");
+ if(!/^\d{6}$/.test(pinValue))throw new Error("PIN harus tepat 6 angka.");
+ const rows=read();
+ const linked=rows.find(x=>{try{return JSON.parse(localStorage.getItem(cloudIdentityKey(x.id))||"null")?.userId===cloudId}catch{return false}});
+ if(linked){
+   if(linked.active===false||linked.role!==cloudRole)throw new Error("Akun PIN yang tertaut tidak aktif atau perannya berubah.");
+   if(await hash(linked.salt,pinValue)!==linked.hash)throw new Error("PIN perangkat salah.");
+   sessionStorage.setItem("ksecurity_session",String(linked.id));startSession(linked);return {created:false,user:linked};
+ }
+ const id="cloud-"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(16).slice(2));
+ const saltValue=salt(),user={id,name:String(name||cloudEmail.split("@")[0]).slice(0,80),role:cloudRole,salt:saltValue,hash:await hash(saltValue,pinValue),active:true,createdAt:new Date().toISOString(),cloudUserId:cloudId};
+ rows.push(user);localStorage.setItem(KEY,JSON.stringify(rows));
+ localStorage.setItem(cloudIdentityKey(id),JSON.stringify({userId:cloudId,email:cloudEmail,role:cloudRole,linkedAt:new Date().toISOString()}));
+ sessionStorage.setItem("ksecurity_session",id);startSession(user);audit("Akun PIN dibuat setelah verifikasi Cloud","Akun "+user.name+" ("+cloudRole+")");
+ return {created:true,user};
+}
+async function startLinkedCloudSession({userId,pin}){
+ const cloudId=String(userId||"").trim(),pinValue=String(pin||"");
+ if(!cloudId||!/^\d{6}$/.test(pinValue))throw new Error("Masukkan PIN 6 angka.");
+ const u=read().find(x=>{try{return JSON.parse(localStorage.getItem(cloudIdentityKey(x.id))||"null")?.userId===cloudId}catch{return false}});
+ if(!u||u.active===false)throw new Error("Akun Cloud ini belum memiliki PIN perangkat di perangkat ini.");
+ if(await hash(u.salt,pinValue)!==u.hash)throw new Error("PIN perangkat salah.");
+ sessionStorage.setItem("ksecurity_session",String(u.id));startSession(u);return u;
+}
+async function linkExistingLocalUser({localId,userId,email,role,pin}){
+ const cloudId=String(userId||"").trim(),id=String(localId||"").trim(),cloudEmail=String(email||"").trim().toLowerCase(),cloudRole=String(role||"").toLowerCase(),pinValue=String(pin||"");
+ if(!cloudId||!id||!["owner","admin","cashier"].includes(cloudRole)||!/^\d{6}$/.test(pinValue))throw new Error("Data pengaitan tidak valid.");
+ const rows=read(),u=rows.find(x=>String(x.id)===id&&x.active!==false);
+ if(!u)throw new Error("Akun lokal lama tidak ditemukan atau tidak aktif.");
+ if(u.role!==cloudRole)throw new Error("Peran akun lokal tidak sama dengan peran akun Cloud.");
+ const current=(()=>{try{return JSON.parse(localStorage.getItem(cloudIdentityKey(id))||"null")}catch{return null}})();
+ if(current&&current.userId!==cloudId)throw new Error("Akun PIN ini sudah terhubung ke akun Cloud lain.");
+ for(const other of rows){if(String(other.id)===id)continue;try{if(JSON.parse(localStorage.getItem(cloudIdentityKey(other.id))||"null")?.userId===cloudId)throw new Error("Akun Cloud ini sudah terhubung ke akun PIN lain.");}catch(error){if(error instanceof Error&&error.message.includes("sudah terhubung"))throw error;}}
+ if(await hash(u.salt,pinValue)!==u.hash)throw new Error("PIN lokal lama salah.");
+ localStorage.setItem(cloudIdentityKey(id),JSON.stringify({userId:cloudId,email:cloudEmail,role:cloudRole,linkedAt:new Date().toISOString()}));
+ sessionStorage.setItem("ksecurity_session",id);startSession(u);audit("Akun lokal lama ditautkan ke Cloud","Akun "+u.name+" ("+cloudRole+")");
+ return u;
+}
+window.KASIRKU_AUTH={enrollVerifiedCloudUser,startLinkedCloudSession,linkExistingLocalUser,getLocalUsers:()=>read().map(({id,name,role,active})=>({id,name,role,active}))};
 function publishLocalSession(){try{window.dispatchEvent(new CustomEvent("kasirku:local-session",{detail:user?{id:String(user.id),name:String(user.name||""),role:String(user.role||"").toLowerCase()}:null}))}catch(e){}}
 function startSession(u){user=u;publishLocalSession();const assigned=Array.isArray(u.branchIds)?u.branchIds:(u.branchId?[u.branchId]:[]);if(!["owner","admin"].includes(u.role)&&assigned.length){const current=localStorage.getItem(ACTIVE_BRANCH_KEY);if(!assigned.includes(current))localStorage.setItem(ACTIVE_BRANCH_KEY,assigned[0])}document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();document.querySelector(".topbar")?.appendChild(b);reset();apply()}
-function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u)startSession(u);else{sessionStorage.removeItem("ksecurity_session");login()}}
-function lock(){user=null;publishLocalSession();clearTimeout(timer);sessionStorage.removeItem("ksecurity_session");localStorage.removeItem("ksecurity_session");document.getElementById("ks-account")?.remove();login()}
+function welcome(){
+  show('<div class="ks-welcome"><div class="ks-welcome-glow ks-welcome-glow-a"></div><div class="ks-welcome-glow ks-welcome-glow-b"></div><div class="ks-welcome-content"><div class="ks-welcome-logo"><img src="./assets/kasirku-mark.svg?v=4" alt="Logo KASIRKU"></div><div class="ks-welcome-kicker">SISTEM KASIR MODERN</div><h1>Selamat Datang<br><span>di KASIRKU</span></h1><p>Kelola usaha dengan lebih mudah, rapi, dan aman. Silakan pilih cara masuk untuk melanjutkan.</p><div class="ks-welcome-actions"><button type="button" class="ks-entry-card" id="ks-open-pin"><span class="ks-entry-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span><span class="ks-entry-copy"><strong>Login PIN</strong><small>Masuk atau daftar PIN perangkat</small></span><span class="ks-entry-arrow">→</span></button><button type="button" class="ks-entry-card ks-entry-cloud" id="ks-open-cloud"><span class="ks-entry-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1-.5-8A5.5 5.5 0 0 1 17 8a4 4 0 0 1 .5 8H7Z"/><path d="M12 11v7m-3-3 3 3 3-3"/></svg></span><span class="ks-entry-copy"><strong>Login Cloud</strong><small>Daftar akun atau masuk dengan Cloud</small></span><span class="ks-entry-arrow">→</span></button></div><div class="ks-welcome-footer"><span class="ks-footer-dot"></span> Aman · Praktis · Terpercaya</div></div></div>');
+  document.getElementById("ks-open-pin").onclick=()=>{if(read().filter(x=>x.active!==false).length)login();else setup()};
+  document.getElementById("ks-open-cloud").onclick=()=>{const url=new URL(location.href);url.searchParams.set("cloud-auth-preview","1");location.href=url.toString()};
+}
+function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u)startSession(u);else{sessionStorage.removeItem("ksecurity_session");welcome()}}
+function lock(){user=null;publishLocalSession();clearTimeout(timer);sessionStorage.removeItem("ksecurity_session");localStorage.removeItem("ksecurity_session");document.getElementById("ks-account")?.remove();welcome()}
 function reset(){clearTimeout(timer);timer=setTimeout(lock,600000)}
 const cashierPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan","Pengaturan"];
 const adminPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Laporan","Kas","Pengaturan"];
@@ -161,8 +208,8 @@ function apply(){
 }
 ["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p){const allowed=user.role==="owner"||user.role==="admin"?adminPages:cashierPages;if(!allowed.includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}}},true);
-document.addEventListener("DOMContentLoaded",()=>{style();if(!read().length)setup();else restoreSession();installActivityAudit()});
-if(document.readyState!=="loading"){style();if(!read().length)setup();else restoreSession();installActivityAudit()}
+document.addEventListener("DOMContentLoaded",()=>{style();restoreSession();installActivityAudit()});
+if(document.readyState!=="loading"){style();restoreSession();installActivityAudit()}
 window.addEventListener("load",()=>{if(user)apply()});
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p)window.setTimeout(()=>{if(user)apply()},0)},false);
 })();

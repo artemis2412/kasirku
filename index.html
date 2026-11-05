@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./style.css?v=mobile-sidebar-scroll-2">
   <link rel="stylesheet" href="./mobile-layout-fixes.css?v=1">
   <link rel="stylesheet" href="./mobile-drawer.css?v=1">
+  <link rel="stylesheet" href="./welcome.css?v=1">
   <title>KASIRKU — Aplikasi Kasir Modern</title>
 </head>
 <body>
@@ -34,25 +35,21 @@
     <nav id="bottom-nav" aria-label="Navigasi bawah"></nav>
     <div id="connection-status" class="connection-status" role="status" aria-live="polite"><span class="connection-dot" aria-hidden="true"></span><span id="connection-status-label">Memeriksa…</span></div>
   </main>
-  <script src="./auth.js?v=session-pin-3"></script>
+  <script src="./auth.js?v=welcome-entry-1"></script>
   <script src="./supabase-config.js?v=1"></script>
-  <script src="./cloud-bridge.js?v=admin-branch-access-1"></script>
+  <script src="./cloud-bridge.js?v=shared-cloud-auth-1"></script>
   <script>
-    if (new URLSearchParams(location.search).has("cloud-auth-preview")) {
-      const configScript = document.createElement("script");
-      configScript.src = "./supabase-config.js?v=1";
-      configScript.onload = () => {
-        const authScript = document.createElement("script");
-        authScript.src = "./cloud-auth.js?v=identity-isolation-8";
-        document.body.appendChild(authScript);
-      };
-      configScript.onerror = () => console.error("KASIRKU: gagal memuat konfigurasi login cloud.");
-      document.body.appendChild(configScript);
+    const authQuery = new URLSearchParams(location.search);
+    if (authQuery.has("cloud-auth-preview") || authQuery.has("accept-staff-invite")) {
+      const authScript = document.createElement("script");
+      authScript.src = "./cloud-auth.js?v=cloud-first-pin-3";
+      authScript.onerror = () => console.error("KASIRKU: gagal memuat halaman autentikasi Cloud.");
+      document.body.appendChild(authScript);
     }
   </script>
   <script src="./branch-storage.js?v=1"></script>
   <script src="./app.js?v=38.0"></script>
-  <script src="./cloud-panel.js?v=admin-branch-access-2"></script>
+  <script src="./cloud-panel.js?v=cloud-session-copy-1"></script>
   <script src="./cloud-catalog-sync.js?v=2"></script>
   <script src="./update-checker.js?v=1"></script>
   <script>

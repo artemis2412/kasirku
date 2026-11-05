@@ -34,9 +34,20 @@
   const IDENTITY_LINK_PREFIX="kasirku_cloud_identity_link_v1:";
   function identityLinkKey(localId){return IDENTITY_LINK_PREFIX+encodeURIComponent(String(localId))}
   function readIdentityLink(localId){try{return JSON.parse(localStorage.getItem(identityLinkKey(localId))||"null")}catch{return null}}
+  const CLOUD_AUTH_PREFIX="kasirku_cloud_auth_v1:";
   function scopedStorage(localId){
-    const prefix="kasirku_supabase_auth_v1:"+encodeURIComponent(String(localId))+":";
-    return {getItem:async key=>localStorage.getItem(prefix+key),setItem:async(key,value)=>localStorage.setItem(prefix+key,value),removeItem:async key=>localStorage.removeItem(prefix+key)};
+    const legacyPrefix="kasirku_supabase_auth_v1:"+encodeURIComponent(String(localId))+":";
+    return {
+      getItem:async key=>{
+        const current=localStorage.getItem(CLOUD_AUTH_PREFIX+key);
+        return current!==null?current:localStorage.getItem(legacyPrefix+key);
+      },
+      setItem:async(key,value)=>localStorage.setItem(CLOUD_AUTH_PREFIX+key,value),
+      removeItem:async key=>{
+        localStorage.removeItem(CLOUD_AUTH_PREFIX+key);
+        localStorage.removeItem(legacyPrefix+key);
+      }
+    };
   }
   async function getScopedClient(){
     const local=readLocalSession();
