@@ -69,3 +69,7 @@ Izin jaringan Android (INTERNET) sudah ditambahkan untuk kebutuhan koneksi Supab
 - Akun dengan beberapa toko dapat memilih toko. Admin/Kasir hanya melihat cabang yang ditetapkan pada `branch_memberships`.
 - Kunci yang dipakai adalah publishable key (bukan service-role/secret). Untuk rilis produksi, pindahkan nilai konfigurasi build ke secret CI atau konfigurasi lokal yang tidak dikomit.
 - Pemilihan toko/cabang menghasilkan `VerifiedTenantContext`. Konteks ini belum otomatis mengalihkan layar Produk dari database lama ke Room; integrasi katalog dilakukan setelah proses login dan pemilihan cabang diuji pada perangkat.
+
+
+### Harga jual per cabang
+Harga jual cabang bersifat opsional. Produk tanpa harga jual pada cabang tertentu tetap tersimpan di katalog toko, tetapi tidak ditampilkan pada pemilihan produk saat checkout cabang tersebut. Harga nominal pada formulir produk ditampilkan dengan pemisah ribuan Indonesia; nilai disimpan sebagai angka.
