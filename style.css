@@ -1539,9 +1539,9 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 
 
 /* Pengaturan — tata letak yang lebih rapi di web dan APK */
-#view .page-stack{gap:16px}
-#view .page-stack>.panel{min-width:0}
-#view .page-stack>.panel h3{margin-bottom:16px}
+#view .settings-page{gap:16px}
+#view .settings-page>.panel{min-width:0}
+#view .settings-page>.panel h3{margin-bottom:16px}
 #view #ks-cloud-check-panel{margin-top:18px!important}
 #ks-cloud-check-panel #ks-cloud-store>div{
   padding:17px!important;border-radius:16px!important;
@@ -1616,8 +1616,8 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 #printer-settings-form .form-actions .btn{width:100%;min-height:46px}
 #store-settings-form{gap:14px}
 @media(max-width:650px){
-  #view .page-stack{gap:14px}
-  #view .page-stack>.panel{padding:17px!important}
+  #view .settings-page{gap:14px}
+  #view .settings-page>.panel{padding:17px!important}
   .settings-logo-upload{margin-top:14px}
   .store-logo-preview{width:104px;height:104px;flex-basis:104px}
   .logo-preview-wrap{align-items:center;gap:11px}
