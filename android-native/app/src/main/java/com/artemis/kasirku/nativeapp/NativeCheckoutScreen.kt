@@ -1,5 +1,11 @@
 package com.artemis.kasirku.nativeapp
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,10 +19,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -27,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +45,8 @@ import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.launch
+
+private data class ReceiptDraft(val saleId: String, val lines: List<CheckoutLine>, val subtotal: Long, val total: Long, val paid: Long, val change: Long)
 
 private data class CartEntry(
     val id: String,
@@ -65,6 +76,26 @@ internal fun NativeCheckoutScreen(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var success by remember { mutableStateOf<String?>(null) }
+    var printerError by remember { mutableStateOf<String?>(null) }
+    var printerList by remember { mutableStateOf<List<PairedPrinter>>(emptyList()) }
+    var selectedPrinter by remember { mutableStateOf(BluetoothReceiptPrinter.selectedAddress(context)) }
+    var receiptDraft by remember { mutableStateOf<ReceiptDraft?>(null) }
+    var printing by remember { mutableStateOf(false) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) printerList = BluetoothReceiptPrinter.pairedPrinters(context)
+        else printerError = "Izin Bluetooth diperlukan untuk membaca printer yang sudah dipasangkan."
+    }
+    fun loadPrinters() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+        ) permissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
+        else printerList = BluetoothReceiptPrinter.pairedPrinters(context)
+    }
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+        ) printerList = BluetoothReceiptPrinter.pairedPrinters(context)
+    }
     val subtotal = cart.values.sumOf { it.price * it.quantity }
     val paid = payment.filter(Char::isDigit).toLongOrNull() ?: 0L
 
@@ -81,6 +112,20 @@ internal fun NativeCheckoutScreen(
             TextButton(onClick = onBack) { Text("Kembali") }
         }
         OutlinedTextField(value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Cari produk") }, singleLine = true)
+        Text("Printer nota Bluetooth", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+        Text(selectedPrinter?.let { address -> printerList.firstOrNull { it.address == address }?.name ?: address } ?: "Belum ada printer dipilih", color = Color(0xFF718096), fontSize = 12.sp)
+        OutlinedButton(onClick = { loadPrinters(); printerError = null }, modifier = Modifier.fillMaxWidth()) { Text("Muat printer yang sudah dipasangkan") }
+        printerList.forEach { printer ->
+            OutlinedButton(onClick = {
+                selectedPrinter = printer.address
+                BluetoothReceiptPrinter.saveSelectedAddress(context, printer.address)
+                printerError = null
+            }, modifier = Modifier.fillMaxWidth(), enabled = selectedPrinter != printer.address) {
+                Text((if (selectedPrinter == printer.address) "✓ " else "") + printer.name + " • " + printer.address)
+            }
+        }
+        printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
+        Text("Pasangkan printer melalui Pengaturan Bluetooth HP terlebih dahulu.", color = Color(0xFF718096), fontSize = 11.sp)
         Text("Pilih produk", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
         products.filter { it.name.contains(search, ignoreCase = true) }.forEach { product ->
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(13.dp)) {
@@ -145,9 +190,11 @@ internal fun NativeCheckoutScreen(
                         scope.launch {
                             busy = true
                             error = null
+                            val receiptLines = cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }
                             runCatching {
-                                sales.checkout(tenant, cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }, paid)
+                                sales.checkout(tenant, receiptLines, paid)
                             }.onSuccess { result ->
+                                receiptDraft = ReceiptDraft(result.saleId, receiptLines, subtotal, result.total, paid, result.change)
                                 success = "Transaksi tersimpan. Total Rp ${result.total}, kembalian Rp ${result.change}."
                                 cart.clear()
                                 payment = ""
@@ -163,6 +210,24 @@ internal fun NativeCheckoutScreen(
         }
         error?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
         success?.let { Text(it, color = Color(0xFF168C83), fontSize = 12.sp) }
-        Text("Transaksi disimpan lokal. Sinkronisasi Cloud dan cetak Bluetooth menyusul.", color = Color(0xFF718096), fontSize = 11.sp)
+        receiptDraft?.let { receipt ->
+            OutlinedButton(onClick = {
+                val address = selectedPrinter
+                if (address == null) printerError = "Pilih printer Bluetooth terlebih dahulu."
+                else scope.launch {
+                    printing = true
+                    printerError = null
+                    runCatching {
+                        BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
+                            receipt.saleId, receipt.lines, receipt.subtotal, receipt.total, receipt.paid, receipt.change)
+                    }.onSuccess { success = "Nota berhasil dikirim ke printer." }
+                        .onFailure { printerError = it.message ?: "Gagal mencetak nota." }
+                    printing = false
+                }
+            }, modifier = Modifier.fillMaxWidth(), enabled = !printing) {
+                Text(if (printing) "Mengirim nota…" else "Cetak nota Bluetooth")
+            }
+        }
+        Text("Transaksi tersimpan lokal. Cetak nota dilakukan manual setelah transaksi berhasil.", color = Color(0xFF718096), fontSize = 11.sp)
     }
 }
