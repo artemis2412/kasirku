@@ -170,17 +170,46 @@ interface CatalogDao {
     @Transaction
     suspend fun completeSale(sale: SaleEntity, items: List<SaleItemEntity>) {
         require(items.isNotEmpty()) { "Keranjang masih kosong." }
-        require(sale.total > 0L && sale.paid >= sale.total) { "Pembayaran belum mencukupi." }
+        require(sale.storeId.isNotBlank() && sale.branchId.isNotBlank()) {
+            "Toko dan cabang transaksi wajib ditentukan."
+        }
+        require(sale.subtotal > 0L && sale.discount >= 0L && sale.discount <= sale.subtotal) {
+            "Subtotal atau diskon transaksi tidak valid."
+        }
+        require(sale.total == sale.subtotal - sale.discount && sale.total > 0L) {
+            "Perhitungan total transaksi tidak valid."
+        }
+        require(sale.paid >= sale.total && sale.change == sale.paid - sale.total) {
+            "Pembayaran atau uang kembalian tidak valid."
+        }
+        require(sale.paymentMethod.isNotBlank()) { "Metode pembayaran wajib ditentukan." }
+
+        var calculatedSubtotal = 0L
         items.forEach { item ->
             require(item.saleId == sale.id && item.quantity > 0 && item.unitPrice > 0L) {
                 "Detail transaksi tidak valid."
             }
+            val expectedLineTotal = Math.multiplyExact(item.quantity.toLong(), item.unitPrice)
+            require(item.lineTotal == expectedLineTotal) {
+                "Jumlah harga pada detail transaksi tidak sesuai."
+            }
+            calculatedSubtotal = Math.addExact(calculatedSubtotal, item.lineTotal)
+
             val product = getProduct(item.productId)
             require(product != null && product.storeId == sale.storeId && product.isActive) {
                 "Produk tidak tersedia di toko aktif."
             }
+            val branchPrice = getBranchPrice(sale.branchId, item.productId)
+            val expectedPrice = branchPrice?.sellingPrice ?: product.basePrice
+            require(item.unitPrice == expectedPrice) {
+                "Harga produk berubah. Perbarui keranjang sebelum menyimpan transaksi."
+            }
+
             val changed = deductStock(sale.branchId, item.productId, item.quantity, sale.createdAt)
             if (changed == 0) throw IllegalStateException("Stok produk tidak mencukupi.")
+        }
+        require(calculatedSubtotal == sale.subtotal) {
+            "Subtotal transaksi tidak sama dengan rincian produk."
         }
         insertSale(sale)
         insertSaleItems(items)
