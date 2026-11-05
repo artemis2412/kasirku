@@ -78,16 +78,27 @@ data class CloudAccountAccess(
  * authentication. Local PIN data is deliberately not used as an authority.
  */
 class CloudAuthRepository {
-    private val client by lazy {
-        require(BuildConfig.SUPABASE_URL.isNotBlank() && BuildConfig.SUPABASE_PUBLISHABLE_KEY.isNotBlank()) {
-            "Konfigurasi Cloud belum tersedia."
-        }
-        createSupabaseClient(
-            supabaseUrl = BuildConfig.SUPABASE_URL,
-            supabaseKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY
-        ) {
-            install(Auth)
-            install(Postgrest)
+    private val client: io.github.jan.supabase.SupabaseClient
+        get() = sharedClient
+
+    companion object {
+        /**
+         * Keep one authenticated client for the whole app process. The Auth
+         * plugin's Android session manager persists/restores the session
+         * between process launches; sharing this instance also avoids
+         * competing refresh cycles when Compose recreates account screens.
+         */
+        private val sharedClient: io.github.jan.supabase.SupabaseClient by lazy {
+            require(BuildConfig.SUPABASE_URL.isNotBlank() && BuildConfig.SUPABASE_PUBLISHABLE_KEY.isNotBlank()) {
+                "Konfigurasi Cloud belum tersedia."
+            }
+            createSupabaseClient(
+                supabaseUrl = BuildConfig.SUPABASE_URL,
+                supabaseKey = BuildConfig.SUPABASE_PUBLISHABLE_KEY
+            ) {
+                install(Auth)
+                install(Postgrest)
+            }
         }
     }
 
