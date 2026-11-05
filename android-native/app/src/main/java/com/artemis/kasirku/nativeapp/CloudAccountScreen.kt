@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -28,7 +30,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.artemis.kasirku.nativeapp.data.AuthorizedStore
 import com.artemis.kasirku.nativeapp.data.CloudAccountAccess
 import com.artemis.kasirku.nativeapp.data.CloudAuthRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
@@ -80,7 +81,7 @@ internal fun CloudAccountScreen(
     val selectedStore = access?.stores?.firstOrNull { it.id == selectedStoreId }
 
     Column(
-        modifier = modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+        modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
