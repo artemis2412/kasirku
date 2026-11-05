@@ -24,6 +24,9 @@ interface CatalogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertInventories(inventory: List<BranchInventoryEntity>)
 
+    @Query("SELECT * FROM product_barcodes WHERE storeId = :storeId AND barcode = :barcode LIMIT 1")
+    suspend fun findByBarcode(storeId: String, barcode: String): ProductBarcodeEntity?
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBarcodes(barcodes: List<ProductBarcodeEntity>)
 
