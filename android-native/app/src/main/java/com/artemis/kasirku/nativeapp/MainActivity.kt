@@ -189,7 +189,13 @@ private fun KasirkuNativeApp() {
                         )
                     }
                     selectedTab == 3 -> if (verifiedTenantContext != null) {
-                        NativeReportsScreen(
+                        if (verifiedTenantContext!!.role == com.artemis.kasirku.nativeapp.data.StoreRole.CASHIER) {
+                            SimpleFeatureScreen(
+                                title = "Laporan terbatas",
+                                description = "Laporan penjualan hanya dapat diakses owner, admin, dan supervisor.",
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        } else NativeReportsScreen(
                             tenant = verifiedTenantContext!!,
                             modifier = Modifier.padding(innerPadding)
                         )
