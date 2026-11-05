@@ -72,9 +72,9 @@ class SalesRepository(private val dao: CatalogDao) {
     fun observeSalesTotal(tenant: VerifiedTenantContext, startAt: Long, endAt: Long) =
         dao.observeSalesTotal(tenant.storeId, tenant.branchId, startAt, endAt)
 
-    suspend fun saleItems(saleId: String): List<SaleItemEntity> {
+    suspend fun saleItems(tenant: VerifiedTenantContext, saleId: String): List<SaleItemEntity> {
         require(saleId.isNotBlank()) { "Transaksi tidak valid." }
-        return dao.getSaleItems(saleId)
+        return dao.getSaleItems(tenant.storeId, tenant.branchId, saleId)
     }
 
     suspend fun exportRows(tenant: VerifiedTenantContext, startAt: Long, endAt: Long): List<Pair<SaleEntity, List<SaleItemEntity>>> {
