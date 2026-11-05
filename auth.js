@@ -115,7 +115,7 @@ function cloudIdentityKey(localId){return "kasirku_cloud_identity_link_v1:"+enco
 async function enrollVerifiedCloudUser({userId,email,role,name,pin}){
  const cloudId=String(userId||"").trim(),cloudEmail=String(email||"").trim().toLowerCase(),cloudRole=String(role||"").toLowerCase(),pinValue=String(pin||"");
  if(!cloudId||!cloudEmail||!["owner","admin","cashier"].includes(cloudRole))throw new Error("Identitas atau peran Cloud tidak valid.");
- if(!/^\\d{6}$/.test(pinValue))throw new Error("PIN harus tepat 6 angka.");
+ if(!/^\d{6}$/.test(pinValue))throw new Error("PIN harus tepat 6 angka.");
  const rows=read();
  const linked=rows.find(x=>{try{return JSON.parse(localStorage.getItem(cloudIdentityKey(x.id))||"null")?.userId===cloudId}catch{return false}});
  if(linked){
@@ -132,7 +132,7 @@ async function enrollVerifiedCloudUser({userId,email,role,name,pin}){
 }
 async function startLinkedCloudSession({userId,pin}){
  const cloudId=String(userId||"").trim(),pinValue=String(pin||"");
- if(!cloudId||!/^\\d{6}$/.test(pinValue))throw new Error("Masukkan PIN 6 angka.");
+ if(!cloudId||!/^\d{6}$/.test(pinValue))throw new Error("Masukkan PIN 6 angka.");
  const u=read().find(x=>{try{return JSON.parse(localStorage.getItem(cloudIdentityKey(x.id))||"null")?.userId===cloudId}catch{return false}});
  if(!u||u.active===false)throw new Error("Akun Cloud ini belum memiliki PIN perangkat di perangkat ini.");
  if(await hash(u.salt,pinValue)!==u.hash)throw new Error("PIN perangkat salah.");
@@ -140,7 +140,7 @@ async function startLinkedCloudSession({userId,pin}){
 }
 async function linkExistingLocalUser({localId,userId,email,role,pin}){
  const cloudId=String(userId||"").trim(),id=String(localId||"").trim(),cloudEmail=String(email||"").trim().toLowerCase(),cloudRole=String(role||"").toLowerCase(),pinValue=String(pin||"");
- if(!cloudId||!id||!["owner","admin","cashier"].includes(cloudRole)||!/^\\d{6}$/.test(pinValue))throw new Error("Data pengaitan tidak valid.");
+ if(!cloudId||!id||!["owner","admin","cashier"].includes(cloudRole)||!/^\d{6}$/.test(pinValue))throw new Error("Data pengaitan tidak valid.");
  const rows=read(),u=rows.find(x=>String(x.id)===id&&x.active!==false);
  if(!u)throw new Error("Akun lokal lama tidak ditemukan atau tidak aktif.");
  if(u.role!==cloudRole)throw new Error("Peran akun lokal tidak sama dengan peran akun Cloud.");
