@@ -165,6 +165,15 @@ private fun DashboardScreen(
     onNewTransaction: () -> Unit,
     onOpenTab: (Int) -> Unit
 ) {
+    val context = LocalContext.current
+    val dashboardProducts = remember { mutableStateListOf<KasirkuProduct>() }
+
+    LaunchedEffect(Unit) {
+        val database = ProductDatabase(context.applicationContext)
+        dashboardProducts.clear()
+        dashboardProducts.addAll(database.getAllProducts())
+    }
+
     Column(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp).padding(top = 18.dp, bottom = 22.dp),
@@ -184,7 +193,7 @@ private fun DashboardScreen(
         SalesSummaryCard()
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             MetricCard("Transaksi", "0", "Hari ini", "▤", Modifier.weight(1f))
-            MetricCard("Produk", "0", "Terdaftar", "▦", Modifier.weight(1f))
+            MetricCard("Produk", dashboardProducts.size.toString(), "Terdaftar", "▦", Modifier.weight(1f))
         }
         Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
             SectionHeading("Menu cepat", "Akses fitur utama")
@@ -214,7 +223,7 @@ private fun DashboardScreen(
                 }
             }
         }
-        Text("Kasirku Native • Versi 0.3.0", color = Muted, fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("Kasirku Native • Versi 0.4.1", color = Muted, fontSize = 11.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
     }
 }
 
