@@ -56,6 +56,29 @@ interface CatalogDao {
         if (barcodes.isNotEmpty()) insertBarcodes(barcodes)
     }
 
+
+    @Query("""
+        SELECT p.*, 
+            COALESCE((SELECT sellingPrice FROM branch_product_prices
+                      WHERE branchId = :branchId AND productId = p.id), p.basePrice) AS activeSellingPrice,
+            COALESCE((SELECT quantity FROM branch_inventory
+                      WHERE branchId = :branchId AND productId = p.id), 0) AS branchQuantity
+        FROM catalog_products AS p
+        WHERE p.storeId = :storeId AND p.isActive = 1
+          AND (:query = '' OR p.name LIKE '%' || :query || '%' COLLATE NOCASE
+               OR EXISTS (SELECT 1 FROM product_barcodes AS b
+                          WHERE b.storeId = :storeId AND b.productId = p.id
+                            AND b.barcode LIKE '%' || :query || '%'))
+        ORDER BY p.name COLLATE NOCASE
+    """)
+    fun observeBranchCatalog(storeId: String, branchId: String, query: String): Flow<List<BranchCatalogRow>>
+
+    @Query("""
+        UPDATE catalog_products SET isActive = 0, updatedAt = :updatedAt
+        WHERE id = :productId AND storeId = :storeId AND isActive = 1
+    """)
+    suspend fun deactivateProduct(storeId: String, productId: String, updatedAt: Long): Int
+
     @Query("SELECT * FROM catalog_products WHERE id = :productId LIMIT 1")
     suspend fun getProduct(productId: String): ProductEntity?
 
