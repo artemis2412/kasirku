@@ -71,3 +71,29 @@ data class BranchCatalogRow(
     @androidx.room.ColumnInfo(name = "activeSellingPrice") val activeSellingPrice: Long,
     @androidx.room.ColumnInfo(name = "branchQuantity") val branchQuantity: Int
 )
+
+@Entity(tableName = "sales", indices = [Index(value = ["storeId", "branchId", "createdAt"])])
+data class SaleEntity(
+    @PrimaryKey val id: String,
+    val storeId: String,
+    val branchId: String,
+    val cashierUserId: String,
+    val subtotal: Long,
+    val discount: Long,
+    val total: Long,
+    val paid: Long,
+    val change: Long,
+    val paymentMethod: String,
+    val createdAt: Long
+)
+
+@Entity(tableName = "sale_items", indices = [Index(value = ["saleId"])])
+data class SaleItemEntity(
+    @PrimaryKey val id: String,
+    val saleId: String,
+    val productId: String,
+    val productName: String,
+    val quantity: Int,
+    val unitPrice: Long,
+    val lineTotal: Long
+)
