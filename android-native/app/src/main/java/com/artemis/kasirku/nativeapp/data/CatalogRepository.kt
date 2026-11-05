@@ -76,7 +76,12 @@ class CatalogRepository(
             require(category != null) { "Kategori tidak aktif atau bukan milik toko ini." }
         }
 
-        val normalizedBarcodes = draft.barcodes.map(String::trim).filter(String::isNotEmpty).distinct()
+        val submittedBarcodes = draft.barcodes.map(String::trim).filter(String::isNotEmpty).distinct()
+        val normalizedBarcodes = if (submittedBarcodes.isEmpty() && existing != null) {
+            dao.getBarcodes(storeId, productId).map { it.barcode }
+        } else {
+            submittedBarcodes
+        }
         normalizedBarcodes.forEach { barcode ->
             val owner = dao.findByBarcode(storeId, barcode)
             require(owner == null || owner.productId == productId) {
