@@ -31,6 +31,8 @@ class SaleSyncRepository(
                 )
                 check(marked == 1) { "Status antrean transaksi tidak berhasil diperbarui." }
                 uploaded++
+            } catch (error: SecurityException) {
+                throw error
             } catch (error: Exception) {
                 failed++
                 dao.updateSaleSyncStatus(
