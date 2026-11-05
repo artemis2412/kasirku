@@ -1499,3 +1499,40 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
   object-fit:contain!important;
   background:transparent!important;
 }
+
+/* Dashboard greeting — calm, open layout without the old solid-green banner. */
+.dashboard-greeting{
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+  padding:7px 2px 17px;margin:0 0 2px;
+  border-bottom:1px solid #e3ebe4;
+  background:transparent;color:var(--ink);
+}
+.dashboard-greeting-copy{min-width:0}
+.dashboard-greeting-kicker{
+  display:inline-flex;align-items:center;gap:7px;margin-bottom:5px;
+  color:#438265;font-size:10px;font-weight:800;letter-spacing:1.7px;
+}
+.dashboard-greeting-kicker:before{
+  content:"";display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:#35ad70;box-shadow:0 0 0 4px #35ad7018;
+}
+.dashboard-greeting h2{margin:0 0 4px;font-size:25px;line-height:1.2;font-weight:800;letter-spacing:-.65px;color:#203b2d}
+.dashboard-greeting p{margin:0;color:#7a8980;font-size:13px;line-height:1.5}
+.dashboard-greeting-action{
+  flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:42px;padding:0 15px;border:1px solid #cfe4d5;border-radius:12px;
+  background:linear-gradient(135deg,#eaf6ee,#f5faf6);color:#176d48;
+  font:700 13px/1.2 inherit;box-shadow:0 3px 10px #1d65400b;
+}
+.dashboard-greeting-action span{font-size:19px;line-height:1}
+.dashboard-greeting-action:active{transform:translateY(1px)}
+@media(max-width:650px){
+ .dashboard-greeting{align-items:flex-start;gap:10px;padding:3px 1px 14px}
+ .dashboard-greeting h2{font-size:22px}
+ .dashboard-greeting p{font-size:12px;max-width:290px}
+ .dashboard-greeting-action{align-self:center;min-height:39px;padding:0 11px;font-size:11px;white-space:nowrap;border-radius:11px}
+}
+@media(max-width:380px){
+ .dashboard-greeting{flex-direction:column;align-items:stretch}
+ .dashboard-greeting-action{align-self:flex-start}
+}
