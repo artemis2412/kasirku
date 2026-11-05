@@ -45,8 +45,8 @@ data class BranchInventoryEntity(
 )
 
 @Entity(tableName = "product_barcodes", indices = [
-    Index(value = ["barcode"], unique = true), Index(value = ["productId"])
+    Index(value = ["storeId", "barcode"], unique = true), Index(value = ["productId"])
 ])
 data class ProductBarcodeEntity(
-    @PrimaryKey val id: String, val productId: String, val barcode: String, val createdAt: Long
+    @PrimaryKey val id: String, val storeId: String, val productId: String, val barcode: String, val createdAt: Long
 )
