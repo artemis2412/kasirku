@@ -56,6 +56,7 @@ internal fun CloudAccountScreen(
 ) {
     val repository = remember { CloudAuthRepository() }
     val appContext = LocalContext.current.applicationContext
+    val selectionPrefs = remember { appContext.getSharedPreferences("kasirku_verified_tenant", android.content.Context.MODE_PRIVATE) }
     val scope = rememberCoroutineScope()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -70,12 +71,22 @@ internal fun CloudAccountScreen(
 
     fun applyAccess(result: CloudAccountAccess) {
         access = result
-        selectedStoreId = result.stores.singleOrNull()?.id
-        selectedBranchId = result.stores.singleOrNull()?.branches?.singleOrNull()?.id
-        verifiedContext = null
+        val savedStoreId = selectionPrefs.getString("store_id", null)
+        val savedBranchId = selectionPrefs.getString("branch_id", null)
+        val store = result.stores.firstOrNull { it.id == savedStoreId }
+            ?: result.stores.singleOrNull()
+        val branch = store?.branches?.firstOrNull { it.id == savedBranchId }
+            ?: store?.branches?.singleOrNull()
+        selectedStoreId = store?.id
+        selectedBranchId = branch?.id
+        verifiedContext = if (store != null && branch != null) {
+            result.verifiedContext(store.id, branch.id)
+        } else null
         importSummary = null
-        onContextChanged(null)
-        message = if (result.stores.size > 1) {
+        onContextChanged(verifiedContext)
+        message = if (verifiedContext != null) {
+            "Sesi dan akses toko/cabang berhasil dipulihkan."
+        } else if (result.stores.size > 1) {
             "Pilih toko yang akan digunakan."
         } else {
             "Pilih cabang aktif untuk melanjutkan."
@@ -148,6 +159,7 @@ internal fun CloudAccountScreen(
                     onClick = {
                         selectedStoreId = store.id
                         selectedBranchId = null
+                        selectionPrefs.edit().putString("store_id", store.id).remove("branch_id").apply()
                         verifiedContext = null
                         onContextChanged(null)
                     }
@@ -164,6 +176,7 @@ internal fun CloudAccountScreen(
                         selected = selectedBranchId == branch.id,
                         onClick = {
                             selectedBranchId = branch.id
+                            selectionPrefs.edit().putString("store_id", selectedStore.id).putString("branch_id", branch.id).apply()
                             verifiedContext = access!!.verifiedContext(selectedStore.id, branch.id)
                             onContextChanged(verifiedContext)
                             message = "Akses toko dan cabang berhasil diverifikasi."
@@ -226,6 +239,7 @@ internal fun CloudAccountScreen(
                         verifiedContext = null
                         selectedStoreId = null
                         selectedBranchId = null
+                        selectionPrefs.edit().clear().apply()
                         onContextChanged(null)
                         message = "Sesi Cloud telah diakhiri."
                         busy = false
