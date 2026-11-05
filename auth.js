@@ -2,6 +2,9 @@
 "use strict";
 const KEY="ksecurity_users";
 const AUDIT_KEY="ksecurity_security_audit";
+const SESSION_KEY="ksecurity_session";
+const ACTIVITY_KEY="kasirku_last_activity";
+const IDLE_TIMEOUT=10*60*1000;
 function audit(action,details){try{const a=JSON.parse(localStorage.getItem(AUDIT_KEY)||"[]");a.push({id:Date.now()+"-"+Math.random().toString(16).slice(2),at:new Date().toISOString(),actor:user?.name||"Sistem",actorRole:user?.role||"system",action,details});localStorage.setItem(AUDIT_KEY,JSON.stringify(a.slice(-1000)))}catch(e){}}
 const read=()=>{try{const rows=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(rows)?rows.map(x=>x?.role==="supervisor"?{...x,role:"cashier"}:x):[]}catch{return []}};
 const hash=async(s,p)=>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s+":"+p));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")};
@@ -113,7 +116,7 @@ function login(){
    if(u.previousSalt&&u.previousHash&&await hash(u.previousSalt,f.get("pin"))===u.previousHash){audit("Percobaan login dengan PIN lama","Akun "+u.name+"; PIN sebelumnya diubah oleh "+(u.pinChangedBy||"Owner"));error("PIN telah diubah oleh "+(u.pinChangedBy||"Owner")+". Silakan hubungi Owner atau Admin untuk mendapatkan PIN terbaru.");return}
    audit("Percobaan login gagal","Akun "+u.name);error("PIN salah.");return
   }
-  sessionStorage.setItem("ksecurity_session",u.id);startSession(u)
+  localStorage.setItem(SESSION_KEY,u.id);localStorage.setItem(ACTIVITY_KEY,String(Date.now()));startSession(u)
  };
  const register=document.getElementById("ks-pin-register"),submit=document.getElementById("ks-register-submit"),registerError=document.getElementById("ks-register-error");
  register.onsubmit=async e=>{
@@ -206,9 +209,9 @@ function welcome(){
  document.getElementById("ks-open-pin").onclick=()=>openPinEntry();
  document.getElementById("ks-open-cloud").onclick=()=>{sessionStorage.setItem("kasirku_login_view","cloud");const url=new URL(location.href);url.searchParams.delete("kasirku-entry");url.searchParams.set("cloud-auth-preview","1");location.href=url.toString()};
 }
-function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u){startSession(u);return}sessionStorage.removeItem("ksecurity_session");if(localStorage.getItem("kasirku_cloud_session_active")==="1")return;const params=new URLSearchParams(location.search);if(params.get("cloud-auth-preview")==="1")return;if(params.get("kasirku-entry")==="pin"||sessionStorage.getItem("kasirku_login_view")==="pin"){sessionStorage.setItem("kasirku_login_view","pin");login();return}welcome()}
-function lock(){sessionStorage.removeItem("kasirku_login_view");if(window.KASIRKU_AUTH_MODE==="cloud"){localStorage.removeItem("kasirku_cloud_session_active");try{window.KASIRKU_CLOUD_SESSION?.signOut?.()}catch(e){console.warn("Cloud sign-out:",e)}}window.KASIRKU_AUTH_MODE="pin";user=null;publishLocalSession();clearTimeout(timer);sessionStorage.removeItem("ksecurity_session");localStorage.removeItem("ksecurity_session");document.getElementById("ks-account")?.remove();welcome()}
-function reset(){clearTimeout(timer);timer=setTimeout(lock,600000)}
+function sessionIsFresh(){const last=Number(localStorage.getItem(ACTIVITY_KEY));return Number.isFinite(last)&&last>0&&Date.now()-last<IDLE_TIMEOUT}function restoreSession(){const id=localStorage.getItem(SESSION_KEY);if(id){if(!sessionIsFresh()){localStorage.removeItem(SESSION_KEY);localStorage.removeItem(ACTIVITY_KEY)}else{const u=read().find(x=>x.id===id&&x.active!==false);if(u){startSession(u);return}localStorage.removeItem(SESSION_KEY);localStorage.removeItem(ACTIVITY_KEY)}}if(localStorage.getItem("kasirku_cloud_session_active")==="1"){if(sessionIsFresh())return;localStorage.removeItem("kasirku_cloud_session_active");localStorage.removeItem(ACTIVITY_KEY);try{window.KASIRKU_CLOUD_SESSION?.signOut?.()}catch(e){}}const params=new URLSearchParams(location.search);if(params.get("cloud-auth-preview")==="1")return;if(params.get("kasirku-entry")==="pin"||sessionStorage.getItem("kasirku_login_view")==="pin"){sessionStorage.setItem("kasirku_login_view","pin");login();return}welcome()}
+function lock(){sessionStorage.removeItem("kasirku_login_view");if(window.KASIRKU_AUTH_MODE==="cloud"){localStorage.removeItem("kasirku_cloud_session_active");try{window.KASIRKU_CLOUD_SESSION?.signOut?.()}catch(e){console.warn("Cloud sign-out:",e)}}window.KASIRKU_AUTH_MODE="pin";user=null;publishLocalSession();clearTimeout(timer);localStorage.removeItem(SESSION_KEY);localStorage.removeItem(ACTIVITY_KEY);sessionStorage.removeItem(SESSION_KEY);document.getElementById("ks-account")?.remove();welcome()}
+function reset(){clearTimeout(timer);if(!user)return;localStorage.setItem(ACTIVITY_KEY,String(Date.now()));timer=setTimeout(()=>{if(!sessionIsFresh())lock();else reset()},IDLE_TIMEOUT)}
 const cashierPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan","Pengaturan"];
 const adminPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Laporan","Kas","Pengaturan"];
 function pinPanel(){
@@ -252,7 +255,7 @@ function apply(){
  pinPanel();branchPanel();employeePanel();updateBranchLabel();
  window.dispatchEvent(new Event("kasirku:page-ready"));
 }
-["click","keydown","touchstart"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
+["click","keydown","touchstart","scroll","input"].forEach(t=>document.addEventListener(t,()=>{if(user)reset()},{passive:true}));
 document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("[data-page]");if(p){const allowed=user.role==="owner"||user.role==="admin"?adminPages:cashierPages;if(!allowed.includes(p.dataset.page)){e.preventDefault();e.stopImmediatePropagation()}}},true);
 window.KASIRKU_AUTH={
  startCloudSession(cloudUser){
