@@ -188,9 +188,9 @@ savePasswordButton.addEventListener("click",async()=>{
       const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
       if(acceptError) throw acceptError;
       if(accepted?.status!=="accepted") throw new Error("Kata sandi tersimpan, tetapi undangan belum diterima. Hubungi Owner.");
-      await linkLocalCloudIdentity();
-      say("Akun pegawai aktif! Mengarahkan ke Dashboard…","success");
-      setTimeout(returnToDashboard,650);
+      const {data:memberships,error:membershipError}=await client.from("store_memberships").select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
+      if(membershipError)throw membershipError;
+      await showPinEnrollment(session.user,memberships||[]);
     }else{
       recoveryWrap.classList.add("kca-hidden");
       say("Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.","success");
@@ -199,6 +199,37 @@ savePasswordButton.addEventListener("click",async()=>{
   }catch(error){say(error.message||"Gagal memperbarui kata sandi.","error");}
   finally{savePasswordButton.disabled=false;}
 });
+async function showPinEnrollment(cloudUser,memberships){
+  if(!window.KASIRKU_AUTH?.enrollVerifiedCloudUser)throw new Error("Modul keamanan PIN belum siap. Muat ulang halaman.");
+  if(!Array.isArray(memberships)||memberships.length!==1)throw new Error("Akun ini memiliki lebih dari satu toko aktif. Pengaitan otomatis ditahan.");
+  const role=String(memberships[0].role||"").toLowerCase();
+  if(!["owner","admin","cashier"].includes(role))throw new Error("Peran akun Cloud belum didukung untuk aktivasi perangkat.");
+  const email=String(cloudUser.email||"").toLowerCase();
+  const displayName=String(cloudUser.user_metadata?.display_name||cloudUser.user_metadata?.full_name||email.split("@")[0]||"Pengguna").trim();
+  layer.querySelector(".kca-tabs")?.classList.add("kca-hidden");
+  form.classList.add("kca-hidden");
+  recoveryWrap.classList.add("kca-hidden");
+  layer.querySelector("#kca-subtitle").textContent="Aktifkan perangkat ini";
+  layer.querySelector(".kca-note").textContent="Akun Cloud sudah terverifikasi. Buat PIN 6 angka untuk membuka KASIRKU di perangkat ini.";
+  layer.querySelector(".kca-preview-tag").textContent="VERIFIKASI CLOUD BERHASIL";
+  const panel=document.createElement("form");
+  panel.id="kca-pin-enroll";
+  panel.innerHTML='<label class="kca-field">PIN perangkat (6 angka)<input name="pin" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" required></label><label class="kca-field">Ulangi PIN perangkat<input name="confirm" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" required></label><button class="kca-primary" type="submit">Aktifkan KASIRKU</button>';
+  form.after(panel);
+  say("Akun "+email+" terverifikasi sebagai "+role.toUpperCase()+". Buat PIN perangkat untuk melanjutkan.","success");
+  panel.addEventListener("submit",async event=>{
+    event.preventDefault();
+    const pin=String(panel.elements.pin.value||""),confirm=String(panel.elements.confirm.value||"");
+    if(!/^\\d{6}$/.test(pin)){say("PIN harus tepat 6 angka.","error");return;}
+    if(pin!==confirm){say("Ulangi PIN harus sama.","error");return;}
+    const button=panel.querySelector("button");button.disabled=true;say("Mengaktifkan perangkat…");
+    try{
+      await window.KASIRKU_AUTH.enrollVerifiedCloudUser({userId:cloudUser.id,email,role,name:displayName,pin});
+      say("Perangkat berhasil diaktifkan. Membuka KASIRKU…","success");
+      setTimeout(returnToDashboard,700);
+    }catch(error){say(error.message||"Gagal mengaktifkan PIN perangkat.","error");button.disabled=false;}
+  });
+}
 async function finishPendingStore(session){
   if(!session?.user||storeSetupInProgress)return;
   const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
@@ -213,10 +244,10 @@ async function finishPendingStore(session){
       p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
     });
     if(error)throw error;
-    await linkLocalCloudIdentity();
     sessionStorage.removeItem("kca_pending_store");
-    say("Email berhasil dikonfirmasi, toko dibuat, dan akun PIN terhubung.","success");
-    setTimeout(returnToDashboard,650);
+    const {data:memberships,error:membershipError2}=await client.from("store_memberships").select("store_id,role,is_active").eq("user_id",session.user.id).eq("is_active",true);
+    if(membershipError2)throw membershipError2;
+    await showPinEnrollment(session.user,memberships||[]);
   }catch(error){console.error("KASIRKU store setup:",error);say(error.message||"Konfirmasi berhasil, tetapi pembuatan toko belum selesai. Silakan masuk kembali.","error");}
   finally{storeSetupInProgress=false;}
 }
@@ -232,43 +263,37 @@ form.addEventListener("submit",async event=>{
       client=await getIsolatedCloudClient();
     }
     if(mode==="login"){
-      const local=getLocalPinSession();
-      if(!local)throw new Error("Masuk dengan PIN KASIRKU terlebih dahulu sebelum menghubungkan akun Cloud.");
       const {data,error}=await client.auth.signInWithPassword({email,password});
       if(error) throw error;
-      const {data:membership,error:membershipError}=await client.from("store_memberships")
-        .select("store_id,role,is_active").eq("user_id",data.user.id).eq("is_active",true).limit(1);
+      let {data:memberships,error:membershipError}=await client.from("store_memberships")
+        .select("store_id,role,is_active").eq("user_id",data.user.id).eq("is_active",true);
       if(membershipError) throw membershipError;
-      if(membership?.length){
-        await linkLocalCloudIdentity();
-        sessionStorage.removeItem("kca_pending_store");
-        say("Login berhasil. Mengarahkan ke Dashboard…", "success");
-        setTimeout(returnToDashboard,650);
-      }else{
+      if(!memberships?.length){
         const {data:accepted,error:acceptError}=await client.rpc("accept_staff_invitation");
         if(!acceptError&&accepted?.status==="accepted"){
-          await linkLocalCloudIdentity();
-          say("Undangan diterima. Mengarahkan ke Dashboard…", "success");
-          setTimeout(returnToDashboard,650);
-          return;
+          const result=await client.from("store_memberships").select("store_id,role,is_active")
+            .eq("user_id",data.user.id).eq("is_active",true);
+          if(result.error)throw result.error;
+          memberships=result.data||[];
         }
+      }
+      if(!memberships?.length){
         const pending=JSON.parse(sessionStorage.getItem("kca_pending_store")||"null");
         if(pending){
           const {error:storeError}=await client.rpc("create_my_store",{
             p_store_name:pending.storeName,p_branch_name:pending.branchName,p_display_name:pending.displayName
           });
-          if(storeError) throw storeError;
-          await linkLocalCloudIdentity();
+          if(storeError)throw storeError;
           sessionStorage.removeItem("kca_pending_store");
-          say("Login, toko, dan pengaitan akun berhasil. Mengarahkan ke Dashboard…", "success");
-          setTimeout(returnToDashboard,650);
-        }else{
-          say("Login berhasil, tetapi akun ini belum memiliki toko. Pendaftaran toko perlu diselesaikan terlebih dahulu.", "success");
+          const result=await client.from("store_memberships").select("store_id,role,is_active")
+            .eq("user_id",data.user.id).eq("is_active",true);
+          if(result.error)throw result.error;
+          memberships=result.data||[];
         }
       }
+      if(!memberships?.length)throw new Error("Akun berhasil masuk, tetapi belum memiliki toko atau undangan pegawai yang aktif.");
+      await showPinEnrollment(data.user,memberships);
     }else{
-      const local=window.KASIRKU_CLOUD.getState().localSession;
-      if(!local||local.role!=="owner")throw new Error("Registrasi toko hanya dapat dilakukan setelah login PIN Owner.");
       const displayName=String(fd.get("displayName")||"").trim();
       const storeName=String(fd.get("storeName")||"").trim();
       const branchName=String(fd.get("branchName")||"").trim();
@@ -289,10 +314,9 @@ form.addEventListener("submit",async event=>{
           p_store_name:storeName,p_branch_name:branchName,p_display_name:displayName
         });
         if(storeError) throw storeError;
-        await linkLocalCloudIdentity();
-        sessionStorage.removeItem("kca_pending_store");
-        say("Akun, toko, dan pengaitan Owner berhasil. Mengarahkan ke Dashboard…", "success");
-        setTimeout(returnToDashboard,650);
+        const {data:memberships,error:membershipError}=await client.from("store_memberships").select("store_id,role,is_active").eq("user_id",data.user.id).eq("is_active",true);
+        if(membershipError)throw membershipError;
+        await showPinEnrollment(data.user,memberships||[]);
       }
     }
   }catch(error){
