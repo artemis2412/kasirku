@@ -71,12 +71,12 @@ internal fun NativeCheckoutScreen(
     val database = remember { KasirkuRoomDatabase.getInstance(context) }
     val catalog = remember { CatalogRepository(database.catalogDao()) }
     val sales = remember { SalesRepository(database.catalogDao()) }
-    val products by remember(tenant.storeId, tenant.branchId) {
+    var search by remember { mutableStateOf("") }
+    val products by remember(tenant.storeId, tenant.branchId, search) {
         catalog.observeBranchCatalog(tenant.storeId, tenant.branchId, search)
     }.collectAsState(initial = emptyList())
     val cart = remember { mutableStateMapOf<String, CartEntry>() }
     val scope = rememberCoroutineScope()
-    var search by remember { mutableStateOf("") }
     var payment by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
