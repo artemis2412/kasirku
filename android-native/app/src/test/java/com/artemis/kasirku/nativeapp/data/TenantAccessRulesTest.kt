@@ -26,6 +26,10 @@ class TenantAccessRulesTest {
         assertEquals(false, StoreRole.ADMIN.canViewCostAndProfit())
         assertEquals(false, StoreRole.SUPERVISOR.canViewCostAndProfit())
         assertEquals(false, StoreRole.CASHIER.canViewCostAndProfit())
+        assertEquals(true, StoreRole.OWNER.canSyncOtherCashierSales())
+        assertEquals(true, StoreRole.ADMIN.canSyncOtherCashierSales())
+        assertEquals(false, StoreRole.SUPERVISOR.canSyncOtherCashierSales())
+        assertEquals(false, StoreRole.CASHIER.canSyncOtherCashierSales())
     }
 
     @Test
