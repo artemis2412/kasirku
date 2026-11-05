@@ -1664,3 +1664,34 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .app-dialog-mark.question{background:#fff3e5;color:#a66b24}
 .app-dialog:has(.app-dialog-mark.error) h3{color:#b52f2f}
 .app-dialog:has(.app-dialog-mark.warning) h3{color:#99600e}
+
+
+/* Unified KASIRKU picker — replaces inconsistent Android native select popups */
+#view select,.app-dialog select{
+ appearance:none;-webkit-appearance:none;
+ min-height:48px;padding:12px 42px 12px 14px!important;
+ border:1px solid #d7e4da!important;border-radius:13px!important;
+ background-color:#fff!important;
+ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23166b45' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")!important;
+ background-repeat:no-repeat!important;background-position:right 14px center!important;
+ color:#203b2d!important;font:inherit;line-height:1.35;
+}
+#view select:focus,.app-dialog select:focus{outline:3px solid rgba(26,125,76,.13);border-color:#218354!important}
+.ks-select-backdrop{position:fixed;inset:0;z-index:10050;display:flex;align-items:flex-end;justify-content:center;padding:14px 12px max(14px,env(safe-area-inset-bottom));box-sizing:border-box;background:rgba(13,28,20,.42);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:ksSelectFade .16s ease-out}
+.ks-select-sheet{width:min(100%,520px);max-height:min(72vh,620px);display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,255,255,.8);border-radius:25px;background:#fff;box-shadow:0 18px 55px rgba(13,38,23,.22);animation:ksSelectRise .2s ease-out}
+.ks-select-grabber{width:38px;height:4px;flex:0 0 auto;margin:10px auto 3px;border-radius:9px;background:#d7e2da}
+.ks-select-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 19px 15px;border-bottom:1px solid #eaf0eb}
+.ks-select-kicker{display:block;margin-bottom:4px;color:#238354;font-size:9px;font-weight:800;letter-spacing:1.5px}
+.ks-select-heading h3{margin:0;color:#203b2d;font-size:17px;font-weight:750;line-height:1.3}
+.ks-select-close{width:35px;height:35px;flex:0 0 35px;border:0;border-radius:50%;background:#f0f5f1;color:#52665a;font-size:23px;line-height:1}
+.ks-select-options{overflow-y:auto;overscroll-behavior:contain;padding:7px 10px 12px}
+.ks-select-option{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:53px;padding:12px 13px;border:0;border-bottom:1px solid #edf1ee;border-radius:11px;background:#fff;color:#263b2e;text-align:left;font:inherit;font-size:15px;line-height:1.35}
+.ks-select-option:last-child{border-bottom:0}
+.ks-select-option.is-selected{background:#f0f8f2;color:#176b46;font-weight:700}
+.ks-select-check{display:grid;place-items:center;width:25px;height:25px;flex:0 0 25px;border:1.5px solid #cbd8ce;border-radius:50%;color:transparent;font-size:14px;font-weight:800}
+.ks-select-option.is-selected .ks-select-check{border-color:#218354;background:#218354;color:#fff}
+.ks-select-option:disabled{opacity:.42}
+@keyframes ksSelectFade{from{opacity:0}to{opacity:1}}
+@keyframes ksSelectRise{from{transform:translateY(18px);opacity:.7}to{transform:translateY(0);opacity:1}}
+@media(min-width:700px){.ks-select-backdrop{align-items:center}.ks-select-sheet{max-height:min(65vh,560px)}}
+@media(prefers-reduced-motion:reduce){.ks-select-backdrop,.ks-select-sheet{animation:none}}
