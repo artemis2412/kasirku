@@ -64,7 +64,7 @@ class OrderSyncPayloadMapperTest {
         id = "sale-uuid-1", storeId = "store-1", branchId = "branch-1",
         cashierUserId = "user-1", subtotal = 20_000, discount = 0,
         total = 20_000, paid = 20_000, change = 0, paymentMethod = "CASH",
-        createdAt = 1_793_879_200_000L
+        createdAt = 1_793_887_200_000L
     )
 
     private fun item(productId: String) = SaleItemEntity(
