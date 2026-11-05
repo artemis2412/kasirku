@@ -36,22 +36,22 @@ interface CatalogDao {
     @Transaction
     suspend fun saveProductForBranch(
         product: ProductEntity,
-        branchPrice: BranchProductPriceEntity,
+        branchPrice: BranchProductPriceEntity?,
         inventory: BranchInventoryEntity,
         barcodes: List<ProductBarcodeEntity>
     ) {
         require(product.storeId.isNotBlank()) { "Store wajib ditentukan." }
-        require(branchPrice.branchId.isNotBlank() && inventory.branchId == branchPrice.branchId) {
-            "Cabang harga dan stok harus sama."
+        require(inventory.branchId.isNotBlank()) { "Cabang stok wajib ditentukan." }
+        require(branchPrice == null || (branchPrice.branchId == inventory.branchId && branchPrice.productId == product.id)) {
+            "Relasi harga cabang tidak cocok."
         }
-        require(branchPrice.productId == product.id && inventory.productId == product.id) {
-            "Relasi produk tidak cocok."
-        }
+        require(inventory.productId == product.id) { "Relasi stok produk tidak cocok." }
         require(barcodes.all { it.storeId == product.storeId && it.productId == product.id }) {
             "Barcode harus berasal dari toko dan produk yang sama."
         }
         upsertProduct(product)
-        upsertBranchPrice(branchPrice)
+        if (branchPrice != null) upsertBranchPrice(branchPrice)
+        else deleteBranchPrice(inventory.branchId, product.id)
         upsertInventory(inventory)
         deleteBarcodesForProduct(product.storeId, product.id)
         if (barcodes.isNotEmpty()) insertBarcodes(barcodes)
@@ -60,8 +60,8 @@ interface CatalogDao {
 
     @Query("""
         SELECT p.*, 
-            COALESCE((SELECT sellingPrice FROM branch_product_prices
-                      WHERE branchId = :branchId AND productId = p.id), p.basePrice) AS activeSellingPrice,
+            (SELECT sellingPrice FROM branch_product_prices
+                      WHERE branchId = :branchId AND productId = p.id) AS activeSellingPrice,
             COALESCE((SELECT quantity FROM branch_inventory
                       WHERE branchId = :branchId AND productId = p.id), 0) AS branchQuantity
         FROM catalog_products AS p
@@ -115,6 +115,9 @@ interface CatalogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBranchPrice(price: BranchProductPriceEntity)
+
+    @Query("DELETE FROM branch_product_prices WHERE branchId = :branchId AND productId = :productId")
+    suspend fun deleteBranchPrice(branchId: String, productId: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBranchPrices(prices: List<BranchProductPriceEntity>)
