@@ -4,6 +4,8 @@ import android.content.Context
 import com.artemis.kasirku.nativeapp.ProductDatabase
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class LegacyImportResult(
     val sourceCount: Int,
@@ -25,7 +27,7 @@ class LegacyProductImporter(
     private val context: Context,
     private val database: KasirkuRoomDatabase
 ) {
-    suspend fun import(storeId: String, branchId: String): LegacyImportResult {
+    suspend fun import(storeId: String, branchId: String): LegacyImportResult = withContext(Dispatchers.IO) {
         require(storeId.isNotBlank()) { "Store belum dipilih." }
         require(branchId.isNotBlank()) { "Cabang belum dipilih." }
 
@@ -102,7 +104,7 @@ class LegacyProductImporter(
         val after = dao.findImportedLegacyIds(storeId).toSet()
         val imported = source.count { it.id in after } - already
 
-        return LegacyImportResult(
+        LegacyImportResult(
             sourceCount = source.size,
             importedCount = imported,
             alreadyImportedCount = already,
