@@ -1536,3 +1536,90 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
  .dashboard-greeting{flex-direction:column;align-items:stretch}
  .dashboard-greeting-action{align-self:flex-start}
 }
+
+
+/* Pengaturan — tata letak yang lebih rapi di web dan APK */
+#view .page-stack{gap:16px}
+#view .page-stack>.panel{min-width:0}
+#view .page-stack>.panel h3{margin-bottom:16px}
+#view #ks-cloud-check-panel{margin-top:18px!important}
+#ks-cloud-check-panel #ks-cloud-store>div{
+  padding:17px!important;border-radius:16px!important;
+  background:linear-gradient(135deg,#f0f8f2,#fff)!important;
+}
+#ks-cloud-check-panel #ks-cloud-store>div>div:first-child{
+  font-size:16px!important;line-height:1.4!important;letter-spacing:-.2px;
+}
+#ks-cloud-check-panel #ks-cloud-store>div>div:nth-child(2){margin-top:10px!important}
+#ks-cloud-check-panel #ks-cloud-store>div>b{font-size:16px!important;margin-top:5px!important}
+#ks-cloud-check-panel #ks-cloud-store>div>div:last-child{font-size:12px!important;margin-top:6px!important}
+#ks-cloud-check-panel #ks-cloud-state{border-radius:13px!important}
+#ks-cloud-check-panel #ks-cloud-mappings>div{padding:12px!important;border-radius:13px!important}
+.settings-logo-upload{display:grid;gap:12px;margin-top:16px}
+.settings-logo-upload-copy{display:grid;gap:4px}
+.settings-logo-upload-copy b{font-size:14px;color:var(--ink)}
+.settings-logo-upload-copy span{font-size:12px;line-height:1.5;color:var(--muted)}
+.settings-upload-drop{
+  position:relative;display:flex;align-items:center;gap:13px;
+  width:100%;min-height:76px;box-sizing:border-box;padding:14px;
+  border:1.5px dashed #a9cbb5;border-radius:14px;
+  background:linear-gradient(135deg,#f5faf6,#fff);
+  color:#176b46;cursor:pointer;overflow:hidden;
+}
+.settings-upload-drop:active{background:#edf7f0}
+.settings-upload-icon{
+  display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;
+  border-radius:12px;background:#e2f2e7;font-size:26px;font-weight:400;
+}
+.settings-upload-text{display:grid;gap:4px;min-width:0}
+.settings-upload-text b{font-size:14px}
+.settings-upload-text small{font-size:11px;line-height:1.4;color:#78877e}
+.settings-upload-drop input[type=file]{
+  position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;
+}
+.logo-preview-wrap{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:4px 0 16px;
+}
+.store-logo-preview{
+  display:block;width:112px;height:112px;flex:0 0 112px;
+  object-fit:contain;padding:8px;box-sizing:border-box;
+  border:1px solid #e2eae4;border-radius:16px;background:#fff;
+}
+.logo-preview-wrap .btn{min-height:42px}
+.bluetooth-connect-panel{
+  display:grid!important;gap:11px!important;
+  margin:16px 0 0!important;padding:16px!important;
+  border:1px solid #dce8df!important;border-radius:16px!important;
+  background:#f8fbf8!important;box-shadow:none!important;
+}
+.bluetooth-connect-panel>.line{
+  display:grid!important;grid-template-columns:1fr!important;
+  align-items:start!important;gap:5px!important;
+  padding:0 0 12px!important;margin:0!important;
+  border-bottom:1px solid #e4ece6;
+}
+.bluetooth-connect-panel>.line b{font-size:15px}
+.bluetooth-connect-panel>.line .hint{
+  font-size:12px!important;line-height:1.5;color:#7b8980!important;
+}
+.bluetooth-connect-panel>button{
+  width:100%;min-height:46px;margin:0!important;
+  box-sizing:border-box;white-space:normal;line-height:1.35;
+}
+.bluetooth-connect-panel #bluetooth-help{
+  font-size:12px!important;line-height:1.65!important;
+  margin:0!important;color:#7b8980!important;
+}
+#printer-settings-form{gap:15px}
+#printer-settings-form>label{min-width:0}
+#printer-settings-form .form-actions{margin-top:2px}
+#printer-settings-form .form-actions .btn{width:100%;min-height:46px}
+#store-settings-form{gap:14px}
+@media(max-width:650px){
+  #view .page-stack{gap:14px}
+  #view .page-stack>.panel{padding:17px!important}
+  .settings-logo-upload{margin-top:14px}
+  .store-logo-preview{width:104px;height:104px;flex-basis:104px}
+  .logo-preview-wrap{align-items:center;gap:11px}
+  .bluetooth-connect-panel{padding:14px!important;gap:10px!important}
+}
