@@ -30,6 +30,7 @@ enum class StoreRole {
         }
     }
     fun canViewCostAndProfit(): Boolean = this == OWNER
+    fun canSyncOtherCashierSales(): Boolean = this == OWNER || this == ADMIN
 }
 
 interface TenantContextProvider {
