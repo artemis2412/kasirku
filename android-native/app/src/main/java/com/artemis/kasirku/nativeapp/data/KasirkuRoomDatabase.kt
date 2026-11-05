@@ -20,9 +20,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         BranchInventoryEntity::class,
         ProductBarcodeEntity::class,
         SaleEntity::class,
-        SaleItemEntity::class
+        SaleItemEntity::class,
+        SaleSyncOutboxEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class KasirkuRoomDatabase : RoomDatabase() {
@@ -38,6 +39,14 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS sale_sync_outbox (saleId TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, branchId TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL, lastError TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_sale_sync_outbox_status_createdAt ON sale_sync_outbox(status, createdAt)")
+                database.execSQL("INSERT OR IGNORE INTO sale_sync_outbox (saleId, storeId, branchId, status, attempts, lastError, createdAt, updatedAt) SELECT id, storeId, branchId, 'PENDING', 0, NULL, createdAt, createdAt FROM sales")
+            }
+        }
+
         @Volatile
         private var INSTANCE: KasirkuRoomDatabase? = null
 
@@ -47,7 +56,7 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
                     context.applicationContext,
                     KasirkuRoomDatabase::class.java,
                     "kasirku_room.db"
-                ).addMigrations(MIGRATION_1_2).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { INSTANCE = it }
             }
     }
 }
