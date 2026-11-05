@@ -60,6 +60,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 
 private val Navy = Color(0xFF17324D)
 private val Teal = Color(0xFF168C83)
@@ -97,13 +98,15 @@ private enum class KasirkuTab(val title: String, val symbol: String) {
     Home("Beranda", "⌂"),
     Products("Produk", "▦"),
     Orders("Pesanan", "▤"),
-    Reports("Laporan", "▥")
+    Reports("Laporan", "▥"),
+    Account("Akun", "◎")
 }
 
 @Composable
 private fun KasirkuNativeApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showNewTransaction by remember { mutableStateOf(false) }
+    var verifiedTenantContext by remember { mutableStateOf<VerifiedTenantContext?>(null) }
 
     MaterialTheme(
         colorScheme = lightColorScheme(
@@ -155,10 +158,14 @@ private fun KasirkuNativeApp() {
                         description = "Daftar pesanan dan transaksi harian akan ditampilkan di sini.",
                         modifier = Modifier.padding(innerPadding)
                     )
-                    else -> SimpleFeatureScreen(
+                    selectedTab == 3 -> SimpleFeatureScreen(
                         title = "Laporan",
                         description = "Ringkasan penjualan, riwayat harian, dan unduhan laporan akan tersedia di sini.",
                         modifier = Modifier.padding(innerPadding)
+                    )
+                    else -> CloudAccountScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        onContextChanged = { verifiedTenantContext = it }
                     )
                 }
             }
