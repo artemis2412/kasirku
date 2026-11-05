@@ -62,4 +62,18 @@ class SalesRepository(private val dao: CatalogDao) {
         dao.completeSale(sale, items)
         return CheckoutResult(saleId, total, paid - total)
     }
+
+    fun observeSales(tenant: VerifiedTenantContext, startAt: Long, endAt: Long) =
+        dao.observeSales(tenant.storeId, tenant.branchId, startAt, endAt)
+
+    fun observeSaleCount(tenant: VerifiedTenantContext, startAt: Long, endAt: Long) =
+        dao.observeSaleCount(tenant.storeId, tenant.branchId, startAt, endAt)
+
+    fun observeSalesTotal(tenant: VerifiedTenantContext, startAt: Long, endAt: Long) =
+        dao.observeSalesTotal(tenant.storeId, tenant.branchId, startAt, endAt)
+
+    suspend fun saleItems(saleId: String): List<SaleItemEntity> {
+        require(saleId.isNotBlank()) { "Transaksi tidak valid." }
+        return dao.getSaleItems(saleId)
+    }
 }
