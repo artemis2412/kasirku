@@ -1654,3 +1654,13 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 .ks-cloud-store-meta{margin-top:7px;color:#718078;font-size:11px;line-height:1.55}
 @media(max-width:650px){#view .settings-page{gap:14px}#view .settings-page>.panel{padding:17px!important}.settings-upload-drop{min-height:82px;padding:13px}.bluetooth-connect-panel{padding:14px!important;gap:12px!important}.bluetooth-panel-icon{width:42px;height:42px;flex-basis:42px}.bluetooth-actions{grid-template-columns:minmax(0,1fr) minmax(0,.8fr)}.bluetooth-status-pill{font-size:9px;padding:5px 7px}}
 @media(max-width:360px){.bluetooth-panel-heading{gap:9px}.bluetooth-panel-icon{width:38px;height:38px;flex-basis:38px}.bluetooth-status-pill{white-space:normal;text-align:center}}
+
+
+/* Unified dialog feedback states: success, error, warning and information */
+.app-dialog-mark.success{background:#e7f6ec;color:#16834b}
+.app-dialog-mark.error{background:#fdebea;color:#c83232}
+.app-dialog-mark.warning{background:#fff4df;color:#a96b12}
+.app-dialog-mark.info{background:#eaf2fb;color:#356da8}
+.app-dialog-mark.question{background:#fff3e5;color:#a66b24}
+.app-dialog:has(.app-dialog-mark.error) h3{color:#b52f2f}
+.app-dialog:has(.app-dialog-mark.warning) h3{color:#99600e}
