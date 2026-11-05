@@ -58,13 +58,28 @@ begin
     raise exception 'Nominal transaksi tidak valid';
   end if;
 
+  if nullif(p_order->>'order_number', '') is null
+     or p_order->>'payment_method' not in ('CASH', 'QRIS', 'TRANSFER') then
+    raise exception 'Nomor atau metode pembayaran transaksi tidak valid';
+  end if;
+
+  if p_order->>'payment_method' <> 'CASH'
+     and (
+       (p_order->>'paid_amount')::numeric <> (p_order->>'total')::numeric
+       or (p_order->>'change_amount')::numeric <> 0
+     ) then
+    raise exception 'Pembayaran non-tunai harus sama dengan total transaksi';
+  end if;
+
   if exists (
     select 1
     from jsonb_array_elements(p_items) as entries(item)
     where jsonb_typeof(item) <> 'object'
        or coalesce((item->>'quantity')::numeric, 0) <= 0
        or coalesce((item->>'unit_price')::numeric, -1) <= 0
-       or coalesce((item->>'line_total')::numeric, -1) < 0
+       or coalesce((item->>'line_total')::numeric, -1) <= 0
+       or nullif(item->>'product_name', '') is null
+       or nullif(item->>'product_local_id', '') is null
        or (item->>'line_total')::numeric <>
           (item->>'quantity')::numeric * (item->>'unit_price')::numeric
   ) then
