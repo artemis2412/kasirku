@@ -1,5 +1,8 @@
 package com.artemis.kasirku.nativeapp
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +18,8 @@ import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
+import java.io.OutputStreamWriter
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -30,12 +35,45 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
     val context = LocalContext.current.applicationContext
     val repository = remember { SalesRepository(KasirkuRoomDatabase.getInstance(context).catalogDao()) }
     var period by remember { mutableIntStateOf(7) }
+    val scope = rememberCoroutineScope()
+    var exporting by remember { mutableStateOf(false) }
+    var exportMessage by remember { mutableStateOf<String?>(null) }
     val endAt = remember(period) { Calendar.getInstance().apply {
         timeInMillis = System.currentTimeMillis()
         add(Calendar.DAY_OF_YEAR, 1)
         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
     }.timeInMillis }
     val startAt = remember(period, endAt) { Calendar.getInstance().apply { timeInMillis = endAt; add(Calendar.DAY_OF_YEAR, -period) }.timeInMillis }
+
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri: Uri? ->
+        if (uri != null) scope.launch {
+            exporting = true
+            exportMessage = null
+            runCatching {
+                val rows = repository.exportRows(tenant, startAt, endAt)
+                context.contentResolver.openOutputStream(uri)?.use { output ->
+                    OutputStreamWriter(output, Charsets.UTF_8).use { writer ->
+                        writer.write("\uFEFFTanggal;Jam;ID Transaksi;Kasir;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\n")
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+                        rows.forEach { (sale, items) -> items.forEach { item ->
+                            val values = listOf(dateFormat.format(Date(sale.createdAt)), timeFormat.format(Date(sale.createdAt)), sale.id, sale.cashierUserId, sale.paymentMethod, item.productName, item.quantity.toString(), item.unitPrice.toString(), item.lineTotal.toString(), sale.subtotal.toString(), sale.discount.toString(), sale.total.toString(), sale.paid.toString(), sale.change.toString())
+                            val line = values.joinToString(";") { value ->
+                                val escaped = value.replace("\"", "\"\"")
+                                if (escaped.contains(';') || escaped.contains('"') || escaped.contains('\n')) "\"$escaped\"" else escaped
+                            }
+                            writer.write(line + "\n")
+                        } }
+                        writer.flush()
+                    }
+                } ?: error("Tidak dapat membuat file di lokasi pilihan.")
+                rows.size
+            }.onSuccess { exportMessage = "Laporan berhasil diekspor: $it transaksi." }
+                .onFailure { exportMessage = it.message ?: "Gagal mengekspor laporan." }
+            exporting = false
+        }
+    }
+
     val sales by remember(tenant.storeId, tenant.branchId, startAt, endAt) { repository.observeSales(tenant, startAt, endAt) }.collectAsState(initial = emptyList())
     val count by remember(tenant.storeId, tenant.branchId, startAt, endAt) { repository.observeSaleCount(tenant, startAt, endAt) }.collectAsState(initial = 0)
     val total by remember(tenant.storeId, tenant.branchId, startAt, endAt) { repository.observeSalesTotal(tenant, startAt, endAt) }.collectAsState(initial = 0L)
@@ -48,6 +86,13 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
             OutlinedButton(onClick = { period = 7 }, shape = RoundedCornerShape(12.dp)) { Text(if (period == 7) "✓ 7 hari" else "7 hari") }
             OutlinedButton(onClick = { period = 30 }, shape = RoundedCornerShape(12.dp)) { Text(if (period == 30) "✓ 30 hari" else "30 hari") }
         }
+        Button(
+            onClick = { exportLauncher.launch("Kasirku_Laporan_\${period}Hari.csv") },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !exporting,
+            shape = RoundedCornerShape(12.dp)
+        ) { Text(if (exporting) "Menyiapkan laporan…" else "Unduh laporan CSV • $period hari") }
+        exportMessage?.let { Text(it, color = ReportTeal, fontSize = 12.sp) }
         Card(colors = CardDefaults.cardColors(containerColor = ReportNavy), shape = RoundedCornerShape(18.dp)) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("TOTAL PENJUALAN • $period HARI", color = Color(0xFFD3DFE9), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
