@@ -234,14 +234,21 @@ internal fun CloudAccountScreen(
                 TextButton(onClick = {
                     scope.launch {
                         busy = true
+                        isError = false
                         runCatching { repository.signOut() }
-                        access = null
-                        verifiedContext = null
-                        selectedStoreId = null
-                        selectedBranchId = null
-                        selectionPrefs.edit().clear().apply()
-                        onContextChanged(null)
-                        message = "Sesi Cloud telah diakhiri."
+                            .onSuccess {
+                                access = null
+                                verifiedContext = null
+                                selectedStoreId = null
+                                selectedBranchId = null
+                                selectionPrefs.edit().clear().apply()
+                                onContextChanged(null)
+                                message = "Sesi Cloud telah diakhiri."
+                            }
+                            .onFailure {
+                                message = it.message ?: "Gagal mengakhiri sesi Cloud. Coba lagi."
+                                isError = true
+                            }
                         busy = false
                     }
                 }, enabled = !busy) { Text("Keluar dari Cloud") }
