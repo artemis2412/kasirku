@@ -183,4 +183,29 @@ interface CatalogDao {
         insertSaleItems(items)
     }
 
+
+    @Query("""
+        SELECT * FROM sales
+        WHERE storeId = :storeId AND branchId = :branchId
+          AND createdAt >= :startAt AND createdAt < :endAt
+        ORDER BY createdAt DESC
+    """)
+    fun observeSales(storeId: String, branchId: String, startAt: Long, endAt: Long): Flow<List<SaleEntity>>
+
+    @Query("SELECT * FROM sale_items WHERE saleId = :saleId ORDER BY productName COLLATE NOCASE")
+    suspend fun getSaleItems(saleId: String): List<SaleItemEntity>
+
+    @Query("""
+        SELECT COUNT(*) FROM sales
+        WHERE storeId = :storeId AND branchId = :branchId
+          AND createdAt >= :startAt AND createdAt < :endAt
+    """)
+    fun observeSaleCount(storeId: String, branchId: String, startAt: Long, endAt: Long): Flow<Int>
+
+    @Query("""
+        SELECT COALESCE(SUM(total), 0) FROM sales
+        WHERE storeId = :storeId AND branchId = :branchId
+          AND createdAt >= :startAt AND createdAt < :endAt
+    """)
+    fun observeSalesTotal(storeId: String, branchId: String, startAt: Long, endAt: Long): Flow<Long>
 }
