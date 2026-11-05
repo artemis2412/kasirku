@@ -29,6 +29,8 @@ class SaleSyncWorker(
             if (report.failed > 0 || report.pending > 0) Result.retry() else Result.success()
         } catch (_: SecurityException) {
             Result.failure()
+        } catch (_: IllegalArgumentException) {
+            Result.failure()
         } catch (error: IllegalStateException) {
             if (error.message?.contains("Zona waktu cabang belum diatur") == true) {
                 Result.failure()
