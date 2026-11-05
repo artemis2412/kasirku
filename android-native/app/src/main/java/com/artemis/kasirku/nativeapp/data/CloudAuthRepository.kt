@@ -36,7 +36,8 @@ private data class StoreDto(
 private data class BranchDto(
     val id: String,
     val name: String,
-    @SerialName("is_active") val isActive: Boolean
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("timezone_id") val timeZoneId: String? = null
 )
 
 @Serializable
@@ -46,7 +47,8 @@ private data class BranchMembershipDto(
 
 data class AuthorizedBranch(
     val id: String,
-    val name: String
+    val name: String,
+    val timeZoneId: String?
 )
 
 data class AuthorizedStore(
@@ -72,7 +74,8 @@ data class CloudAccountAccess(
             storeName = store.name,
             role = store.role,
             branchId = branch.id,
-            branchName = branch.name
+            branchName = branch.name,
+            branchTimeZoneId = branch.timeZoneId
         )
     }
 }
@@ -215,7 +218,7 @@ class CloudAuthRepository {
                 id = store.id,
                 name = store.name,
                 role = role,
-                branches = allowedBranches.map { AuthorizedBranch(it.id, it.name) }
+                branches = allowedBranches.map { AuthorizedBranch(it.id, it.name, it.timeZoneId) }
             )
         }
 
