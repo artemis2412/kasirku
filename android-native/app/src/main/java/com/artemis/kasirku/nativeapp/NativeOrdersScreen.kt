@@ -215,7 +215,7 @@ internal fun NativeOrdersScreen(
                         selectedSale = sale
                         loadingDetail = true
                         scope.launch {
-                            selectedItems = repository.saleItems(sale.id)
+                            selectedItems = repository.saleItems(tenant, sale.id)
                             loadingDetail = false
                         }
                     },
