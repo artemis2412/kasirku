@@ -69,3 +69,15 @@
   .ks-entry-copy strong{font-size:16px!important;line-height:1.2!important}
   .ks-entry-copy small{font-size:11px!important;line-height:1.35!important}
 }
+
+/* Add breathing room between the welcome chips and the KASIRKU logo. */
+.ks-welcome-top{margin-bottom:18px!important}
+.ks-logo-stage-full{margin:10px auto 10px!important}
+@media(max-width:420px){
+  .ks-welcome-top{margin-bottom:19px!important}
+  .ks-logo-stage-full{margin:10px auto 9px!important}
+}
+@media(max-height:760px){
+  .ks-welcome-top{margin-bottom:15px!important}
+  .ks-logo-stage-full{margin:8px auto 8px!important}
+}
