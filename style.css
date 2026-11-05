@@ -1698,3 +1698,13 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
 
 /* Arsip data 30 hari */
 .archive-page{gap:15px}.archive-hero{background:linear-gradient(145deg,#f1f8f3,#fff);border-color:#d9e9dd}.archive-kicker{font-size:10px;font-weight:800;letter-spacing:1.4px;color:#238354}.archive-hero h2{margin:7px 0;font-size:22px;color:#203b2d}.archive-hero p{color:#627368;line-height:1.6;font-size:13px}.archive-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}.archive-stats>div{padding:13px;border:1px solid #e2ece4;border-radius:13px;background:#fff}.archive-stats b{display:block;font-size:23px;color:#176b46}.archive-stats span{font-size:11px;color:#738178}.archive-hero>.btn{width:100%;margin-top:14px}.archive-file-label{display:inline-flex;align-items:center;justify-content:center}.archive-preview{margin-top:16px;padding:14px;border:1px solid #dce9df;border-radius:14px;background:#fbfdfb}.archive-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.archive-preview-grid span{padding:9px;border-radius:9px;background:#f0f6f1;font-size:11px;color:#405449}.archive-order-row{display:grid;grid-template-columns:1fr auto;gap:4px;padding:10px 0;border-top:1px solid #e9efea;font-size:12px}.archive-order-row small{grid-column:1/-1;color:#829087}.archive-order-row span{color:#52655a}@media(max-width:380px){.archive-order-row{grid-template-columns:1fr}.archive-order-row span{grid-column:1}}
+
+/* Pesanan harian dan riwayat */
+.order-period-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:5px;border:1px solid #e4ece6;border-radius:14px;background:#f5f8f5}
+.order-period-tab{display:flex;align-items:center;justify-content:center;gap:8px;min-height:43px;border:0;border-radius:10px;background:transparent;color:#627268;font:inherit;font-size:13px;font-weight:700}
+.order-period-tab span{padding:2px 7px;border-radius:20px;background:#e7eee8;font-size:11px}
+.order-period-tab.selected{background:#fff;color:#176b46;box-shadow:0 2px 8px rgba(23,67,40,.08)}
+.order-history-date{display:grid;gap:7px;color:#52665a;font-size:12px;font-weight:700}
+.order-day-group{display:grid;gap:9px}
+.order-day-heading{display:flex;justify-content:space-between;align-items:center;padding:10px 2px 5px;border-bottom:1px solid #e7eee8;color:#294536;font-size:13px;font-weight:800}
+.order-day-heading span{color:#7b8a80;font-size:11px;font-weight:500}
