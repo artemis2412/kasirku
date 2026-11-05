@@ -383,6 +383,7 @@ set search_path = ''
 as $$
 declare
   v_order_id uuid;
+  v_created_by uuid;
 begin
   if auth.uid() is null then
     raise exception 'Harus login terlebih dahulu';
@@ -397,9 +398,22 @@ begin
     raise exception 'Rincian transaksi tidak boleh kosong';
   end if;
 
-  -- Do not allow an authenticated branch member to attribute a sale to another user.
-  if nullif(p_order->>'created_by', '')::uuid is distinct from auth.uid() then
-    raise exception 'Kasir transaksi tidak sesuai akun yang login';
+  -- Cashiers may upload only their own sales. Owner/admin may recover
+  -- queued sales created by another cashier on a shared store device.
+  v_created_by := nullif(p_order->>'created_by', '')::uuid;
+  if v_created_by is null then
+    raise exception 'Identitas kasir transaksi tidak tersedia';
+  end if;
+
+  if v_created_by is distinct from auth.uid() and not exists (
+    select 1
+    from public.store_memberships as sm
+    where sm.store_id = (p_order->>'store_id')::uuid
+      and sm.user_id = auth.uid()
+      and sm.is_active = true
+      and sm.role in ('owner', 'admin')
+  ) then
+    raise exception 'Hanya owner/admin yang dapat menyinkronkan transaksi kasir lain';
   end if;
 
   if nullif(p_order->>'store_id', '') is null
