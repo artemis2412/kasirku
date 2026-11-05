@@ -128,8 +128,8 @@ function welcome(){
  document.getElementById("ks-open-pin").onclick=()=>openPinEntry();
  document.getElementById("ks-open-cloud").onclick=()=>{const url=new URL(location.href);url.searchParams.set("cloud-auth-preview","1");location.href=url.toString()};
 }
-function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u)startSession(u);else{sessionStorage.removeItem("ksecurity_session");welcome()}}
-function lock(){if(window.KASIRKU_AUTH_MODE==="cloud")localStorage.removeItem("kasirku_cloud_session_active");window.KASIRKU_AUTH_MODE="pin";user=null;publishLocalSession();clearTimeout(timer);sessionStorage.removeItem("ksecurity_session");localStorage.removeItem("ksecurity_session");document.getElementById("ks-account")?.remove();welcome()}
+function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u)startSession(u);else{sessionStorage.removeItem("ksecurity_session");if(localStorage.getItem("kasirku_cloud_session_active")==="1")return;welcome()}}
+function lock(){if(window.KASIRKU_AUTH_MODE==="cloud"){localStorage.removeItem("kasirku_cloud_session_active");try{window.KASIRKU_CLOUD_SESSION?.signOut?.()}catch(e){console.warn("Cloud sign-out:",e)}}window.KASIRKU_AUTH_MODE="pin";user=null;publishLocalSession();clearTimeout(timer);sessionStorage.removeItem("ksecurity_session");localStorage.removeItem("ksecurity_session");document.getElementById("ks-account")?.remove();welcome()}
 function reset(){clearTimeout(timer);timer=setTimeout(lock,600000)}
 const cashierPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan","Pengaturan"];
 const adminPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Laporan","Kas","Pengaturan"];
@@ -186,7 +186,8 @@ window.KASIRKU_AUTH={
   const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();document.querySelector(".topbar")?.appendChild(b);
   reset();apply();window.dispatchEvent(new CustomEvent("kasirku:cloud-session",{detail:{user:{...user}}}));
  },
- isCloudSession(){return window.KASIRKU_AUTH_MODE==="cloud"&&!!user}
+ isCloudSession(){return window.KASIRKU_AUTH_MODE==="cloud"&&!!user},
+ showWelcome(){window.KASIRKU_AUTH_MODE="pin";user=null;welcome()}
 };
 function boot(){style();restoreSession();installActivityAudit()}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();
