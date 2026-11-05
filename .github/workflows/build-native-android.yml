@@ -2,9 +2,16 @@ name: Build Kasirku Native APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - native-android-foundation
+    paths:
+      - "android-native/**"
+      - ".github/workflows/build-native-android.yml"
   push:
     branches:
       - native-android-foundation
+      - native-room-foundation
     paths:
       - "android-native/**"
       - ".github/workflows/build-native-android.yml"

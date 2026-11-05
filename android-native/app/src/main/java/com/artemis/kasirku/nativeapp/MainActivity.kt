@@ -60,6 +60,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 
 private val Navy = Color(0xFF17324D)
 private val Teal = Color(0xFF168C83)
@@ -97,13 +98,15 @@ private enum class KasirkuTab(val title: String, val symbol: String) {
     Home("Beranda", "⌂"),
     Products("Produk", "▦"),
     Orders("Pesanan", "▤"),
-    Reports("Laporan", "▥")
+    Reports("Laporan", "▥"),
+    Account("Akun", "◎")
 }
 
 @Composable
 private fun KasirkuNativeApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showNewTransaction by remember { mutableStateOf(false) }
+    var verifiedTenantContext by remember { mutableStateOf<VerifiedTenantContext?>(null) }
 
     MaterialTheme(
         colorScheme = lightColorScheme(
@@ -138,27 +141,53 @@ private fun KasirkuNativeApp() {
                 }
             ) { innerPadding ->
                 when {
-                    showNewTransaction -> SimpleFeatureScreen(
-                        title = "Transaksi baru",
-                        description = "Halaman transaksi akan kita bangun berikutnya, termasuk keranjang, jumlah barang, diskon, pembayaran, dan cetak nota.",
-                        onBack = { showNewTransaction = false },
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    showNewTransaction -> if (verifiedTenantContext != null) {
+                        NativeCheckoutScreen(
+                            tenant = verifiedTenantContext!!,
+                            onBack = { showNewTransaction = false },
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    } else {
+                        CloudAccountScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onContextChanged = { verifiedTenantContext = it }
+                        )
+                    }
                     selectedTab == 0 -> DashboardScreen(
                         modifier = Modifier.padding(innerPadding),
                         onNewTransaction = { showNewTransaction = true },
                         onOpenTab = { selectedTab = it }
                     )
-                    selectedTab == 1 -> ProductsScreen(modifier = Modifier.padding(innerPadding))
-                    selectedTab == 2 -> SimpleFeatureScreen(
-                        title = "Pesanan",
-                        description = "Daftar pesanan dan transaksi harian akan ditampilkan di sini.",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                    else -> SimpleFeatureScreen(
+                    selectedTab == 1 -> if (verifiedTenantContext != null) {
+                        NativeProductsScreen(
+                            tenant = verifiedTenantContext!!,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    } else {
+                        CloudAccountScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onContextChanged = { verifiedTenantContext = it }
+                        )
+                    }
+                    selectedTab == 2 -> if (verifiedTenantContext != null) {
+                        NativeOrdersScreen(
+                            tenant = verifiedTenantContext!!,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    } else {
+                        CloudAccountScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onContextChanged = { verifiedTenantContext = it }
+                        )
+                    }
+                    selectedTab == 3 -> SimpleFeatureScreen(
                         title = "Laporan",
                         description = "Ringkasan penjualan, riwayat harian, dan unduhan laporan akan tersedia di sini.",
                         modifier = Modifier.padding(innerPadding)
+                    )
+                    else -> CloudAccountScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        onContextChanged = { verifiedTenantContext = it }
                     )
                 }
             }
