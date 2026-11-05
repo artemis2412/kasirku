@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.CloudAccountAccess
 import com.artemis.kasirku.nativeapp.data.CloudAuthRepository
 import com.artemis.kasirku.nativeapp.data.CatalogRepository
+import com.artemis.kasirku.nativeapp.data.CatalogProductDraft
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.LegacyProductImporter
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
@@ -269,10 +270,30 @@ internal fun NativeProductsScreen(
     val repository = remember {
         CatalogRepository(KasirkuRoomDatabase.getInstance(context).catalogDao())
     }
+    val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
+    var editingId by remember { mutableStateOf<String?>(null) }
+    var name by remember { mutableStateOf("") }
+    var basePrice by remember { mutableStateOf("") }
+    var sellingPrice by remember { mutableStateOf("") }
+    var quantity by remember { mutableStateOf("0") }
+    var barcode by remember { mutableStateOf("") }
+    var formError by remember { mutableStateOf<String?>(null) }
+    var notice by remember { mutableStateOf<String?>(null) }
+    var saving by remember { mutableStateOf(false) }
     val products by remember(tenant.storeId, tenant.branchId, query) {
         repository.observeBranchCatalog(tenant.storeId, tenant.branchId, query)
     }.collectAsState(initial = emptyList())
+
+    fun clearForm() {
+        editingId = null
+        name = ""
+        basePrice = ""
+        sellingPrice = ""
+        quantity = "0"
+        barcode = ""
+        formError = null
+    }
 
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 18.dp),
@@ -281,6 +302,62 @@ internal fun NativeProductsScreen(
         Text("KATALOG CABANG", color = AccountTeal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
         Text("Produk", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = AccountMuted, fontSize = 12.sp)
+
+        Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(15.dp)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text(if (editingId == null) "Tambah produk" else "Edit produk", color = AccountNavy, fontWeight = FontWeight.Bold)
+                OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nama produk *") }, singleLine = true)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = basePrice, onValueChange = { basePrice = it.filter(Char::isDigit) }, modifier = Modifier.weight(1f), label = { Text("Harga dasar") }, singleLine = true)
+                    OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = it.filter(Char::isDigit) }, modifier = Modifier.weight(1f), label = { Text("Harga jual cabang *") }, singleLine = true)
+                }
+                OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit) }, modifier = Modifier.fillMaxWidth(), label = { Text("Stok cabang") }, singleLine = true)
+                OutlinedTextField(value = barcode, onValueChange = { barcode = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Barcode (opsional)") }, singleLine = true)
+                formError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            val parsedBase = basePrice.toLongOrNull() ?: 0L
+                            val parsedSelling = sellingPrice.toLongOrNull()
+                            val parsedQuantity = quantity.toIntOrNull()
+                            if (name.isBlank() || parsedSelling == null || parsedQuantity == null) {
+                                formError = "Nama, harga jual, dan stok harus diisi dengan benar."
+                            } else {
+                                scope.launch {
+                                    saving = true
+                                    formError = null
+                                    runCatching {
+                                        repository.saveProduct(
+                                            tenant.storeId,
+                                            tenant.branchId,
+                                            CatalogProductDraft(
+                                                id = editingId,
+                                                name = name,
+                                                basePrice = parsedBase,
+                                                sellingPrice = parsedSelling,
+                                                quantity = parsedQuantity,
+                                                barcodes = barcode.split(",").map(String::trim).filter(String::isNotEmpty)
+                                            )
+                                        )
+                                    }.onSuccess {
+                                        notice = if (editingId == null) "Produk berhasil ditambahkan." else "Produk berhasil diperbarui."
+                                        clearForm()
+                                    }.onFailure {
+                                        formError = it.message ?: "Gagal menyimpan produk."
+                                    }
+                                    saving = false
+                                }
+                            }
+                        },
+                        enabled = !saving,
+                        shape = RoundedCornerShape(11.dp)
+                    ) { Text(if (saving) "Menyimpan…" else "Simpan") }
+                    TextButton(onClick = { clearForm() }, enabled = !saving) { Text("Batal") }
+                }
+            }
+        }
+
+        notice?.let { Text(it, color = AccountTeal, fontSize = 12.sp) }
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
@@ -296,7 +373,7 @@ internal fun NativeProductsScreen(
             ) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Text("Belum ada produk di katalog Native", color = AccountNavy, fontWeight = FontWeight.SemiBold)
-                    Text("Pilih Akun, verifikasi cabang, lalu jalankan impor produk lama jika ingin memindahkan katalog yang tersimpan di perangkat ini.", color = AccountMuted, fontSize = 12.sp)
+                    Text("Tambahkan produk di formulir atas atau impor katalog lama melalui menu Akun.", color = AccountMuted, fontSize = 12.sp)
                 }
             }
         } else {
@@ -307,16 +384,34 @@ internal fun NativeProductsScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(15.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(product.name, color = AccountNavy, fontWeight = FontWeight.SemiBold)
-                            Text("Stok: ${product.branchQuantity}", color = AccountMuted, fontSize = 12.sp)
+                    Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(horizontalArrangement = Arrangement.SpaceBetween) {
+                            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(product.name, color = AccountNavy, fontWeight = FontWeight.SemiBold)
+                                Text("Stok: ${product.branchQuantity}", color = AccountMuted, fontSize = 12.sp)
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text("Rp ${product.activeSellingPrice.toString().reversed().chunked(3).joinToString(".").reversed()}", color = AccountTeal, fontWeight = FontWeight.Bold)
                         }
-                        Spacer(Modifier.width(12.dp))
-                        Text("Rp ${product.activeSellingPrice.toString().reversed().chunked(3).joinToString(".").reversed()}", color = AccountTeal, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                editingId = product.id
+                                name = product.name
+                                basePrice = product.basePrice.toString()
+                                sellingPrice = product.activeSellingPrice.toString()
+                                quantity = product.branchQuantity.toString()
+                                barcode = ""
+                                notice = "Saat edit, barcode lama dipertahankan jika kolom barcode dikosongkan."
+                                formError = null
+                            }) { Text("Edit") }
+                            TextButton(onClick = {
+                                scope.launch {
+                                    runCatching { repository.deactivateProduct(tenant.storeId, product.id) }
+                                        .onSuccess { notice = "Produk dinonaktifkan dari katalog." }
+                                        .onFailure { notice = it.message ?: "Gagal menonaktifkan produk." }
+                                }
+                            }) { Text("Nonaktifkan", color = Color(0xFFB42318)) }
+                        }
                     }
                 }
             }
