@@ -44,7 +44,7 @@
       configScript.src = "./supabase-config.js?v=1";
       configScript.onload = () => {
         const authScript = document.createElement("script");
-        authScript.src = "./cloud-auth.js?v=cloud-first-pin-1";
+        authScript.src = "./cloud-auth.js?v=cloud-first-pin-2";
         document.body.appendChild(authScript);
       };
       configScript.onerror = () => console.error("KASIRKU: gagal memuat konfigurasi login cloud.");
@@ -53,7 +53,7 @@
   </script>
   <script src="./branch-storage.js?v=1"></script>
   <script src="./app.js?v=38.0"></script>
-  <script src="./cloud-panel.js?v=admin-branch-access-2"></script>
+  <script src="./cloud-panel.js?v=cloud-session-copy-1"></script>
   <script src="./cloud-catalog-sync.js?v=2"></script>
   <script src="./update-checker.js?v=1"></script>
   <script>
