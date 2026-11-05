@@ -1296,3 +1296,48 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
  #view{padding-bottom:calc(76px + 34px + env(safe-area-inset-bottom,0px))!important}
 }
 @media(max-width:360px){#bottom-nav{padding-left:6px!important;padding-right:6px!important;gap:2px!important}#bottom-nav .navbtn{font-size:9px!important}}
+
+
+/* Sidebar contrast refinement — readable labels and clear active state */
+#sidebar{
+  background:linear-gradient(180deg,#123b2b 0%,#0e3023 100%)!important;
+  color:#f4fff7!important;
+  border-right:1px solid rgba(206,244,220,.16);
+}
+#sidebar .brand-wordmark{color:#f6fff8!important}
+#sidebar .brand-wordmark small{color:#b9d9c6!important}
+#sidebar .branch-label{color:#b7d4c2!important}
+#sidebar .branch-name{
+  background:#1d5139!important;
+  border:1px solid #4b8062!important;
+  color:#f5fff8!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+#sidebar #nav{gap:7px!important}
+#sidebar #nav .navbtn{
+  min-height:58px!important;
+  padding:9px 12px!important;
+  color:#e0eee5!important;
+  background:rgba(231,250,238,.075)!important;
+  border:1px solid rgba(222,247,230,.10)!important;
+  border-radius:14px!important;
+  font-weight:650!important;
+}
+#sidebar #nav .navbtn .nav-icon{
+  color:#e2f7e9!important;
+}
+#sidebar #nav .navbtn .nav-icon svg{stroke:#d8f3e1!important}
+#sidebar #nav .navbtn.active{
+  color:#ffffff!important;
+  background:linear-gradient(100deg,#218657 0%,#176b45 100%)!important;
+  border-color:rgba(173,240,198,.48)!important;
+  box-shadow:0 5px 15px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.13)!important;
+}
+#sidebar #nav .navbtn.active .nav-icon{color:#ffffff!important}
+#sidebar #nav .navbtn.active .nav-icon svg{stroke:#ffffff!important}
+#sidebar .sidebar-foot,#sidebar .brand-credit{color:#c1d9ca!important;border-color:rgba(210,240,220,.18)!important}
+#sidebar .desktop-toggle{color:#e8f5ec!important;border-color:#527b61!important;background:rgba(230,250,237,.07)}
+@media(max-width:650px){
+  #sidebar{box-shadow:16px 0 38px rgba(0,0,0,.28)!important}
+  #sidebar #nav .navbtn{min-height:60px!important}
+}
