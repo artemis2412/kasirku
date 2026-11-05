@@ -94,7 +94,79 @@ function error(t){const x=document.getElementById("ks-error");if(x)x.textContent
 async function setup(){show('<h2>Keamanan KASIRKU</h2><p>Buat PIN Owner dan Kasir untuk perangkat ini.</p><form id="ks-setup"><label>PIN Owner (6 angka)</label><input name="o" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>Ulangi PIN Owner</label><input name="o2" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>PIN Kasir (6 angka)</label><input name="c" type="password" inputmode="numeric" minlength="6" maxlength="6" required><label>Ulangi PIN Kasir</label><input name="c2" type="password" inputmode="numeric" minlength="6" maxlength="6" required><div id="ks-error"></div><button>Simpan PIN</button></form>');
 document.getElementById("ks-setup").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),o=f.get("o"),o2=f.get("o2"),c=f.get("c"),c2=f.get("c2");if(!/^\d{6}$/.test(o)||!/^\d{6}$/.test(c)){error("PIN harus tepat 6 angka.");return}if(o!==o2||c!==c2||o===c){error("Periksa ulang PIN. Kedua PIN harus berbeda.");return}const a=[];for(const [id,name,role,pin] of [["owner","Owner","owner",o],["cashier","Kasir","cashier",c]]){const s=salt();a.push({id,name,role,salt:s,hash:await hash(s,pin)})}localStorage.setItem(KEY,JSON.stringify(a));login()};
 }
-function login(){const list=read().filter(x=>x.active!==false);show('<div class="ks-login-art"><div class="ks-art-orbit"></div><div class="ks-art-mark"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M13 25h38l-4-12H17zM17 25v25h30V25M25 50V35h14v15M10 25h44" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 19h18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></div></div><div class="ks-login-heading"><span>SISTEM KASIR</span><h2>Selamat datang di<br><strong>KASIRKU</strong></h2><p>Silakan pilih akun dan masukkan PIN untuk melanjutkan.</p></div><form id="ks-login"><label>Pilih akun</label><div class="ks-role-grid">'+list.map(x=>'<button type="button" class="ks-role-card" data-account="'+x.id+'"><span class="ks-role-icon">'+(x.role==="owner"?"♛":x.role==="admin"?"✦":"▣")+'</span><span class="ks-role-name">'+x.name+'</span><span class="ks-role-desc">'+(x.role==="owner"?"Pemilik usaha":x.role==="admin"?"Pengelola &amp; pengawasan":"Petugas transaksi")+'</span><span class="ks-role-check">✓</span></button>').join("")+'</div><input type="hidden" name="id" id="ks-selected-account" value="'+(list[0]?.id||"")+'"><label for="ks-pin-input">PIN keamanan</label><input id="ks-pin-input" name="pin" type="password" inputmode="numeric" minlength="6" maxlength="6" placeholder="Masukkan 6 digit PIN" required><div id="ks-error"></div><button>Masuk KASIRKU</button></form><div class="ks-login-foot">Aman · Praktis · Terpercaya</div>');const roleCards=[...document.querySelectorAll(".ks-role-card")],selected=document.getElementById("ks-selected-account");roleCards.forEach(card=>{card.classList.toggle("active",card.dataset.account===selected.value);card.onclick=()=>{selected.value=card.dataset.account;roleCards.forEach(x=>x.classList.toggle("active",x===card));document.getElementById("ks-pin-input").focus()}});document.getElementById("ks-login").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),u=list.find(x=>x.id===f.get("id"));if(!u){error("PIN salah.");return}if(await hash(u.salt,f.get("pin"))!==u.hash){if(u.previousSalt&&u.previousHash&&await hash(u.previousSalt,f.get("pin"))===u.previousHash){audit("Percobaan login dengan PIN lama","Akun "+u.name+"; PIN sebelumnya diubah oleh "+(u.pinChangedBy||"Owner"));error("PIN telah diubah oleh "+(u.pinChangedBy||"Owner")+". Silakan hubungi Owner atau Admin untuk mendapatkan PIN terbaru.");return}audit("Percobaan login gagal","Akun "+u.name);error("PIN salah.");return}sessionStorage.setItem("ksecurity_session",u.id);startSession(u)};
+function login(){
+ const list=read().filter(x=>x.active!==false);
+ show('<div class="ks-login-art"><div class="ks-art-orbit"></div><div class="ks-art-mark"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M13 25h38l-4-12H17zM17 25v25h30V25M25 50V35h14v15M10 25h44" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M23 19h18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></div></div><div class="ks-login-heading"><span>SISTEM KASIR</span><h2>Selamat datang di<br><strong>KASIRKU</strong></h2><p>Masuk dengan PIN atau daftarkan PIN yang terhubung ke akun Cloud.</p></div><div class="ks-pin-tabs" role="tablist"><button type="button" class="active" data-pin-tab="login">Masuk</button><button type="button" data-pin-tab="register">Register PIN</button></div><section id="ks-pin-login-pane"><form id="ks-login"><label>Pilih akun</label><div class="ks-role-grid">'+(list.length?list.map(x=>'<button type="button" class="ks-role-card" data-account="'+String(x.id).replace(/"/g,"&quot;")+'"><span class="ks-role-icon">'+(x.role==="owner"?"♛":x.role==="admin"?"✦":"▣")+'</span><span class="ks-role-name">'+String(x.name||"Akun").replace(/</g,"&lt;")+'</span><span class="ks-role-desc">'+(x.role==="owner"?"Pemilik usaha":x.role==="admin"?"Pengelola &amp; pengawasan":"Petugas transaksi")+'</span><span class="ks-role-check">✓</span></button>').join(""):'<p class="ks-pin-empty">Belum ada akun PIN di perangkat ini. Gunakan Register PIN untuk mendaftarkan akun.</p>')+'</div><input type="hidden" name="id" id="ks-selected-account" value="'+(list[0]?.id||"")+'"><label for="ks-pin-input">PIN keamanan</label><input id="ks-pin-input" name="pin" type="password" inputmode="numeric" minlength="6" maxlength="6" placeholder="Masukkan 6 digit PIN" required '+(!list.length?'disabled':'')+'><div id="ks-error"></div><button '+(!list.length?'disabled':'')+'>Masuk KASIRKU</button></form></section><section id="ks-pin-register-pane" hidden><form id="ks-pin-register"><label>Email akun KASIRKU Cloud</label><input name="email" type="email" autocomplete="email" placeholder="nama@email.com" required><label>Kata sandi Cloud</label><input name="cloudPassword" type="password" autocomplete="current-password" minlength="8" placeholder="Kata sandi akun Cloud" required><p class="ks-pin-register-note">Email harus sudah terdaftar dan memiliki akses toko aktif di KASIRKU Cloud.</p><label>Nama akun PIN</label><input name="displayName" maxlength="80" placeholder="Nama yang ditampilkan" required><label>PIN baru (6 angka)</label><input name="pin" type="password" inputmode="numeric" minlength="6" maxlength="6" placeholder="Buat PIN 6 angka" required><label>Ulangi PIN</label><input name="confirmPin" type="password" inputmode="numeric" minlength="6" maxlength="6" placeholder="Ulangi PIN 6 angka" required><div id="ks-register-error" role="status"></div><button id="ks-register-submit">Verifikasi Cloud &amp; Daftar PIN</button></form></section><div class="ks-login-foot">Aman · Praktis · Terpercaya</div>');
+ const css=document.createElement("style");
+ css.textContent='.ks-pin-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;margin:0 0 16px;border-radius:12px;background:#eff5f0}.ks-pin-tabs button{width:auto!important;min-height:42px!important;margin:0!important;padding:9px 8px!important;border:0!important;border-radius:9px!important;background:transparent!important;color:#63776a!important;box-shadow:none!important;font-size:13px!important;font-weight:750!important}.ks-pin-tabs button.active{background:#fff!important;color:#176c48!important;box-shadow:0 2px 8px #193b2812!important}.ks-pin-empty{grid-column:1/-1;margin:0;padding:14px;border-radius:12px;background:#f4f8f5;color:#6d7e72;font-size:13px;line-height:1.5}.ks-pin-register-note{margin:9px 0 12px;padding:10px 12px;border-radius:10px;background:#f1f7f2;color:#65776b;font-size:12px;line-height:1.5}#ks-pin-register label{display:block;margin:12px 0 6px;font-size:13px;font-weight:700;color:#40564a}#ks-pin-register input{display:block;box-sizing:border-box;width:100%;min-height:48px;padding:12px 14px;border:1px solid #dce6de;border-radius:12px;background:#f8faf8;color:#263b30;font:inherit;font-size:15px}#ks-pin-register input:focus{outline:none;border-color:#218658;box-shadow:0 0 0 3px #2186581c}#ks-register-error{min-height:20px;margin-top:9px;color:#b42318;font-size:13px;line-height:1.4}#ks-register-error.success{color:#137347}#ks-register-submit:disabled{opacity:.65}';
+ document.head.appendChild(css);
+ const tabs=[...document.querySelectorAll("[data-pin-tab]")],loginPane=document.getElementById("ks-pin-login-pane"),registerPane=document.getElementById("ks-pin-register-pane");
+ tabs.forEach(tab=>tab.onclick=()=>{const reg=tab.dataset.pinTab==="register";tabs.forEach(x=>x.classList.toggle("active",x===tab));loginPane.hidden=reg;registerPane.hidden=!reg;});
+ const roleCards=[...document.querySelectorAll(".ks-role-card")],selected=document.getElementById("ks-selected-account");
+ roleCards.forEach(card=>{card.classList.toggle("active",card.dataset.account===selected.value);card.onclick=()=>{selected.value=card.dataset.account;roleCards.forEach(x=>x.classList.toggle("active",x===card));document.getElementById("ks-pin-input").focus()}});
+ document.getElementById("ks-login").onsubmit=async e=>{
+  e.preventDefault();const f=new FormData(e.target),u=list.find(x=>x.id===f.get("id"));
+  if(!u){error("Pilih akun PIN terlebih dahulu.");return}
+  if(await hash(u.salt,f.get("pin"))!==u.hash){
+   if(u.previousSalt&&u.previousHash&&await hash(u.previousSalt,f.get("pin"))===u.previousHash){audit("Percobaan login dengan PIN lama","Akun "+u.name+"; PIN sebelumnya diubah oleh "+(u.pinChangedBy||"Owner"));error("PIN telah diubah oleh "+(u.pinChangedBy||"Owner")+". Silakan hubungi Owner atau Admin untuk mendapatkan PIN terbaru.");return}
+   audit("Percobaan login gagal","Akun "+u.name);error("PIN salah.");return
+  }
+  sessionStorage.setItem("ksecurity_session",u.id);startSession(u)
+ };
+ const register=document.getElementById("ks-pin-register"),submit=document.getElementById("ks-register-submit"),registerError=document.getElementById("ks-register-error");
+ register.onsubmit=async e=>{
+  e.preventDefault();registerError.className="";registerError.textContent="";
+  const f=new FormData(register),email=String(f.get("email")||"").trim().toLowerCase(),cloudPassword=String(f.get("cloudPassword")||""),displayName=String(f.get("displayName")||"").trim(),pin=String(f.get("pin")||""),confirmPin=String(f.get("confirmPin")||"");
+  if(!/^\S+@\S+\.\S+$/.test(email)){registerError.textContent="Masukkan alamat email yang valid.";return}
+  if(!displayName){registerError.textContent="Nama akun wajib diisi.";return}
+  if(!/^\d{6}$/.test(pin)||pin!==confirmPin){registerError.textContent="PIN harus tepat 6 angka dan kedua isian harus sama.";return}
+  if(list.some(x=>String(x.email||"").toLowerCase()===email)){registerError.textContent="Email ini sudah terdaftar pada akun PIN di perangkat.";return}
+  submit.disabled=true;submit.textContent="Memverifikasi akun Cloud…";
+  let cloudClient=null;
+  try{
+   if(!window.KASIRKU_SUPABASE_CONFIG?.url||!window.KASIRKU_SUPABASE_CONFIG?.publishableKey)throw new Error("Konfigurasi Cloud belum tersedia.");
+   if(!window.supabase?.createClient){
+    await new Promise((resolve,reject)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js";sc.onload=resolve;sc.onerror=()=>reject(new Error("Pustaka Cloud gagal dimuat. Periksa koneksi internet."));document.head.appendChild(sc)});
+   }
+   const prefix="kasirku_supabase_cloud_auth_v1:";
+   const storage={getItem:async k=>localStorage.getItem(prefix+k),setItem:async(k,v)=>localStorage.setItem(prefix+k,v),removeItem:async k=>localStorage.removeItem(prefix+k)};
+   cloudClient=window.supabase.createClient(window.KASIRKU_SUPABASE_CONFIG.url,window.KASIRKU_SUPABASE_CONFIG.publishableKey,{auth:{storage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+   const {data:authData,error:authError}=await cloudClient.auth.signInWithPassword({email,password:cloudPassword});
+   if(authError||!authData?.user)throw new Error("Email ini belum terhubung dengan akun KASIRKU Cloud, atau kata sandinya salah.");
+   const cloudUser=authData.user;
+   if(String(cloudUser.email||"").toLowerCase()!==email)throw new Error("Email akun Cloud tidak cocok.");
+   const {data:memberships,error:membershipError}=await cloudClient.from("store_memberships").select("store_id,role,is_active").eq("user_id",cloudUser.id).eq("is_active",true);
+   if(membershipError)throw membershipError;
+   if(!memberships?.length)throw new Error("Email ini belum terhubung dengan toko KASIRKU Cloud yang aktif.");
+   if(memberships.length!==1)throw new Error("Akun Cloud memiliki lebih dari satu toko aktif. Selesaikan pemilihan toko melalui Login Cloud terlebih dahulu.");
+   const role=String(memberships[0].role||"").toLowerCase();
+   if(!["owner","admin","cashier"].includes(role))throw new Error("Peran akun Cloud tidak valid.");
+   const {data:branches,error:branchError}=await cloudClient.from("branches").select("id,name,is_active").eq("store_id",memberships[0].store_id).eq("is_active",true);
+   if(branchError)throw branchError;
+   let allowed=branches||[];
+   if(role!=="owner"){
+    const {data:assignments,error:assignmentError}=await cloudClient.from("branch_memberships").select("branch_id").eq("store_id",memberships[0].store_id).eq("user_id",cloudUser.id);
+    if(assignmentError)throw assignmentError;
+    const ids=new Set((assignments||[]).map(x=>x.branch_id));allowed=allowed.filter(x=>ids.has(x.id));
+   }
+   if(!allowed.length)throw new Error("Akun Cloud belum memiliki cabang aktif yang diizinkan.");
+   const id="pin_"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"_"+Math.random().toString(16).slice(2));
+   const saltValue=salt(),newUser={id,name:displayName,role,salt:saltValue,hash:await hash(saltValue,pin),email,cloudUserId:cloudUser.id,cloudLinkedAt:new Date().toISOString()};
+   const latest=read();
+   if(latest.some(x=>String(x.email||"").toLowerCase()===email||String(x.cloudUserId||"")===String(cloudUser.id)))throw new Error("Akun Cloud ini sudah ditautkan ke akun PIN pada perangkat ini.");
+   latest.push(newUser);localStorage.setItem(KEY,JSON.stringify(latest));
+   localStorage.setItem("kasirku_cloud_identity_link_v1:"+encodeURIComponent(id),JSON.stringify({userId:cloudUser.id,email,role,linkedAt:new Date().toISOString()}));
+   await cloudClient.auth.signOut();
+   register.reset();registerError.className="success";registerError.textContent="Berhasil! Akun PIN sudah terhubung dengan akun Cloud. Silakan masuk menggunakan PIN.";
+   const refreshed=read().filter(x=>x.active!==false),grid=document.querySelector(".ks-role-grid");
+   if(grid){grid.innerHTML=refreshed.map(x=>'<button type="button" class="ks-role-card" data-account="'+String(x.id).replace(/"/g,"&quot;")+'"><span class="ks-role-icon">'+(x.role==="owner"?"♛":x.role==="admin"?"✦":"▣")+'</span><span class="ks-role-name">'+String(x.name||"Akun").replace(/</g,"&lt;")+'</span><span class="ks-role-desc">'+(x.role==="owner"?"Pemilik usaha":x.role==="admin"?"Pengelola &amp; pengawasan":"Petugas transaksi")+'</span><span class="ks-role-check">✓</span></button>').join("");}
+   const freshCards=[...document.querySelectorAll(".ks-role-card")];freshCards.forEach(card=>{card.onclick=()=>{selected.value=card.dataset.account;freshCards.forEach(x=>x.classList.toggle("active",x===card));document.getElementById("ks-pin-input").focus()}});selected.value=id;freshCards.forEach(x=>x.classList.toggle("active",x.dataset.account===id));
+   tabs[0].click();
+  }catch(err){
+   try{if(cloudClient)await cloudClient.auth.signOut()}catch(_){}
+   registerError.textContent=err?.message||"Registrasi PIN gagal. Periksa akun Cloud dan koneksi internet.";
+  }finally{submit.disabled=false;submit.textContent="Verifikasi Cloud & Daftar PIN"}
+ };
 }
 function logoutConfirm(){
  const overlay=document.createElement("div");
