@@ -26,7 +26,9 @@ class SalesRepository(private val dao: CatalogDao) {
         discount: Long = 0L
     ): CheckoutResult {
         require(lines.isNotEmpty()) { "Keranjang masih kosong." }
-        require(lines.all { it.quantity > 0 && it.unitPrice > 0L }) { "Isi keranjang tidak valid." }
+        require(lines.all { it.productId.isNotBlank() && it.productName.isNotBlank() && it.quantity > 0 && it.unitPrice > 0L }) {
+            "Produk, jumlah, atau harga pada keranjang tidak valid."
+        }
         require(discount >= 0L) { "Diskon tidak valid." }
         require(paymentMethod.isNotBlank()) { "Metode pembayaran wajib ditentukan." }
         val subtotal = lines.fold(0L) { total, line -> Math.addExact(total, line.lineTotal) }
