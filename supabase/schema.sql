@@ -398,6 +398,12 @@ begin
     raise exception 'Rincian transaksi tidak boleh kosong';
   end if;
 
+  if nullif(p_order->>'store_id', '') is null
+     or nullif(p_order->>'branch_id', '') is null
+     or nullif(p_order->>'local_id', '') is null then
+    raise exception 'Identitas toko, cabang, atau transaksi tidak lengkap';
+  end if;
+
   -- Cashiers may upload only their own sales. Owner/admin may recover
   -- queued sales created by another cashier on a shared store device.
   v_created_by := nullif(p_order->>'created_by', '')::uuid;
@@ -414,12 +420,6 @@ begin
       and sm.role in ('owner', 'admin')
   ) then
     raise exception 'Hanya owner/admin yang dapat menyinkronkan transaksi kasir lain';
-  end if;
-
-  if nullif(p_order->>'store_id', '') is null
-     or nullif(p_order->>'branch_id', '') is null
-     or nullif(p_order->>'local_id', '') is null then
-    raise exception 'Identitas toko, cabang, atau transaksi tidak lengkap';
   end if;
 
   if coalesce((p_order->>'subtotal')::numeric, -1) < 0
