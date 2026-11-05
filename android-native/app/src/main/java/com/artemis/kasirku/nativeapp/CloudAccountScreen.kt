@@ -398,7 +398,7 @@ internal fun NativeProductsScreen(
                                 editingId = product.id
                                 name = product.name
                                 basePrice = product.basePrice.toString()
-                                sellingPrice = product.activeSellingPrice.toString()
+                                sellingPrice = product.activeSellingPrice?.toString() ?: ""
                                 quantity = product.branchQuantity.toString()
                                 barcode = ""
                                 notice = "Saat edit, barcode lama dipertahankan jika kolom barcode dikosongkan."
