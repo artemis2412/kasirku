@@ -118,7 +118,7 @@ internal fun NativeCheckoutScreen(
                 Text("Printer nota", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
                 Text(selectedPrinter?.let { address -> printerList.firstOrNull { it.address == address }?.name ?: address } ?: "Belum ada printer dipilih", color = Color(0xFF718096), fontSize = 12.sp)
             }
-            TextButton(onClick = { showPrinterSettings = !showPrinterSettings; if (!showPrinterSettings) loadPrinters() }) {
+            TextButton(onClick = { if (!showPrinterSettings) loadPrinters(); showPrinterSettings = !showPrinterSettings }) {
                 Text(if (showPrinterSettings) "Tutup" else "Atur")
             }
         }
