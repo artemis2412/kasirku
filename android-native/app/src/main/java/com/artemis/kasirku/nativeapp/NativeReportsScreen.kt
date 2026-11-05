@@ -113,7 +113,7 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(14.dp)) {
                 Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text(SimpleDateFormat("dd MMM yyyy • HH:mm", Locale("id", "ID")).format(Date(sale.createdAt)), color = ReportNavy, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        Text(BranchTime.format(sale.createdAt, "dd MMM yyyy • HH:mm", branchZone), color = ReportNavy, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                         Text(sale.paymentMethod + " • " + sale.id.take(8).uppercase(), color = ReportMuted, fontSize = 11.sp)
                     }
                     Text("Rp ${reportMoney(sale.total)}", color = ReportTeal, fontWeight = FontWeight.Bold, fontSize = 13.sp)
