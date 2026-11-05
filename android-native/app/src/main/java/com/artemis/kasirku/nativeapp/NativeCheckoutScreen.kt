@@ -44,6 +44,7 @@ import com.artemis.kasirku.nativeapp.data.CatalogRepository
 import com.artemis.kasirku.nativeapp.data.CheckoutLine
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SalesRepository
+import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.launch
 
@@ -249,6 +250,9 @@ internal fun NativeCheckoutScreen(
                             runCatching {
                                 sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod)
                             }.onSuccess { result ->
+                                if (!tenant.branchTimeZoneId.isNullOrBlank()) {
+                                    SaleSyncWorker.enqueue(context, tenant)
+                                }
                                 receiptDraft = ReceiptDraft(result.saleId, receiptLines, subtotal, result.total, paid, result.change)
                                 success = "Transaksi tersimpan. Total Rp ${result.total}, kembalian Rp ${result.change}."
                                 cart.clear()
