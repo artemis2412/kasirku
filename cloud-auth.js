@@ -216,7 +216,24 @@ async function showPinEnrollment(cloudUser,memberships){
   panel.id="kca-pin-enroll";
   panel.innerHTML='<label class="kca-field">PIN perangkat (6 angka)<input name="pin" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" required></label><label class="kca-field">Ulangi PIN perangkat<input name="confirm" type="password" inputmode="numeric" maxlength="6" minlength="6" autocomplete="new-password" required></label><button class="kca-primary" type="submit">Aktifkan KASIRKU</button>';
   form.after(panel);
-  say("Akun "+email+" terverifikasi sebagai "+role.toUpperCase()+". Buat PIN perangkat untuk melanjutkan.","success");
+  const oldUsers=(window.KASIRKU_AUTH.getLocalUsers()||[]).filter(u=>u.active!==false&&u.role===role);
+  if(oldUsers.length){
+    const legacy=document.createElement("form");
+    legacy.id="kca-link-old-pin";
+    legacy.style.cssText="margin-top:16px;padding-top:15px;border-top:1px solid #e5ece7";
+    legacy.innerHTML='<p style="margin:0 0 8px;color:#52675a;font-size:12px;font-weight:750">Sudah punya akun PIN di perangkat ini?</p><label class="kca-field">Pilih akun lokal<select name="localId" required>'+oldUsers.map(u=>'<option value="'+String(u.id).replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'">'+String(u.name).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))+'</option>').join("")+'</select></label><label class="kca-field">PIN lama<input name="oldPin" type="password" inputmode="numeric" maxlength="6" minlength="6" required></label><button class="kca-primary" type="submit" style="background:#eaf3ed;color:#176c48;border:1px solid #d7e8dc">Hubungkan akun lama</button>';
+    panel.after(legacy);
+    legacy.addEventListener("submit",async event=>{
+      event.preventDefault();
+      const button=legacy.querySelector("button");button.disabled=true;
+      try{
+        await window.KASIRKU_AUTH.linkExistingLocalUser({localId:legacy.elements.localId.value,userId:cloudUser.id,email,role,pin:legacy.elements.oldPin.value});
+        say("Akun lokal lama berhasil ditautkan. Membuka KASIRKU…","success");
+        setTimeout(returnToDashboard,700);
+      }catch(error){say(error.message||"Gagal menghubungkan akun lokal lama.","error");button.disabled=false;}
+    });
+  }
+  say("Akun "+email+" terverifikasi sebagai "+role.toUpperCase()+". Buat PIN perangkat baru atau hubungkan PIN lama.","success");
   panel.addEventListener("submit",async event=>{
     event.preventDefault();
     const pin=String(panel.elements.pin.value||""),confirm=String(panel.elements.confirm.value||"");
