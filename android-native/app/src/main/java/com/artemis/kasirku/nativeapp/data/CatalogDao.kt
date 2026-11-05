@@ -119,6 +119,9 @@ interface CatalogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertInventories(inventory: List<BranchInventoryEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertInventoriesIfMissing(inventory: List<BranchInventoryEntity>)
+
     @Query("SELECT * FROM branch_product_prices WHERE branchId = :branchId AND productId = :productId LIMIT 1")
     suspend fun getBranchPrice(branchId: String, productId: String): BranchProductPriceEntity?
 
@@ -130,6 +133,9 @@ interface CatalogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertBranchPrices(prices: List<BranchProductPriceEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertBranchPricesIfMissing(prices: List<BranchProductPriceEntity>)
 
     @Query("SELECT * FROM product_barcodes WHERE storeId = :storeId AND barcode = :barcode LIMIT 1")
     suspend fun findByBarcode(storeId: String, barcode: String): ProductBarcodeEntity?
@@ -147,8 +153,8 @@ interface CatalogDao {
     ) {
         if (categories.isNotEmpty()) upsertCategories(categories)
         if (products.isNotEmpty()) upsertProducts(products)
-        if (prices.isNotEmpty()) upsertBranchPrices(prices)
-        if (inventory.isNotEmpty()) upsertInventories(inventory)
+        if (prices.isNotEmpty()) insertBranchPricesIfMissing(prices)
+        if (inventory.isNotEmpty()) insertInventoriesIfMissing(inventory)
         if (barcodes.isNotEmpty()) insertBarcodes(barcodes)
     }
 
