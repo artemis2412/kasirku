@@ -59,7 +59,7 @@ begin
 
   if (
     select coalesce(sum((item->>'line_total')::numeric), 0)
-    from jsonb_array_elements(p_items) as item
+    from jsonb_array_elements(p_items) as entries(item)
   ) <> (p_order->>'subtotal')::numeric then
     raise exception 'Subtotal tidak cocok dengan rincian transaksi';
   end if;
@@ -125,7 +125,7 @@ begin
     (item->>'unit_price')::numeric,
     (item->>'quantity')::numeric,
     (item->>'line_total')::numeric
-  from jsonb_array_elements(p_items) as item;
+  from jsonb_array_elements(p_items) as entries(item);
 
   return v_order_id;
 end;
