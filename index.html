@@ -39,7 +39,7 @@
   <script src="./cloud-bridge.js?v=shared-cloud-auth-1"></script>
   <script>
     const hasLocalAccounts = (() => { try { const rows = JSON.parse(localStorage.getItem("ksecurity_users") || "[]"); return Array.isArray(rows) && rows.length > 0; } catch { return false; } })();
-    if (new URLSearchParams(location.search).has("cloud-auth-preview") || !hasLocalAccounts) {
+    if (new URLSearchParams(location.search).has("cloud-auth-preview") || new URLSearchParams(location.search).has("accept-staff-invite") || !hasLocalAccounts) {
       const configScript = document.createElement("script");
       configScript.src = "./supabase-config.js?v=1";
       configScript.onload = () => {
