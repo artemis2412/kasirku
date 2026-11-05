@@ -1522,7 +1522,7 @@ body.receipt-print-thermal.receipt-paper-58 #receipt-paper{page:thermal58;width:
   flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;
   min-height:42px;padding:0 15px;border:1px solid #cfe4d5;border-radius:12px;
   background:linear-gradient(135deg,#eaf6ee,#f5faf6);color:#176d48;
-  font:700 13px/1.2 inherit;box-shadow:0 3px 10px #1d65400b;
+  font-family:inherit;font-size:13px;font-weight:700;line-height:1.2;box-shadow:0 3px 10px #1d65400b;
 }
 .dashboard-greeting-action span{font-size:19px;line-height:1}
 .dashboard-greeting-action:active{transform:translateY(1px)}
