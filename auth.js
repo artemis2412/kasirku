@@ -113,9 +113,19 @@ function logoutConfirm(){
 }
 function publishLocalSession(){try{window.dispatchEvent(new CustomEvent("kasirku:local-session",{detail:user?{id:String(user.id),name:String(user.name||""),role:String(user.role||"").toLowerCase()}:null}))}catch(e){}}
 function startSession(u){user=u;publishLocalSession();const assigned=Array.isArray(u.branchIds)?u.branchIds:(u.branchId?[u.branchId]:[]);if(!["owner","admin"].includes(u.role)&&assigned.length){const current=localStorage.getItem(ACTIVE_BRANCH_KEY);if(!assigned.includes(current))localStorage.setItem(ACTIVE_BRANCH_KEY,assigned[0])}document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();document.querySelector(".topbar")?.appendChild(b);reset();apply()}
+function openPinEntry(){
+ history.pushState({kasirkuEntry:"pin"},"",location.href);
+ if(read().filter(x=>x.active!==false).length)login();else setup();
+}
+window.addEventListener("popstate",event=>{
+ if(user)return;
+ if(event.state?.kasirkuEntry==="pin"){
+  if(read().filter(x=>x.active!==false).length)login();else setup();
+ }else welcome();
+});
 function welcome(){
  show('<div class="ks-welcome"><div class="ks-welcome-glow ks-welcome-glow-a"></div><div class="ks-welcome-glow ks-welcome-glow-b"></div><div class="ks-welcome-content"><div class="ks-welcome-logo"><img src="./assets/kasirku-mark.svg?v=4" alt="Logo KASIRKU"></div><div class="ks-welcome-kicker">SISTEM KASIR MODERN</div><h1>Selamat Datang<br><span>di KASIRKU</span></h1><p>Kelola usaha dengan lebih mudah, rapi, dan aman. Silakan pilih cara masuk untuk melanjutkan.</p><div class="ks-welcome-actions"><button type="button" class="ks-entry-card" id="ks-open-pin"><span class="ks-entry-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"></path></svg></span><span class="ks-entry-copy"><strong>Login PIN</strong><small>Masuk menggunakan PIN perangkat</small></span><span class="ks-entry-arrow">›</span></button><button type="button" class="ks-entry-card ks-entry-cloud" id="ks-open-cloud"><span class="ks-entry-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 9a4.5 4.5 0 0 0 1 9Z"></path><path d="M12 12v7m-3-3 3 3 3-3"></path></svg></span><span class="ks-entry-copy"><strong>Login Cloud</strong><small>Masuk menggunakan akun cloud</small></span><span class="ks-entry-arrow">›</span></button></div><div class="ks-welcome-footer"><span class="ks-footer-dot"></span> Aman · Praktis · Terpercaya</div></div></div>');
- document.getElementById("ks-open-pin").onclick=()=>{if(read().filter(x=>x.active!==false).length)login();else setup()};
+ document.getElementById("ks-open-pin").onclick=()=>openPinEntry();
  document.getElementById("ks-open-cloud").onclick=()=>{const url=new URL(location.href);url.searchParams.set("cloud-auth-preview","1");location.href=url.toString()};
 }
 function restoreSession(){localStorage.removeItem("ksecurity_session");const id=sessionStorage.getItem("ksecurity_session");const u=read().find(x=>x.id===id&&x.active!==false);if(u)startSession(u);else{sessionStorage.removeItem("ksecurity_session");welcome()}}
