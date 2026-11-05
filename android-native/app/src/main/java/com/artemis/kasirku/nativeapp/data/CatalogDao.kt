@@ -163,6 +163,22 @@ interface CatalogDao {
         if (inventory.isNotEmpty()) upsertInventories(inventory)
     }
 
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun enqueueSaleSync(item: SaleSyncOutboxEntity)
+
+    @Query("SELECT * FROM sale_sync_outbox WHERE status IN ('PENDING', 'RETRY') ORDER BY createdAt ASC")
+    suspend fun getPendingSaleSync(): List<SaleSyncOutboxEntity>
+
+    @Query("SELECT COUNT(*) FROM sale_sync_outbox WHERE status IN ('PENDING', 'RETRY')")
+    fun observePendingSaleSyncCount(): Flow<Int>
+
+    @Query("UPDATE sale_sync_outbox SET status = :status, attempts = attempts + 1, lastError = :error, updatedAt = :updatedAt WHERE saleId = :saleId")
+    suspend fun updateSaleSyncStatus(saleId: String, status: String, error: String?, updatedAt: Long)
+
+    @Query("UPDATE sale_sync_outbox SET status = 'SYNCED', lastError = NULL, updatedAt = :updatedAt WHERE saleId = :saleId")
+    suspend fun markSaleSynced(saleId: String, updatedAt: Long)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertSale(sale: SaleEntity)
 
@@ -222,6 +238,7 @@ interface CatalogDao {
         }
         insertSale(sale)
         insertSaleItems(items)
+        enqueueSaleSync(SaleSyncOutboxEntity(saleId = sale.id, storeId = sale.storeId, branchId = sale.branchId, createdAt = sale.createdAt, updatedAt = sale.createdAt))
     }
 
 
