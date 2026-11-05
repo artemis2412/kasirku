@@ -117,7 +117,7 @@ internal fun NativeCheckoutScreen(
             }
             TextButton(onClick = onBack) { Text("Kembali") }
         }
-        OutlinedTextField(value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Cari produk") }, singleLine = true)
+        OutlinedTextField(value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Cari nama produk atau barcode") }, singleLine = true)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Printer nota", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
@@ -182,7 +182,7 @@ internal fun NativeCheckoutScreen(
                 }
             }
         }
-        Text("Keranjang • ${cart.values.sumOf { it.quantity }} item", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+        Text("Keranjang • ${cart.values.sumOf { it.quantity.toLong() }} item", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
         if (cart.isEmpty()) {
             Text("Pilih produk untuk memulai transaksi.", color = Color(0xFF718096), fontSize = 12.sp)
         } else {
