@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.artemis.kasirku.nativeapp.data.CloudAuthRepository
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.StoreTableEntity
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
@@ -45,6 +46,7 @@ internal fun NativeTableManagementScreen(
 ) {
     val context = LocalContext.current.applicationContext
     val dao = remember { KasirkuRoomDatabase.getInstance(context).storeTableDao() }
+    val cloud = remember { CloudAuthRepository() }
     val tables by dao.observeActiveTables(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
     val count by dao.observeActiveCount(tenant.storeId, tenant.branchId).collectAsState(initial = 0)
     val scope = rememberCoroutineScope()
@@ -100,8 +102,10 @@ internal fun NativeTableManagementScreen(
                             if (table.occupiedSaleId != null) {
                                 TextButton(onClick = {
                                     scope.launch {
+                                        val cloudReleased = cloud.releaseStoreTable(tenant, table.id, table.occupiedSaleId)
+                                        check(cloudReleased) { "Meja tidak berhasil dikosongkan di server. Periksa koneksi atau muat ulang." }
                                         val released = dao.release(tenant.storeId, tenant.branchId, table.id, table.occupiedSaleId, System.currentTimeMillis())
-                                        if (released != 1) error = "Status meja berubah. Muat ulang lalu coba lagi."
+                                        check(released == 1) { "Status lokal meja berubah. Muat ulang untuk menyamakan data." }
                                     }
                                 }) { Text("Kosongkan") }
                             } else {
@@ -140,7 +144,9 @@ internal fun NativeTableManagementScreen(
                             val now = System.currentTimeMillis()
                             val current = editing
                             if (current == null) {
-                                dao.insert(StoreTableEntity(UUID.randomUUID().toString(), tenant.storeId, tenant.branchId, cleanName, seats, true, now, now))
+                                val tableId = UUID.randomUUID().toString()
+                                cloud.createStoreTable(tenant, tableId, cleanName, seats)
+                                dao.insert(StoreTableEntity(tableId, tenant.storeId, tenant.branchId, cleanName, seats, true, now, now))
                             } else {
                                 val changed = dao.update(tenant.storeId, tenant.branchId, current.id, cleanName, seats, now)
                                 check(changed == 1) { "Meja tidak ditemukan atau sudah diarsipkan." }
