@@ -38,7 +38,7 @@ async function validateCloudIdentity(client){
   if(!memberships?.length)throw new Error("Keanggotaan toko aktif tidak ditemukan. Pastikan undangan sudah diterima atau pendaftaran toko selesai.");
   if(memberships.length!==1)throw new Error("Akun ini memiliki lebih dari satu toko aktif. Pemilihan toko perlu diselesaikan terlebih dahulu.");
   const membership=memberships[0],role=String(membership.role||"").toLowerCase();
-  if(!["owner","admin","cashier"].includes(role))throw new Error("Peran akun Cloud tidak dikenali.");
+  if(!["owner","admin","supervisor","cashier"].includes(role))throw new Error("Peran akun Cloud tidak dikenali.");
   const {data:store,error:storeError}=await client.from("stores").select("id,name")
     .eq("id",membership.store_id).maybeSingle();
   if(storeError)throw storeError;
@@ -69,7 +69,7 @@ async function linkLocalCloudIdentity(){
   if(error)throw error;
   if(!memberships?.length)throw new Error("Keanggotaan Cloud aktif tidak ditemukan.");
   if(memberships.length!==1)throw new Error("Akun Cloud memiliki lebih dari satu keanggotaan toko. Pengaitan ditahan.");
-  const expected=local.role==="owner"?"owner":local.role==="admin"?"admin":"cashier";
+  const expected=["owner","admin","supervisor","cashier"].includes(local.role)?local.role:"cashier";
   const actual=String(memberships[0].role||"").toLowerCase();
   if(actual!==expected)throw new Error("Peran tidak cocok: PIN lokal "+expected+" tetapi akun Cloud "+actual+". Pengaitan dibatalkan.");
   const linkKey="kasirku_cloud_identity_link_v1:"+encodeURIComponent(local.id);
