@@ -46,7 +46,7 @@ create table if not exists public.branch_inventory (
   store_id uuid not null,
   branch_id uuid not null,
   product_id uuid not null,
-  quantity numeric(14,3) not null default 0 check (quantity >= 0),
+  quantity integer not null default 0 check (quantity >= 0),
   updated_at timestamptz not null default now(),
   primary key (branch_id, product_id),
   foreign key (store_id, branch_id)
