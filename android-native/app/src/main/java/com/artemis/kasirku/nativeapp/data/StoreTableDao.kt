@@ -14,11 +14,14 @@ interface StoreTableDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(table: StoreTableEntity)
 
-    @Query("UPDATE store_tables SET name = :name, capacity = :capacity, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND isActive = 1")
+    @Query("UPDATE store_tables SET name = :name, capacity = :capacity, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND isActive = 1 AND occupiedSaleId IS NULL")
     suspend fun update(storeId: String, branchId: String, id: String, name: String, capacity: Int, updatedAt: Long): Int
 
-    @Query("UPDATE store_tables SET isActive = 0, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND isActive = 1")
+    @Query("UPDATE store_tables SET isActive = 0, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND isActive = 1 AND occupiedSaleId IS NULL")
     suspend fun archive(storeId: String, branchId: String, id: String, updatedAt: Long): Int
+
+    @Query("UPDATE store_tables SET occupiedSaleId = NULL, occupiedAt = NULL, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND occupiedSaleId = :saleId")
+    suspend fun release(storeId: String, branchId: String, id: String, saleId: String, updatedAt: Long): Int
 
     @Query("SELECT COUNT(*) FROM store_tables WHERE storeId = :storeId AND branchId = :branchId AND isActive = 1")
     fun observeActiveCount(storeId: String, branchId: String): Flow<Int>
