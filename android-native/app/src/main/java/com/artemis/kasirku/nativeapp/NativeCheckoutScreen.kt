@@ -136,7 +136,7 @@ internal fun NativeCheckoutScreen(
             if (tables.isEmpty()) Text("Belum ada meja aktif di cabang ini. Tambahkan meja melalui Manajemen Meja.", color = Color(0xFFB42318), fontSize = 12.sp)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 tables.forEach { table ->
-                    FilterChip(selected = selectedTableId == table.id, onClick = { selectedTableId = table.id }, label = { Text(table.name + " · " + table.capacity) })
+                    FilterChip(selected = selectedTableId == table.id, enabled = table.occupiedSaleId == null, onClick = { selectedTableId = table.id }, label = { Text(table.name + " · " + if (table.occupiedSaleId == null) "Kosong" else "Terisi") })
                 }
             }
         }
@@ -292,7 +292,7 @@ internal fun NativeCheckoutScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !busy && cart.isNotEmpty() && paid >= subtotal && subtotal > 0L && (orderType == "Takeaway" || tables.any { it.id == selectedTableId }),
+                    enabled = !busy && cart.isNotEmpty() && paid >= subtotal && subtotal > 0L && (orderType == "Takeaway" || tables.any { it.id == selectedTableId && it.occupiedSaleId == null }),
                     shape = RoundedCornerShape(12.dp)
                 ) { Text(if (busy) "Memproses…" else "Selesaikan transaksi") }
             }
