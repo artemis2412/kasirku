@@ -208,3 +208,41 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--green)}
  #view .menu-page .menu-product-actions .btn{flex:1}
  #view .menu-page .category-manager-row{align-items:flex-start;flex-direction:column}
 }
+
+
+/* Store settings workspace */
+#view .settings-page{gap:16px;max-width:1050px}
+#view .settings-page-heading{padding:2px 1px 3px}
+#view .settings-page-heading h2{font-size:24px;letter-spacing:-.45px;color:#183d2b}
+#view .settings-page>.settings-section{padding:19px;border:1px solid #e2eae4;border-radius:15px;box-shadow:0 4px 15px rgba(27,65,43,.035)}
+#view .settings-page>.settings-section>h3{display:flex;align-items:center;gap:9px;margin:0 0 14px;color:#244b33;font-size:15px}
+#view .settings-page>.settings-section>h3:before{content:"";width:4px;height:17px;border-radius:4px;background:#4c9664}
+#view .settings-page .form-grid{gap:13px}
+#view .settings-page .field{min-height:43px;border-radius:9px}
+#view .settings-page .form-actions .btn{min-height:42px}
+#view .settings-page .settings-logo-upload{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:15px;padding:14px;border:1px dashed #cbdccf;border-radius:12px;background:#f8fbf8}
+#view .settings-page .settings-logo-upload-copy{display:grid;gap:4px}
+#view .settings-page .settings-logo-upload-copy b{font-size:13px;color:#315640}
+#view .settings-page .settings-logo-upload-copy span{font-size:11px;color:#829187}
+#view .settings-page .settings-upload-drop{display:flex;align-items:center;gap:10px;min-width:190px;padding:10px 13px;border:1px solid #dce8df;border-radius:10px;background:#fff;cursor:pointer}
+#view .settings-page .settings-upload-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;background:#eaf4ed;color:#2b7047;font-size:21px}
+#view .settings-page .settings-upload-text{display:grid;gap:3px}
+#view .settings-page .settings-upload-text b{font-size:12px;color:#315640}
+#view .settings-page .settings-upload-text small{font-size:10px;color:#829187}
+#view .settings-page .logo-preview-wrap{display:flex;align-items:center;gap:14px;margin:8px 0 14px}
+#view .settings-page .store-logo-preview{width:76px;height:76px;object-fit:contain;padding:7px;border:1px solid #e3ebe5;border-radius:12px;background:#fff}
+#view .settings-page .feedback-panel .feedback-whatsapp{display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin:3px 0 9px}
+#view .settings-page .bluetooth-connect-panel{margin-top:16px;border-radius:13px}
+#view .settings-page .bluetooth-panel-heading{gap:11px}
+#view .settings-page .bluetooth-device-summary{margin-top:10px}
+#view .settings-page .settings-backup-panel .action-row{gap:9px;flex-wrap:wrap}
+#view .settings-page .settings-backup-panel .action-row .btn{min-height:40px}
+@media(max-width:650px){
+ #view .settings-page{gap:12px}
+ #view .settings-page-heading h2{font-size:21px}
+ #view .settings-page>.settings-section{padding:15px}
+ #view .settings-page .settings-logo-upload{align-items:stretch;flex-direction:column}
+ #view .settings-page .settings-upload-drop{min-width:0}
+ #view .settings-page .logo-preview-wrap{align-items:flex-start;flex-wrap:wrap}
+ #view .settings-page .settings-backup-panel .action-row .btn{flex:1}
+}
