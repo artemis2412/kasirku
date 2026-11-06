@@ -86,7 +86,7 @@ object BluetoothReceiptPrinter {
             val normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
                 .replace("\\p{M}+".toRegex(), "")
                 .replace('–', '-').replace('—', '-')
-                .replace('’', '\'').replace('‘', '\'')
+                .replace("’", "'").replace("‘", "'")
                 .replace('“', '"').replace('”', '"')
             return normalized.map { if (it.code in 32..126) it else '?' }.joinToString("")
         }
