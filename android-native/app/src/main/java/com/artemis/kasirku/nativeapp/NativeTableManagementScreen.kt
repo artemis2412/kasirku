@@ -48,6 +48,11 @@ internal fun NativeTableManagementScreen(
     val context = LocalContext.current.applicationContext
     val dao = remember { KasirkuRoomDatabase.getInstance(context).storeTableDao() }
     val cloud = remember { CloudAuthRepository() }
+    val canManageTables = tenant.role in setOf(
+        com.artemis.kasirku.nativeapp.data.StoreRole.OWNER,
+        com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN,
+        com.artemis.kasirku.nativeapp.data.StoreRole.SUPERVISOR
+    )
     val tables by dao.observeActiveTables(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
     val count by dao.observeActiveCount(tenant.storeId, tenant.branchId).collectAsState(initial = 0)
     val scope = rememberCoroutineScope()
@@ -89,8 +94,10 @@ internal fun NativeTableManagementScreen(
         }
         error?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { openForm(null) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
-                Text("+ Tambah meja")
+            if (canManageTables) {
+                Button(onClick = { openForm(null) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
+                    Text("+ Tambah meja")
+                }
             }
             TextButton(onClick = {
                 scope.launch {
@@ -132,7 +139,7 @@ internal fun NativeTableManagementScreen(
                                         check(released == 1) { "Status lokal meja berubah. Muat ulang untuk menyamakan data." }
                                     }
                                 }) { Text("Kosongkan") }
-                            } else {
+                            } else if (canManageTables) {
                                 TextButton(onClick = { openForm(table) }) { Text("Ubah") }
                                 TextButton(onClick = {
                                     scope.launch {
