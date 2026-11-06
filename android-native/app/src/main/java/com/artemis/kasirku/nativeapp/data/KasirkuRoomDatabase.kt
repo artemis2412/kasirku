@@ -21,13 +21,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProductBarcodeEntity::class,
         SaleEntity::class,
         SaleItemEntity::class,
-        SaleSyncOutboxEntity::class
+        SaleSyncOutboxEntity::class,
+        StoreTableEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class KasirkuRoomDatabase : RoomDatabase() {
     abstract fun catalogDao(): CatalogDao
+    abstract fun storeTableDao(): StoreTableDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -53,6 +55,14 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS store_tables (id TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, branchId TEXT NOT NULL, name TEXT NOT NULL, capacity INTEGER NOT NULL, isActive INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_store_tables_branchId_name ON store_tables(branchId, name)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_store_tables_storeId_branchId_isActive ON store_tables(storeId, branchId, isActive)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: KasirkuRoomDatabase? = null
 
@@ -62,7 +72,7 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
                     context.applicationContext,
                     KasirkuRoomDatabase::class.java,
                     "kasirku_room.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { INSTANCE = it }
             }
     }
 }
