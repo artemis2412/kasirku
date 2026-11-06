@@ -26,7 +26,8 @@ class SalesRepository(private val dao: CatalogDao) {
         discount: Long = 0L,
         orderType: String = "Takeaway",
         tableLocalId: String? = null,
-        tableLabel: String? = null
+        tableLabel: String? = null,
+        saleIdOverride: String? = null
     ): CheckoutResult {
         require(orderType in setOf("Takeaway", "Dine In")) { "Jenis pesanan tidak valid." }
         require(if (orderType == "Dine In") !tableLocalId.isNullOrBlank() && !tableLabel.isNullOrBlank() else tableLocalId == null && tableLabel == null) { "Pilih meja untuk pesanan Dine In." }
@@ -38,7 +39,7 @@ class SalesRepository(private val dao: CatalogDao) {
         val payment = CheckoutPaymentRules.validate(subtotal, discount, paid, paymentMethod)
         val total = payment.total
         val normalizedMethod = payment.method
-        val saleId = UUID.randomUUID().toString()
+        val saleId = saleIdOverride?.also { require(it.isNotBlank()) } ?: UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val sale = SaleEntity(
             id = saleId,
