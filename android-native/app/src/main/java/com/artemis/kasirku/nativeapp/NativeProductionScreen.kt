@@ -41,6 +41,7 @@ import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import com.artemis.kasirku.nativeapp.data.StoreRole
 import kotlinx.coroutines.launch
 
+// Shared production UI for branch-scoped inventory and recipes.
 private val ProductionNavy = Color(0xFF17324D)
 private val ProductionTeal = Color(0xFF168C83)
 private val ProductionMuted = Color(0xFF718096)
