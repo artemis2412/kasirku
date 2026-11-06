@@ -65,6 +65,14 @@ private val AccountMuted = Color(0xFF718096)
 private fun formatNominalInput(value: String): String =
     value.filter(Char::isDigit).reversed().chunked(3).joinToString(".").reversed()
 
+private fun friendlyTimeZoneLabel(zoneId: String?): String = when (zoneId) {
+    "Asia/Jakarta", "Asia/Pontianak" -> "WIB — Waktu Indonesia Barat"
+    "Asia/Makassar" -> "WITA — Waktu Indonesia Tengah"
+    "Asia/Jayapura" -> "WIT — Waktu Indonesia Timur"
+    null, "" -> "Belum diatur"
+    else -> "Zona waktu khusus"
+}
+
 @Composable
 internal fun CloudAccountScreen(
     modifier: Modifier = Modifier,
@@ -86,6 +94,7 @@ internal fun CloudAccountScreen(
     var importSummary by remember { mutableStateOf<String?>(null) }
     var timeZoneInput by remember { mutableStateOf("") }
     var showTimeZoneOptions by remember { mutableStateOf(false) }
+    var sessionRestoreFinished by remember { mutableStateOf(false) }
 
     fun applyAccess(result: CloudAccountAccess) {
         access = result
@@ -100,7 +109,7 @@ internal fun CloudAccountScreen(
         verifiedContext = if (store != null && branch != null) {
             result.verifiedContext(store.id, branch.id)
         } else null
-        timeZoneInput = verifiedContext?.branchTimeZoneId.orEmpty()
+        timeZoneInput = verifiedContext?.branchTimeZoneId ?: java.util.TimeZone.getDefault().id
         importSummary = null
         onContextChanged(verifiedContext)
         message = if (verifiedContext != null) {
@@ -119,6 +128,7 @@ internal fun CloudAccountScreen(
             .onSuccess { result -> if (result != null) applyAccess(result) }
             .onFailure { message = it.message ?: "Gagal memulihkan sesi Cloud."; isError = true }
         busy = false
+        sessionRestoreFinished = true
     }
 
     val selectedStore = access?.stores?.firstOrNull { it.id == selectedStoreId }
@@ -160,7 +170,23 @@ internal fun CloudAccountScreen(
             }
         }
 
-        if (access == null) {
+        if (access == null && !sessionRestoreFinished) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(color = AccountPurple)
+                    Text("Memulihkan sesi akun…", color = AccountNavy, fontWeight = FontWeight.SemiBold)
+                    Text("Sebentar, kami memeriksa akses toko dan cabang.", color = AccountMuted, fontSize = 12.sp)
+                }
+            }
+        } else if (access == null) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -263,7 +289,7 @@ internal fun CloudAccountScreen(
                         Text(context.branchName + " • " + context.role.name.lowercase(), color = AccountMuted, fontSize = 12.sp)
                         Text("Akses harga modal/laba: " + if (context.role.canViewCostAndProfit()) "Owner" else "Tidak diizinkan", color = AccountMuted, fontSize = 12.sp)
                         Text(
-                            "Zona waktu cabang: " + (context.branchTimeZoneId ?: "Belum diatur"),
+                            "Zona waktu cabang: " + friendlyTimeZoneLabel(context.branchTimeZoneId),
                             color = if (context.branchTimeZoneId.isNullOrBlank()) Color(0xFFB54708) else AccountMuted,
                             fontSize = 12.sp
                         )
@@ -282,8 +308,8 @@ internal fun CloudAccountScreen(
                                         value = timeZoneInput,
                                         onValueChange = { timeZoneInput = it },
                                         modifier = Modifier.fillMaxWidth(),
-                                        label = { Text("Kode zona waktu IANA") },
-                                        placeholder = { Text("Contoh: Asia/Makassar") },
+                                        label = { Text("Zona waktu toko") },
+                                        placeholder = { Text("Pilih WIB, WITA, atau WIT") },
                                         singleLine = true,
                                         enabled = !busy
                                     )
@@ -293,14 +319,12 @@ internal fun CloudAccountScreen(
                                     onDismissRequest = { showTimeZoneOptions = false }
                                 ) {
                                     listOf(
-                                        "WIB — Jakarta" to "Asia/Jakarta",
-                                        "WIB — Pontianak" to "Asia/Pontianak",
-                                        "WITA — Makassar" to "Asia/Makassar",
-                                        "WITA — Denpasar" to "Asia/Makassar",
-                                        "WIT — Jayapura" to "Asia/Jayapura"
+                                        "WIB — Waktu Indonesia Barat" to "Asia/Jakarta",
+                                        "WITA — Waktu Indonesia Tengah" to "Asia/Makassar",
+                                        "WIT — Waktu Indonesia Timur" to "Asia/Jayapura"
                                     ).forEach { (label, zoneId) ->
                                         DropdownMenuItem(
-                                            text = { Text("$label  ($zoneId)") },
+                                            text = { Text(label) },
                                             onClick = {
                                                 timeZoneInput = zoneId
                                                 showTimeZoneOptions = false
@@ -309,7 +333,7 @@ internal fun CloudAccountScreen(
                                     }
                                 }
                             }
-                            Text("Pilih zona waktu sesuai lokasi toko. Kamu juga bisa mengisi kode IANA secara manual.", color = AccountMuted, fontSize = 11.sp)
+                            Text("Pilih zona waktu sesuai lokasi toko. Pilihan ini digunakan untuk tanggal dan laporan transaksi.", color = AccountMuted, fontSize = 11.sp)
                             Button(
                                 onClick = {
                                     scope.launch {
