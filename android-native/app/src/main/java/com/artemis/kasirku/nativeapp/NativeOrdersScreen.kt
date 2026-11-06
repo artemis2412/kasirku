@@ -127,12 +127,12 @@ internal fun NativeOrdersScreen(
                     val rows = repository.exportRows(tenant, archiveStart, archiveEnd)
                     context.contentResolver.openOutputStream(uri)?.use { stream ->
                         OutputStreamWriter(stream, Charsets.UTF_8).use { writer ->
-                            writer.write("\uFEFFTanggal;Jam;ID Transaksi;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\n")
+                            writer.write("\uFEFFTanggal;Jam;ID Transaksi;Jenis Pesanan;Meja;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\n")
                             rows.forEach { (sale, items) ->
                                 items.forEach { item ->
                                     val values = listOf(
                                         BranchTime.format(sale.createdAt, "yyyy-MM-dd", branchZone), BranchTime.format(sale.createdAt, "HH:mm:ss", branchZone), sale.id,
-                                        sale.paymentMethod, item.productName, item.quantity.toString(), item.unitPrice.toString(),
+                                        sale.orderType, sale.tableLabel.orEmpty(), sale.paymentMethod, item.productName, item.quantity.toString(), item.unitPrice.toString(),
                                         item.lineTotal.toString(), sale.subtotal.toString(), sale.discount.toString(),
                                         sale.total.toString(), sale.paid.toString(), sale.change.toString()
                                     )
@@ -272,7 +272,7 @@ internal fun NativeOrdersScreen(
                     Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("Transaksi ${sale.id.take(8).uppercase()}", color = OrdersNavy, fontWeight = FontWeight.SemiBold)
-                            Text(BranchTime.format(sale.createdAt, "HH:mm", branchZone) + " • ${sale.paymentMethod}", color = OrdersMuted, fontSize = 11.sp)
+                            Text(BranchTime.format(sale.createdAt, "HH:mm", branchZone) + " • " + sale.orderType + (sale.tableLabel?.let { " • Meja $it" } ?: "") + " • ${sale.paymentMethod}", color = OrdersMuted, fontSize = 11.sp)
                         }
                         Spacer(Modifier.width(8.dp))
                         Text("Rp ${formatOrderNominal(sale.total)}", color = OrdersTeal, fontWeight = FontWeight.Bold)
@@ -292,6 +292,7 @@ internal fun NativeOrdersScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text("ID: ${sale.id}", color = OrdersMuted, fontSize = 10.sp)
                     Text(BranchTime.format(sale.createdAt, "dd MMM yyyy", branchZone) + " • " + BranchTime.format(sale.createdAt, "HH:mm", branchZone), color = OrdersMuted, fontSize = 11.sp)
+                    Text("Jenis pesanan: " + sale.orderType + (sale.tableLabel?.let { " • Meja $it" } ?: ""), color = OrdersNavy, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     if (loadingDetail) Text("Memuat rincian…", color = OrdersMuted)
                     detailError?.let { Text(it, color = Color(0xFFB42318), fontSize = 11.sp) }
                     selectedItems.forEach { item ->
@@ -323,7 +324,7 @@ internal fun NativeOrdersScreen(
                                     val items = repository.saleItems(tenant, sale.id)
                                     BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName, sale.id,
                                         items.map { CheckoutLine(it.productId, it.productName, it.quantity, it.unitPrice) },
-                                        sale.subtotal, sale.total, sale.paid, sale.change, discount = sale.discount)
+                                        sale.subtotal, sale.total, sale.paid, sale.change, discount = sale.discount, orderType = sale.orderType, tableLabel = sale.tableLabel)
                                     receiptMessage = "Nota transaksi berhasil dikirim ke printer."
                                 } catch (cancelled: CancellationException) {
                                     throw cancelled
