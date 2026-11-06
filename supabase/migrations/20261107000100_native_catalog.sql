@@ -26,7 +26,7 @@ create table if not exists public.catalog_products (
   updated_at timestamptz not null default now(),
   unique (store_id, id),
   foreign key (store_id, category_id)
-    references public.catalog_categories(store_id, id) on delete set null
+    references public.catalog_categories(store_id, id)
 );
 
 create table if not exists public.branch_product_prices (
