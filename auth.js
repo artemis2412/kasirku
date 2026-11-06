@@ -6,7 +6,7 @@ const SESSION_KEY="ksecurity_session";
 const ACTIVITY_KEY="kasirku_last_activity";
 const IDLE_TIMEOUT=10*60*1000;
 function audit(action,details){try{const a=JSON.parse(localStorage.getItem(AUDIT_KEY)||"[]");a.push({id:Date.now()+"-"+Math.random().toString(16).slice(2),at:new Date().toISOString(),actor:user?.name||"Sistem",actorRole:user?.role||"system",action,details});localStorage.setItem(AUDIT_KEY,JSON.stringify(a.slice(-1000)))}catch(e){}}
-const read=()=>{try{const rows=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(rows)?rows.map(x=>x?.role==="supervisor"?{...x,role:"cashier"}:x):[]}catch{return []}};
+const read=()=>{try{const rows=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(rows)?rows:[]}catch{return []}};
 const hash=async(s,p)=>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s+":"+p));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")};
 const salt=()=>Array.from(crypto.getRandomValues(new Uint8Array(16))).map(x=>x.toString(16).padStart(2,"0")).join("");
 // Local-device friction only; Cloud authorization must still be enforced by Supabase RLS.
@@ -274,7 +274,7 @@ function welcome(){
  document.getElementById("ks-open-pin").onclick=()=>openPinEntry();
  document.getElementById("ks-open-cloud").onclick=()=>{sessionStorage.setItem("kasirku_login_view","cloud");const url=new URL(location.href);url.searchParams.delete("kasirku-entry");url.searchParams.set("cloud-auth-preview","1");location.href=url.toString()};
 }
-function sessionIsFresh(){const last=Number(localStorage.getItem(ACTIVITY_KEY));return Number.isFinite(last)&&last>0&&Date.now()-last<IDLE_TIMEOUT}function restoreSession(){const id=localStorage.getItem(SESSION_KEY);if(id){if(!sessionIsFresh()){localStorage.removeItem(SESSION_KEY);localStorage.removeItem(ACTIVITY_KEY)}else{const u=read().find(x=>x.id===id&&x.active!==false);if(u){startSession(u);return}localStorage.removeItem(SESSION_KEY);localStorage.removeItem(ACTIVITY_KEY)}}if(localStorage.getItem("kasirku_cloud_session_active")==="1")return;const params=new URLSearchParams(location.search);if(params.get("cloud-auth-preview")==="1")return;if(params.get("kasirku-entry")==="pin"||sessionStorage.getItem("kasirku_login_view")==="pin"){sessionStorage.setItem("kasirku_login_view","pin");login();return}welcome()}
+function sessionIsFresh(){const last=Number(localStorage.getItem(ACTIVITY_KEY));return Number.isFinite(last)&&last>0&&Date.now()-last<IDLE_TIMEOUT}function restoreSession(){const id=localStorage.getItem(SESSION_KEY);if(id){if(!sessionIsFresh()){localStorage.removeItem(SESSION_KEY);localStorage.removeItem(ACTIVITY_KEY)}else{const u=read().find(x=>x.id===id&&x.active!==false);if(u){startSession(u);return}localStorage.removeItem(SESSION_KEY);localStorage.removeItem(ACTIVITY_KEY)}}if(localStorage.getItem("kasirku_cloud_session_active")==="1"){welcome();return;}const params=new URLSearchParams(location.search);if(params.get("cloud-auth-preview")==="1")return;if(params.get("kasirku-entry")==="pin"||sessionStorage.getItem("kasirku_login_view")==="pin"){sessionStorage.setItem("kasirku_login_view","pin");login();return}welcome()}
 function lock(){sessionStorage.removeItem("kasirku_login_view");if(window.KASIRKU_AUTH_MODE==="cloud"){localStorage.removeItem("kasirku_cloud_session_active");try{window.KASIRKU_CLOUD_SESSION?.signOut?.()}catch(e){console.warn("Cloud sign-out:",e)}}window.KASIRKU_AUTH_MODE="pin";user=null;publishLocalSession();clearTimeout(timer);localStorage.removeItem(SESSION_KEY);localStorage.removeItem(ACTIVITY_KEY);sessionStorage.removeItem(SESSION_KEY);document.getElementById("ks-account")?.remove();welcome()}
 function reset(){clearTimeout(timer);if(!user)return;localStorage.setItem(ACTIVITY_KEY,String(Date.now()));timer=setTimeout(()=>{if(!sessionIsFresh())lock();else reset()},IDLE_TIMEOUT)}
 const cashierPages=["Dashboard","Kasir","Pesanan","Meja","Menu","Dapur","Kas","Laporan","Pengaturan"];
@@ -325,7 +325,7 @@ document.addEventListener("click",e=>{if(!user)return;const p=e.target.closest("
 window.KASIRKU_AUTH={
  startCloudSession(cloudUser){
   const role=String(cloudUser?.role||"").toLowerCase();
-  if(!cloudUser?.id||!["owner","admin","cashier"].includes(role))throw new Error("Identitas atau peran Cloud tidak valid.");
+  if(!cloudUser?.id||!["owner","admin","supervisor","cashier"].includes(role))throw new Error("Identitas atau peran Cloud tidak valid.");
   clearTimeout(timer);window.KASIRKU_AUTH_MODE="cloud";
   user={id:"cloud:"+String(cloudUser.id),name:String(cloudUser.name||cloudUser.email||"Pengguna"),role,cloudUserId:String(cloudUser.id),email:String(cloudUser.email||""),branchIds:Array.isArray(cloudUser.branchIds)?cloudUser.branchIds:[]};
   document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();
