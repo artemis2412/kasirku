@@ -165,7 +165,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   changed integer;
 begin
@@ -200,7 +200,7 @@ begin
   get diagnostics changed = row_count;
   return changed = 1;
 end;
-$;
+$$;
 
 create or replace function public.archive_store_table(
   target_store_id uuid,
@@ -211,7 +211,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   changed integer;
 begin
@@ -243,7 +243,7 @@ begin
   get diagnostics changed = row_count;
   return changed = 1;
 end;
-$;
+$$;
 
 revoke all on function public.update_store_table(uuid, uuid, text, text, integer) from public, anon;
 revoke all on function public.archive_store_table(uuid, uuid, text) from public, anon;
