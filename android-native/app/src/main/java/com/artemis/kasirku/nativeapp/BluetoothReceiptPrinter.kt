@@ -82,38 +82,11 @@ object BluetoothReceiptPrinter {
     ): ByteArray {
         val out = ArrayList<Byte>()
         fun raw(vararg values: Int) { values.forEach { out.add(it.toByte()) } }
-        fun printable(value: String): String {
-            val normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
-                .replace("\\p{M}+".toRegex(), "")
-                .replace('–', '-').replace('—', '-')
-                .replace("’", "'").replace("‘", "'")
-                .replace('“', '"').replace('”', '"')
-            return normalized.map { if (it.code in 32..126) it else '?' }.joinToString("")
-        }
-        fun line(value: String) { (printable(value) + "\n").toByteArray(Charsets.US_ASCII).forEach(out::add) }
-        fun wrapped(value: String, width: Int = 32): List<String> {
-            val text = printable(value).trim()
-            if (text.isEmpty()) return listOf("")
-            val result = mutableListOf<String>()
-            var current = StringBuilder()
-            text.split(Regex("\\s+")).forEach { word ->
-                if (word.length > width) {
-                    if (current.isNotEmpty()) { result.add(current.toString()); current = StringBuilder() }
-                    var remaining = word
-                    while (remaining.length > width) {
-                        result.add(remaining.take(width))
-                        remaining = remaining.drop(width)
-                    }
-                    if (remaining.isNotEmpty()) current.append(remaining)
-                } else if (current.isEmpty()) current.append(word)
-                else if (current.length + 1 + word.length <= width) current.append(' ').append(word)
-                else { result.add(current.toString()); current = StringBuilder(word) }
-            }
-            if (current.isNotEmpty()) result.add(current.toString())
-            return result
-        }
-        fun money(value: Long) = value.toString().reversed().chunked(3).joinToString(".").reversed()
-        fun rupiah(value: Long) = "Rp " + money(value)
+        fun line(value: String) { (ReceiptTextFormatter.printable(value) + "\n").toByteArray(Charsets.US_ASCII).forEach(out::add) }
+        fun wrapped(value: String, width: Int = 32) =
+            ReceiptTextFormatter.wrap(value, width)
+        fun money(value: Long) = ReceiptTextFormatter.money(value)
+        fun rupiah(value: Long) = ReceiptTextFormatter.rupiah(value)
         raw(0x1B, 0x40) // initialize
         raw(0x1B, 0x61, 1)
         raw(0x1B, 0x45, 1)
