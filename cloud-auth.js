@@ -47,7 +47,7 @@ async function validateCloudIdentity(client){
     .eq("store_id",membership.store_id).eq("is_active",true).order("created_at");
   if(branchError)throw branchError;
   let allowed=branches||[];
-  if(role!=="owner"){
+  if(role==="supervisor"||role==="cashier"){
     const {data:assignments,error:assignmentError}=await client.from("branch_memberships")
       .select("branch_id").eq("store_id",membership.store_id).eq("user_id",user.id);
     if(assignmentError)throw assignmentError;
