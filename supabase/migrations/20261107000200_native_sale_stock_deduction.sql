@@ -108,5 +108,53 @@ create trigger trg_deduct_native_catalog_stock
 after insert on public.order_items
 for each row execute function private.deduct_native_catalog_stock_after_order_item();
 
+create or replace function private.validate_native_sale_deduction_snapshot()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_branch_id uuid;
+  v_local_id text;
+begin
+  select o.branch_id, o.local_id
+    into v_branch_id, v_local_id
+  from public.orders o
+  where o.id = new.order_id;
+
+  if v_branch_id is null or v_local_id is null then
+    raise exception 'Order context missing while validating stock ledger';
+  end if;
+
+  -- A retried order must retain every previously deducted product and quantity.
+  if exists (
+    select 1
+    from public.inventory_sale_deductions d
+    where d.branch_id = v_branch_id
+      and d.order_local_id = v_local_id
+      and not exists (
+        select 1
+        from public.order_items oi
+        where oi.order_id = new.order_id
+          and oi.product_id = d.product_id
+          and oi.quantity = d.quantity
+      )
+  ) then
+    raise exception 'Rincian transaksi berbeda dari transaksi yang stoknya sudah diproses';
+  end if;
+
+  return new;
+end;
+$;
+
+revoke all on function private.validate_native_sale_deduction_snapshot() from public, anon, authenticated;
+
+drop trigger if exists trg_validate_native_sale_deduction_snapshot on public.order_items;
+create constraint trigger trg_validate_native_sale_deduction_snapshot
+after insert or update on public.order_items
+deferrable initially deferred
+for each row execute function private.validate_native_sale_deduction_snapshot();
+
 comment on table public.inventory_sale_deductions is
   'Idempotency ledger preventing duplicate branch stock deductions when native orders retry sync.';
