@@ -163,7 +163,12 @@ internal fun NativeOrdersScreen(
         Text(tenant.storeName + " • " + tenant.branchName, color = OrdersMuted, fontSize = 12.sp)
         Text("Hari ini • ${BranchTime.format(dayStart, "dd MMM yyyy", branchZone)}", color = OrdersMuted, fontSize = 12.sp)
         if (tenant.branchTimeZoneId.isNullOrBlank()) {
-            Text("Zona waktu cabang belum diatur. Tanggal sementara mengikuti zona waktu perangkat dan bisa berbeda dari tanggal operasional.", color = Color(0xFFB45309), fontSize = 11.sp)
+            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4E5)), shape = RoundedCornerShape(12.dp)) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Zona waktu belum diatur", color = Color(0xFF9A4D00), fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
+                    Text("Tanggal sementara mengikuti perangkat. Atur zona waktu cabang di menu Akun.", color = Color(0xFF9A4D00), fontSize = 10.sp)
+                }
+            }
         }
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF1F3)), shape = RoundedCornerShape(13.dp)) {
             Row(Modifier.fillMaxWidth().padding(13.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -184,9 +189,6 @@ internal fun NativeOrdersScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !tenant.branchTimeZoneId.isNullOrBlank() && pendingSync > 0
             ) { Text("Coba sinkronkan sekarang") }
-            if (tenant.branchTimeZoneId.isNullOrBlank()) {
-                Text("Atur zona waktu cabang di menu Akun agar sinkronisasi dapat berjalan.", color = Color(0xFFB45309), fontSize = 11.sp)
-            }
             syncMessage?.let { Text(it, color = OrdersTeal, fontSize = 11.sp) }
         }
         if (syncQueue.isNotEmpty()) {
