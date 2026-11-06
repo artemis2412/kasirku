@@ -35,9 +35,9 @@
     <nav id="bottom-nav" aria-label="Navigasi bawah"></nav>
     <div id="connection-status" class="connection-status" role="status" aria-live="polite"><span class="connection-dot" aria-hidden="true"></span><span id="connection-status-label">Memeriksa…</span></div>
   </main>
-  <script src="./auth.js?v=branch-status-dots-1"></script>
+  <script src="./auth.js?v=login-session-recovery-1"></script>
   <script src="./supabase-config.js?v=1"></script>
-  <script src="./cloud-session.js?v=idle-session-10m-1"></script>
+  <script src="./cloud-session.js?v=login-session-recovery-1"></script>
   <script src="./cloud-bridge.js?v=admin-branch-access-1"></script>
   <script>
     if (new URLSearchParams(location.search).has("cloud-auth-preview")) {
@@ -45,7 +45,7 @@
       configScript.src = "./supabase-config.js?v=1";
       configScript.onload = () => {
         const authScript = document.createElement("script");
-        authScript.src = "./cloud-auth.js?v=official-cloud-logo-2";
+        authScript.src = "./cloud-auth.js?v=supervisor-cloud-auth-1";
         document.body.appendChild(authScript);
       };
       configScript.onerror = () => console.error("KASIRKU: gagal memuat konfigurasi login cloud.");
