@@ -273,7 +273,8 @@ internal fun NativeCheckoutScreen(
                             error = null
                             val receiptLines = cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }
                             try {
-                                val chosenTable = tables.firstOrNull { it.id == selectedTableId }\n                                val result = sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod, orderType = orderType, tableLocalId = chosenTable?.id, tableLabel = chosenTable?.name)
+                                val chosenTable = tables.firstOrNull { it.id == selectedTableId }
+                                val result = sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod, orderType = orderType, tableLocalId = chosenTable?.id, tableLabel = chosenTable?.name)
                                 if (!tenant.branchTimeZoneId.isNullOrBlank()) {
                                     SaleSyncWorker.enqueue(context, tenant)
                                 }
