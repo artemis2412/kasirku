@@ -24,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -42,6 +44,7 @@ import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 
 private fun formatOrderNominal(value: Long): String = value.toString().reversed().chunked(3).joinToString(".").reversed()
@@ -68,7 +71,15 @@ internal fun NativeOrdersScreen(
     val pendingSync by dao.observePendingSaleSyncCount(tenant.storeId, tenant.branchId).collectAsState(initial = 0)
     val syncQueue by dao.observeSaleSyncQueue(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
     val branchZone = remember(tenant.branchTimeZoneId) { BranchTime.zoneId(tenant) }
-    val dayStart = remember(branchZone) { BranchTime.startOfToday(branchZone) }
+    var dayStart by remember(branchZone) { mutableLongStateOf(BranchTime.startOfToday(branchZone)) }
+    LaunchedEffect(branchZone) {
+        while (true) {
+            val currentDayStart = BranchTime.startOfToday(branchZone)
+            if (dayStart != currentDayStart) dayStart = currentDayStart
+            val nextDayStart = BranchTime.startOfDayOffset(currentDayStart, 1, branchZone)
+            delay((nextDayStart - System.currentTimeMillis()).coerceAtLeast(1_000L))
+        }
+    }
     val dayEnd = remember(dayStart, branchZone) {
         BranchTime.startOfDayOffset(dayStart, 1, branchZone)
     }
