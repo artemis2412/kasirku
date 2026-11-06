@@ -451,9 +451,9 @@ internal fun NativeProductsScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current.applicationContext
-    val repository = remember {
-        CatalogRepository(KasirkuRoomDatabase.getInstance(context).catalogDao())
-    }
+    val database = remember { KasirkuRoomDatabase.getInstance(context) }
+    val repository = remember { CatalogRepository(database.catalogDao()) }
+    val cloudRepository = remember { CloudAuthRepository() }
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var editingId by remember { mutableStateOf<String?>(null) }
