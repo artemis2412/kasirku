@@ -207,8 +207,8 @@ interface CatalogDao {
     """)
     suspend fun deductStock(branchId: String, productId: String, quantity: Int, updatedAt: Long): Int
 
-    @Query("UPDATE store_tables SET occupiedSaleId = :saleId, occupiedAt = :occupiedAt, updatedAt = :occupiedAt WHERE id = :tableId AND storeId = :storeId AND branchId = :branchId AND isActive = 1 AND occupiedSaleId IS NULL")
-    suspend fun occupyTable(storeId: String, branchId: String, tableId: String, saleId: String, occupiedAt: Long): Int
+    @Query("UPDATE store_tables SET occupiedSaleId = :saleId, occupiedAt = :occupiedAt, updatedAt = :occupiedAt WHERE id = :tableId AND storeId = :storeId AND branchId = :branchId AND name = :tableLabel AND isActive = 1 AND occupiedSaleId IS NULL")
+    suspend fun occupyTable(storeId: String, branchId: String, tableId: String, tableLabel: String, saleId: String, occupiedAt: Long): Int
 
     @Transaction
     suspend fun completeSale(sale: SaleEntity, items: List<SaleItemEntity>) {
@@ -271,7 +271,7 @@ interface CatalogDao {
             "Subtotal transaksi tidak sama dengan rincian produk."
         }
         if (sale.orderType == "Dine In") {
-            val occupied = occupyTable(sale.storeId, sale.branchId, sale.tableLocalId!!, sale.id, sale.createdAt)
+            val occupied = occupyTable(sale.storeId, sale.branchId, sale.tableLocalId!!, sale.tableLabel!!, sale.id, sale.createdAt)
             check(occupied == 1) { "Meja sudah digunakan atau tidak tersedia. Pilih meja lain." }
         }
         insertSale(sale)
