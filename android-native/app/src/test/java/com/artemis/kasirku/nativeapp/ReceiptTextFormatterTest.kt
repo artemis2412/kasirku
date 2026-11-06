@@ -13,7 +13,7 @@ class ReceiptTextFormatterTest {
     }
 
     @Test fun transliteratesAccentsAndSmartPunctuation() {
-        assertEquals("Cafe 'Pagi' - "Enak"", ReceiptTextFormatter.printable("Café ‘Pagi’ – “Enak”"))
+        assertEquals("Cafe 'Pagi' - \"Enak\"", ReceiptTextFormatter.printable("Café ‘Pagi’ – “Enak”"))
     }
 
     @Test fun wrapsWordsAndLongUnbrokenTokensToPrinterWidth() {
