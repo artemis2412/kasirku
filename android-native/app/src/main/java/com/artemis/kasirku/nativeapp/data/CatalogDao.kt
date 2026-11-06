@@ -107,6 +107,21 @@ interface CatalogDao {
     @Query("SELECT * FROM catalog_categories WHERE storeId = :storeId AND isActive = 1 ORDER BY sortOrder, name COLLATE NOCASE")
     fun observeCategories(storeId: String): Flow<List<CategoryEntity>>
 
+    @Query("SELECT * FROM catalog_products WHERE storeId = :storeId")
+    suspend fun getProductsForCloudSync(storeId: String): List<ProductEntity>
+
+    @Query("SELECT * FROM catalog_categories WHERE storeId = :storeId")
+    suspend fun getCategoriesForCloudSync(storeId: String): List<CategoryEntity>
+
+    @Query("SELECT * FROM branch_product_prices WHERE branchId = :branchId")
+    suspend fun getBranchPricesForCloudSync(branchId: String): List<BranchProductPriceEntity>
+
+    @Query("SELECT * FROM branch_inventory WHERE branchId = :branchId")
+    suspend fun getBranchInventoryForCloudSync(branchId: String): List<BranchInventoryEntity>
+
+    @Query("SELECT * FROM product_barcodes WHERE storeId = :storeId")
+    suspend fun getBarcodesForCloudSync(storeId: String): List<ProductBarcodeEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCategories(categories: List<CategoryEntity>)
 
