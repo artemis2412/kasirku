@@ -307,6 +307,79 @@ class CloudAuthRepository {
         CatalogCloudSyncSummary(categoryRows.size, productRows.size, priceRows.size, inventoryRows.size, barcodeRows.size)
     }
 
+    /**
+     * Pulls the canonical store catalog and selected-branch stock into the local cache.
+     * Refuses to overwrite local inventory while unsynced sales could still change it.
+     */
+    suspend fun fetchCatalogFromCloud(
+        tenant: VerifiedTenantContext,
+        dao: CatalogDao
+    ): CatalogCloudSyncSummary = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN)) {
+            "Hanya Owner atau Admin yang dapat mengambil katalog Cloud."
+        }
+        require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+        require(dao.countUnresolvedSaleSync(tenant.storeId, tenant.branchId) == 0) {
+            "Masih ada transaksi yang belum tersinkron. Sinkronkan transaksi dahulu agar stok lokal tidak tertimpa."
+        }
+
+        val categories = client.from("catalog_categories").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeCatalogCategoryDto>()
+        val products = client.from("catalog_products").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeCatalogProductDto>()
+        val prices = client.from("branch_product_prices").select {
+            filter {
+                eq("store_id", tenant.storeId)
+                eq("branch_id", tenant.branchId)
+            }
+        }.decodeList<NativeBranchPriceDto>()
+        val inventory = client.from("branch_inventory").select {
+            filter {
+                eq("store_id", tenant.storeId)
+                eq("branch_id", tenant.branchId)
+            }
+        }.decodeList<NativeBranchInventoryDto>()
+        val barcodes = client.from("product_barcodes").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeProductBarcodeDto>()
+
+        require(products.all { it.storeId == tenant.storeId } &&
+            categories.all { it.storeId == tenant.storeId }) { "Data Cloud tidak sesuai dengan toko aktif." }
+        require(prices.all { it.storeId == tenant.storeId && it.branchId == tenant.branchId } &&
+            inventory.all { it.storeId == tenant.storeId && it.branchId == tenant.branchId }) {
+            "Data harga atau stok Cloud tidak sesuai dengan cabang aktif."
+        }
+        val productIds = products.map { it.id }.toSet()
+        require(prices.all { it.productId in productIds } &&
+            inventory.all { it.productId in productIds } &&
+            barcodes.all { it.storeId == tenant.storeId && it.productId in productIds }) {
+            "Data Cloud berisi referensi produk yang tidak valid."
+        }
+
+        fun epoch(value: String) = java.time.Instant.parse(value).toEpochMilli()
+        dao.applyCloudCatalogSnapshot(
+            products = products.map {
+                ProductEntity(it.id, it.storeId, it.categoryId, it.name, it.description, it.basePrice,
+                    it.photoUri, null, it.isActive, epoch(it.createdAt), epoch(it.updatedAt))
+            },
+            categories = categories.map {
+                CategoryEntity(it.id, it.storeId, it.name, it.sortOrder, it.isActive, epoch(it.updatedAt))
+            },
+            prices = prices.map {
+                BranchProductPriceEntity(it.branchId, it.productId, it.sellingPrice, epoch(it.updatedAt))
+            },
+            inventory = inventory.map {
+                BranchInventoryEntity(it.branchId, it.productId, it.quantity, epoch(it.updatedAt))
+            },
+            barcodes = barcodes.map {
+                ProductBarcodeEntity(it.id, it.storeId, it.productId, it.barcode, epoch(it.createdAt))
+            }
+        )
+        CatalogCloudSyncSummary(categories.size, products.size, prices.size, inventory.size, barcodes.size)
+    }
+
     suspend fun fetchStoreTables(tenant: VerifiedTenantContext): List<StoreTableEntity> =
         withContext(Dispatchers.IO) {
             require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
