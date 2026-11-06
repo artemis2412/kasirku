@@ -2,6 +2,7 @@ package com.artemis.kasirku.nativeapp
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -79,6 +82,7 @@ internal fun CloudAccountScreen(
     var isError by remember { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<String?>(null) }
     var timeZoneInput by remember { mutableStateOf("") }
+    var showTimeZoneOptions by remember { mutableStateOf(false) }
 
     fun applyAccess(result: CloudAccountAccess) {
         access = result
@@ -217,15 +221,46 @@ internal fun CloudAccountScreen(
                         if (context.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER ||
                             context.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
                         ) {
-                            OutlinedTextField(
-                                value = timeZoneInput,
-                                onValueChange = { timeZoneInput = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("Zona waktu IANA cabang") },
-                                placeholder = { Text("Contoh: Asia/Makassar") },
-                                singleLine = true
-                            )
-                            Text("Gunakan zona waktu lokasi toko, bukan pengaturan HP kasir.", color = AccountMuted, fontSize = 11.sp)
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text("Pilih zona waktu cabang", color = AccountNavy, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    TextButton(
+                                        onClick = { showTimeZoneOptions = true },
+                                        enabled = !busy,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) { Text("Pilih zona waktu Indonesia  ▾") }
+                                    OutlinedTextField(
+                                        value = timeZoneInput,
+                                        onValueChange = { timeZoneInput = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        label = { Text("Kode zona waktu IANA") },
+                                        placeholder = { Text("Contoh: Asia/Makassar") },
+                                        singleLine = true,
+                                        enabled = !busy
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = showTimeZoneOptions,
+                                    onDismissRequest = { showTimeZoneOptions = false }
+                                ) {
+                                    listOf(
+                                        "WIB — Jakarta" to "Asia/Jakarta",
+                                        "WIB — Pontianak" to "Asia/Pontianak",
+                                        "WITA — Makassar" to "Asia/Makassar",
+                                        "WITA — Denpasar" to "Asia/Makassar",
+                                        "WIT — Jayapura" to "Asia/Jayapura"
+                                    ).forEach { (label, zoneId) ->
+                                        DropdownMenuItem(
+                                            text = { Text("$label  ($zoneId)") },
+                                            onClick = {
+                                                timeZoneInput = zoneId
+                                                showTimeZoneOptions = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            Text("Pilih zona waktu sesuai lokasi toko. Kamu juga bisa mengisi kode IANA secara manual.", color = AccountMuted, fontSize = 11.sp)
                             Button(
                                 onClick = {
                                     scope.launch {
