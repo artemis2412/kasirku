@@ -105,6 +105,49 @@ class CatalogDaoTransactionTest {
     }
 
     @Test
+    fun cloudCatalogSnapshotUpdatesProductsPricesStockAndBarcodesAtomically() = runBlocking {
+        seedProduct("cloud-product", "Nama Lama", 2)
+        val category = CategoryEntity("category-1", "store-1", "Minuman", 1, true, 20)
+        val product = ProductEntity(
+            id = "cloud-product", storeId = "store-1", categoryId = "category-1",
+            name = "Nama Cloud", description = "Dari Cloud", basePrice = 12_000,
+            createdAt = 1, updatedAt = 20
+        )
+        dao.applyCloudCatalogSnapshot(
+            products = listOf(product),
+            categories = listOf(category),
+            prices = listOf(BranchProductPriceEntity("branch-1", "cloud-product", 14_000, 20)),
+            inventory = listOf(BranchInventoryEntity("branch-1", "cloud-product", 7, 20)),
+            barcodes = listOf(ProductBarcodeEntity("barcode-1", "store-1", "cloud-product", "8990001", 20))
+        )
+
+        val row = dao.observeBranchCatalog("store-1", "branch-1", "").first().single()
+        assertEquals("Nama Cloud", row.name)
+        assertEquals(14_000L, row.activeSellingPrice)
+        assertEquals(7, row.branchQuantity)
+        assertEquals(listOf("8990001"), dao.getBarcodes("store-1", "cloud-product").map { it.barcode })
+    }
+
+    @Test
+    fun unresolvedSaleSyncCountIncludesFailedAndRetryStates() = runBlocking {
+        dao.enqueueSaleSync(SaleSyncOutboxEntity(
+            saleId = "sale-pending", storeId = "store-1", branchId = "branch-1",
+            status = "PENDING", createdAt = 1, updatedAt = 1
+        ))
+        dao.enqueueSaleSync(SaleSyncOutboxEntity(
+            saleId = "sale-failed", storeId = "store-1", branchId = "branch-1",
+            status = "FAILED", createdAt = 2, updatedAt = 2
+        ))
+        dao.enqueueSaleSync(SaleSyncOutboxEntity(
+            saleId = "sale-other-branch", storeId = "store-1", branchId = "branch-2",
+            status = "PENDING", createdAt = 3, updatedAt = 3
+        ))
+
+        assertEquals(2, dao.countUnresolvedSaleSync("store-1", "branch-1"))
+        assertEquals(0, dao.countUnresolvedSaleSync("store-1", "branch-3"))
+    }
+
+    @Test
     fun pendingSyncQueueIsIsolatedByStoreAndBranch() = runBlocking {
         seedProduct("product-a", "Kopi A", 5, storeId = "store-a", branchId = "branch-a")
         seedProduct("product-b", "Kopi B", 5, storeId = "store-b", branchId = "branch-b")
