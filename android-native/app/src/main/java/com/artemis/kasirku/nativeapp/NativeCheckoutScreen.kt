@@ -80,6 +80,7 @@ internal fun NativeCheckoutScreen(
     val cloud = remember { CloudAuthRepository() }
     val tableDao = remember { database.storeTableDao() }
     val tables by tableDao.observeActiveTables(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
+    var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(tenant.storeId, tenant.branchId) {
         runCatching { tableDao.upsertAll(cloud.fetchStoreTables(tenant)) }
@@ -96,7 +97,6 @@ internal fun NativeCheckoutScreen(
     var selectedTableId by remember { mutableStateOf<String?>(null) }
     var paymentMethod by remember { mutableStateOf("CASH") }
     var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
     var success by remember { mutableStateOf<String?>(null) }
     var printerError by remember { mutableStateOf<String?>(null) }
     var printerList by remember { mutableStateOf<List<PairedPrinter>>(emptyList()) }
