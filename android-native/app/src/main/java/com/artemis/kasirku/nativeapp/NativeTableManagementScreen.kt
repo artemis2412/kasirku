@@ -135,7 +135,16 @@ internal fun NativeTableManagementScreen(
                             } else {
                                 TextButton(onClick = { openForm(table) }) { Text("Ubah") }
                                 TextButton(onClick = {
-                                    scope.launch { dao.archive(tenant.storeId, tenant.branchId, table.id, System.currentTimeMillis()) }
+                                    scope.launch {
+                                        try {
+                                            val archived = cloud.archiveStoreTable(tenant, table.id)
+                                            check(archived) { "Meja tidak ditemukan atau gagal diarsipkan di server." }
+                                            dao.upsertAll(cloud.fetchStoreTables(tenant))
+                                            error = null
+                                        } catch (failure: Exception) {
+                                            error = failure.message ?: "Gagal mengarsipkan meja."
+                                        }
+                                    }
                                 }) { Text("Arsip", color = Color(0xFFB42318)) }
                             }
                         }
@@ -172,8 +181,10 @@ internal fun NativeTableManagementScreen(
                                 cloud.createStoreTable(tenant, tableId, cleanName, seats)
                                 dao.insert(StoreTableEntity(tableId, tenant.storeId, tenant.branchId, cleanName, seats, true, now, now))
                             } else {
-                                val changed = dao.update(tenant.storeId, tenant.branchId, current.id, cleanName, seats, now)
-                                check(changed == 1) { "Meja tidak ditemukan atau sudah diarsipkan." }
+                                val cloudUpdated = cloud.updateStoreTable(tenant, current.id, cleanName, seats)
+                                check(cloudUpdated) { "Meja tidak ditemukan, sedang terisi, atau perubahan ditolak server." }
+                                val refreshed = cloud.fetchStoreTables(tenant)
+                                dao.upsertAll(refreshed)
                             }
                             showForm = false
                         } catch (failure: Exception) {
