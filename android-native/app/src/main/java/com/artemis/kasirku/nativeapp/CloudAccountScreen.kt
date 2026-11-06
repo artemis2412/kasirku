@@ -479,41 +479,6 @@ internal fun NativeProductsScreen(
                 }
             }
         } else {
-                                scope.launch {
-                                    saving = true
-                                    formError = null
-                                    cancellationSafeResult {
-                                        repository.saveProduct(
-                                            tenant.storeId,
-                                            tenant.branchId,
-                                            CatalogProductDraft(
-                                                id = editingId,
-                                                name = name,
-                                                basePrice = parsedBase,
-                                                sellingPrice = parsedSelling,
-                                                quantity = parsedQuantity,
-                                                barcodes = barcode.split(",").map(String::trim).filter(String::isNotEmpty)
-                                            )
-                                        )
-                                    }.onSuccess {
-                                        notice = if (editingId == null) "Produk berhasil ditambahkan." else "Produk berhasil diperbarui."
-                                        clearForm()
-                                    }.onFailure {
-                                        formError = it.message ?: "Gagal menyimpan produk."
-                                    }
-                                    saving = false
-                                }
-                            }
-                        },
-                        enabled = !saving,
-                        shape = RoundedCornerShape(11.dp)
-                    ) { Text(if (saving) "Menyimpan…" else "Simpan") }
-                    TextButton(onClick = { clearForm() }, enabled = !saving) { Text("Batal") }
-                }
-            }
-        }
-
-        } else {
             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF1F3)), shape = RoundedCornerShape(15.dp)) {
                 Text("Akses lihat katalog saja. Hanya owner dan admin yang dapat menambah atau mengubah produk.", modifier = Modifier.padding(14.dp), color = AccountMuted, fontSize = 12.sp)
             }
