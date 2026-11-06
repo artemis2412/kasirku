@@ -69,7 +69,7 @@ create or replace function public.claim_store_table(
 )
 returns boolean
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
@@ -108,7 +108,7 @@ create or replace function public.release_store_table(
 )
 returns boolean
 language plpgsql
-security invoker
+security definer
 set search_path = ''
 as $$
 declare
