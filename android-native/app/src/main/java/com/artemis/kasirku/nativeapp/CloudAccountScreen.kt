@@ -40,7 +40,17 @@ import com.artemis.kasirku.nativeapp.data.CatalogProductDraft
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.LegacyProductImporter
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+
+private suspend fun <T> cancellationSafeResult(block: suspend () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (failure: Exception) {
+        Result.failure(failure)
+    }
 
 private val AccountNavy = Color(0xFF17324D)
 private val AccountTeal = Color(0xFF168C83)
@@ -98,7 +108,7 @@ internal fun CloudAccountScreen(
 
     LaunchedEffect(Unit) {
         busy = true
-        runCatching { repository.restoreSession() }
+        cancellationSafeResult { repository.restoreSession() }
             .onSuccess { result -> if (result != null) applyAccess(result) }
             .onFailure { message = it.message ?: "Gagal memulihkan sesi Cloud."; isError = true }
         busy = false
@@ -138,7 +148,7 @@ internal fun CloudAccountScreen(
                         busy = true
                         isError = false
                         message = "Memverifikasi akun, toko, dan cabang…"
-                        runCatching { repository.signIn(email, password) }
+                        cancellationSafeResult { repository.signIn(email, password) }
                             .onSuccess(::applyAccess)
                             .onFailure {
                                 message = it.message ?: "Login Cloud gagal."
@@ -220,7 +230,7 @@ internal fun CloudAccountScreen(
                                 onClick = {
                                     scope.launch {
                                         busy = true
-                                        runCatching {
+                                        cancellationSafeResult {
                                             repository.setBranchTimeZone(context.storeId, context.branchId, timeZoneInput)
                                         }.onSuccess { updated ->
                                             applyAccess(updated)
@@ -248,7 +258,7 @@ internal fun CloudAccountScreen(
                         scope.launch {
                             busy = true
                             importSummary = null
-                            runCatching {
+                            cancellationSafeResult {
                                 val room = KasirkuRoomDatabase.getInstance(appContext)
                                 LegacyProductImporter(appContext, room).import(tenant.storeId, tenant.branchId)
                             }.onSuccess { result ->
@@ -277,7 +287,7 @@ internal fun CloudAccountScreen(
                     scope.launch {
                         busy = true
                         isError = false
-                        runCatching { repository.signOut() }
+                        cancellationSafeResult { repository.signOut() }
                             .onSuccess {
                                 access = null
                                 verifiedContext = null
@@ -394,7 +404,7 @@ internal fun NativeProductsScreen(
                                 scope.launch {
                                     saving = true
                                     formError = null
-                                    runCatching {
+                                    cancellationSafeResult {
                                         repository.saveProduct(
                                             tenant.storeId,
                                             tenant.branchId,
@@ -479,7 +489,7 @@ internal fun NativeProductsScreen(
                             }) { Text("Edit") }
                             TextButton(onClick = {
                                 scope.launch {
-                                    runCatching { repository.deactivateProduct(tenant.storeId, product.id) }
+                                    cancellationSafeResult { repository.deactivateProduct(tenant.storeId, product.id) }
                                         .onSuccess { notice = "Produk dinonaktifkan dari katalog." }
                                         .onFailure { notice = it.message ?: "Gagal menonaktifkan produk." }
                                 }

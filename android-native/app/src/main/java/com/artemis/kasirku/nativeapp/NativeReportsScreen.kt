@@ -20,6 +20,7 @@ import com.artemis.kasirku.nativeapp.data.BranchTime
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
@@ -62,7 +63,7 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
         if (uri != null) scope.launch {
             exporting = true
             exportMessage = null
-            runCatching {
+            try {
                 val rows = repository.exportRows(tenant, startAt, endAt)
                 context.contentResolver.openOutputStream(uri)?.use { output ->
                     OutputStreamWriter(output, Charsets.UTF_8).use { writer ->
@@ -74,10 +75,14 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
                         writer.flush()
                     }
                 } ?: error("Tidak dapat membuat file di lokasi pilihan.")
-                rows.size
-            }.onSuccess { exportMessage = "Laporan berhasil diekspor: $it transaksi." }
-                .onFailure { exportMessage = it.message ?: "Gagal mengekspor laporan." }
-            exporting = false
+                exportMessage = "Laporan berhasil diekspor: ${rows.size} transaksi."
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (failure: Exception) {
+                exportMessage = failure.message ?: "Gagal mengekspor laporan."
+            } finally {
+                exporting = false
+            }
         }
     }
 

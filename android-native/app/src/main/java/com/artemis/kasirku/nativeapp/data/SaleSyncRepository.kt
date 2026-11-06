@@ -1,6 +1,7 @@
 package com.artemis.kasirku.nativeapp.data
 
 import java.time.ZoneId
+import kotlinx.coroutines.CancellationException
 
 data class SaleSyncReport(val uploaded: Int, val pending: Int, val failed: Int)
 
@@ -32,6 +33,8 @@ class SaleSyncRepository(
                 )
                 check(marked == 1) { "Status antrean transaksi tidak berhasil diperbarui." }
                 uploaded++
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: SecurityException) {
                 throw error
             } catch (error: Exception) {

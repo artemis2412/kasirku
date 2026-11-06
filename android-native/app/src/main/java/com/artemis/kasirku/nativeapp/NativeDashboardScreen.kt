@@ -18,6 +18,7 @@ import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.BranchTime
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
+import kotlinx.coroutines.delay
 
 private val HomeNavy = Color(0xFF17324D)
 private val HomeTeal = Color(0xFF168C83)
@@ -30,7 +31,15 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
     val dao = remember { KasirkuRoomDatabase.getInstance(context).catalogDao() }
     val repository = remember { SalesRepository(dao) }
     val branchZone = remember(tenant.branchTimeZoneId) { BranchTime.zoneId(tenant) }
-    val start = remember(branchZone) { BranchTime.startOfToday(branchZone) }
+    var start by remember(branchZone) { mutableLongStateOf(BranchTime.startOfToday(branchZone)) }
+    LaunchedEffect(branchZone) {
+        while (true) {
+            val currentStart = BranchTime.startOfToday(branchZone)
+            if (start != currentStart) start = currentStart
+            val nextStart = BranchTime.startOfDayOffset(currentStart, 1, branchZone)
+            delay((nextStart - System.currentTimeMillis()).coerceAtLeast(1_000L))
+        }
+    }
     val end = remember(start, branchZone) { BranchTime.startOfDayOffset(start, 1, branchZone) }
     val products by remember(tenant.storeId) { dao.observeActiveProductCount(tenant.storeId) }.collectAsState(initial=0)
     val stock by remember(tenant.branchId) { dao.observeBranchStockTotal(tenant.branchId) }.collectAsState(initial=0)

@@ -49,6 +49,7 @@ import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
@@ -102,11 +103,17 @@ internal fun NativeOrdersScreen(
     var selectedSale by remember { mutableStateOf<SaleEntity?>(null) }
     var selectedItems by remember { mutableStateOf<List<SaleItemEntity>>(emptyList()) }
     var loadingDetail by remember { mutableStateOf(false) }
+    var detailRequestToken by remember { mutableLongStateOf(0L) }
+    var detailError by remember { mutableStateOf<String?>(null) }
     var archiveMessage by remember { mutableStateOf<String?>(null) }
     var archiveBusy by remember { mutableStateOf(false) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
     var printingReceipt by remember { mutableStateOf(false) }
     var receiptMessage by remember { mutableStateOf<String?>(null) }
+    val bluetoothPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        receiptMessage = if (granted) "Izin Bluetooth diberikan. Tekan Cetak nota kembali."
+        else "Izin Bluetooth ditolak. Izinkan Bluetooth dari pengaturan aplikasi untuk mencetak nota."
+    }
     val archiveStart = remember(dayStart, branchZone) {
         BranchTime.startOfDayOffset(dayStart, -29, branchZone)
     }
@@ -116,12 +123,12 @@ internal fun NativeOrdersScreen(
             scope.launch {
                 archiveBusy = true
                 archiveMessage = null
-                runCatching {
+                try {
                     val rows = repository.exportRows(tenant, archiveStart, archiveEnd)
                     context.contentResolver.openOutputStream(uri)?.use { stream ->
                         OutputStreamWriter(stream, Charsets.UTF_8).use { writer ->
                             writer.write("\uFEFFTanggal;Jam;ID Transaksi;Metode;Produk;Jumlah;Harga Satuan;Total Baris;Subtotal;Diskon;Total;Dibayar;Kembalian\n")
-                                                        rows.forEach { (sale, items) ->
+                            rows.forEach { (sale, items) ->
                                 items.forEach { item ->
                                     val values = listOf(
                                         BranchTime.format(sale.createdAt, "yyyy-MM-dd", branchZone), BranchTime.format(sale.createdAt, "HH:mm:ss", branchZone), sale.id,
@@ -135,10 +142,14 @@ internal fun NativeOrdersScreen(
                             writer.flush()
                         }
                     } ?: error("File tidak dapat dibuat di lokasi pilihan.")
-                    rows.size
-                }.onSuccess { size -> archiveMessage = "Arsip berhasil disimpan: $size transaksi (30 hari)." }
-                    .onFailure { archiveMessage = it.message ?: "Gagal membuat arsip." }
-                archiveBusy = false
+                    archiveMessage = "Arsip berhasil disimpan: " + rows.size + " transaksi (30 hari)."
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (failure: Exception) {
+                    archiveMessage = failure.message ?: "Gagal membuat arsip."
+                } finally {
+                    archiveBusy = false
+                }
             }
         }
     }
@@ -232,10 +243,25 @@ internal fun NativeOrdersScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable {
                         selectedSale = sale
+                        selectedItems = emptyList()
+                        detailError = null
+                        receiptMessage = null
+                        val requestToken = detailRequestToken + 1L
+                        detailRequestToken = requestToken
                         loadingDetail = true
                         scope.launch {
-                            selectedItems = repository.saleItems(tenant, sale.id)
-                            loadingDetail = false
+                            try {
+                                val items = repository.saleItems(tenant, sale.id)
+                                if (detailRequestToken == requestToken) selectedItems = items
+                            } catch (error: CancellationException) {
+                                throw error
+                            } catch (error: Exception) {
+                                if (detailRequestToken == requestToken) {
+                                    detailError = error.message ?: "Gagal memuat rincian transaksi."
+                                }
+                            } finally {
+                                if (detailRequestToken == requestToken) loadingDetail = false
+                            }
                         }
                     },
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -265,6 +291,7 @@ internal fun NativeOrdersScreen(
                     Text("ID: ${sale.id}", color = OrdersMuted, fontSize = 10.sp)
                     Text(BranchTime.format(sale.createdAt, "dd MMM yyyy", branchZone) + " • " + BranchTime.format(sale.createdAt, "HH:mm", branchZone), color = OrdersMuted, fontSize = 11.sp)
                     if (loadingDetail) Text("Memuat rincian…", color = OrdersMuted)
+                    detailError?.let { Text(it, color = Color(0xFFB42318), fontSize = 11.sp) }
                     selectedItems.forEach { item ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("${item.productName} × ${item.quantity}", color = OrdersNavy, modifier = Modifier.weight(1f))
@@ -286,18 +313,24 @@ internal fun NativeOrdersScreen(
                             if (address == null) receiptMessage = "Pilih printer Bluetooth di halaman Penjualan terlebih dahulu."
                             else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
-                            ) receiptMessage = "Buka halaman Penjualan dan berikan izin Bluetooth terlebih dahulu."
+                            ) bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
                             else scope.launch {
                                 printingReceipt = true
                                 receiptMessage = null
-                                runCatching {
+                                try {
                                     val items = repository.saleItems(tenant, sale.id)
                                     BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName, sale.id,
                                         items.map { CheckoutLine(it.productId, it.productName, it.quantity, it.unitPrice) },
                                         sale.subtotal, sale.total, sale.paid, sale.change, discount = sale.discount)
-                                }.onSuccess { receiptMessage = "Nota transaksi berhasil dikirim ke printer." }
-                                    .onFailure { receiptMessage = "Transaksi tetap tersimpan, tetapi nota belum tercetak. " + (it.message ?: "Periksa printer lalu coba lagi.") }
-                                printingReceipt = false
+                                    receiptMessage = "Nota transaksi berhasil dikirim ke printer."
+                                } catch (cancelled: CancellationException) {
+                                    throw cancelled
+                                } catch (failure: Exception) {
+                                    receiptMessage = "Transaksi tetap tersimpan, tetapi nota belum tercetak. " +
+                                        (failure.message ?: "Periksa printer lalu coba lagi.")
+                                } finally {
+                                    printingReceipt = false
+                                }
                             }
                         },
                         enabled = !loadingDetail && !printingReceipt && selectedItems.isNotEmpty()

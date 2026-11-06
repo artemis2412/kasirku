@@ -46,6 +46,7 @@ import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private fun formatCheckoutNominal(value: Long): String = value.toString().reversed().chunked(3).joinToString(".").reversed()
@@ -149,12 +150,17 @@ internal fun NativeCheckoutScreen(
                     else scope.launch {
                         printing = true
                         printerError = null
-                        runCatching {
+                        try {
                             BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
                                 "TES-PRINTER", listOf(CheckoutLine("test", "Tes cetak Kasirku", 1, 1000L)),
                                 1000L, 1000L, 2000L, 1000L)
-                        }.onFailure { printerError = it.message ?: "Tes printer gagal." }
-                        printing = false
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (failure: Exception) {
+                            printerError = failure.message ?: "Tes printer gagal."
+                        } finally {
+                            printing = false
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -247,9 +253,8 @@ internal fun NativeCheckoutScreen(
                             busy = true
                             error = null
                             val receiptLines = cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }
-                            runCatching {
-                                sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod)
-                            }.onSuccess { result ->
+                            try {
+                                val result = sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod)
                                 if (!tenant.branchTimeZoneId.isNullOrBlank()) {
                                     SaleSyncWorker.enqueue(context, tenant)
                                 }
@@ -257,8 +262,13 @@ internal fun NativeCheckoutScreen(
                                 success = "Transaksi tersimpan. Total Rp ${result.total}, kembalian Rp ${result.change}."
                                 cart.clear()
                                 payment = ""
-                            }.onFailure { error = it.message ?: "Transaksi gagal disimpan." }
-                            busy = false
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: Exception) {
+                                error = failure.message ?: "Transaksi gagal disimpan."
+                            } finally {
+                                busy = false
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -276,12 +286,18 @@ internal fun NativeCheckoutScreen(
                 else scope.launch {
                     printing = true
                     printerError = null
-                    runCatching {
+                    try {
                         BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
                             receipt.saleId, receipt.lines, receipt.subtotal, receipt.total, receipt.paid, receipt.change)
-                    }.onSuccess { success = "Nota berhasil dikirim ke printer." }
-                        .onFailure { printerError = "Transaksi berhasil tersimpan, tetapi nota belum tercetak. " + (it.message ?: "Periksa printer lalu coba cetak ulang.") }
-                    printing = false
+                        success = "Nota berhasil dikirim ke printer."
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        printerError = "Transaksi berhasil tersimpan, tetapi nota belum tercetak. " +
+                            (failure.message ?: "Periksa printer lalu coba cetak ulang.")
+                    } finally {
+                        printing = false
+                    }
                 }
             }, modifier = Modifier.fillMaxWidth(), enabled = !printing) {
                 Text(if (printing) "Mengirim nota…" else "Cetak ulang nota Bluetooth")
