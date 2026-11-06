@@ -170,3 +170,41 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--green)}
  #view .order-card-foot .action-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
  #view .order-card-foot .action-row .btn{width:100%}
 }
+
+
+/* Menu catalog and stock visibility */
+#view .menu-page{gap:16px}
+#view .menu-page-heading{align-items:center}
+#view .menu-page-heading h2{font-size:24px;letter-spacing:-.4px;color:#183d2b}
+#view .menu-page>#menu-search{min-height:44px;border-radius:11px;background:#fbfdfb}
+#view .menu-page>.menu-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+#view .menu-page .menu-product-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border:1px solid #e2eae4;border-radius:14px;box-shadow:0 4px 14px rgba(27,65,43,.035)}
+#view .menu-page .menu-product-info{min-width:0;display:grid;gap:5px}
+#view .menu-page .menu-product-info>b{font-size:14px;line-height:1.4;color:#244b33;overflow-wrap:anywhere}
+#view .menu-page .menu-product-meta{font-size:11px;color:#849188}
+#view .menu-page .menu-stock-state{width:max-content;max-width:100%;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:750}
+#view .menu-page .menu-stock-state.stock-ok{background:#eaf4ed;color:#2c7046}
+#view .menu-page .menu-stock-state.stock-low{background:#fff4df;color:#94621a}
+#view .menu-page .menu-stock-state.stock-empty{background:#fff0ef;color:#b33b32}
+#view .menu-page .menu-product-info .price{margin-top:3px;font-size:15px;font-weight:850;color:#245d3a}
+#view .menu-page .menu-product-actions{flex:0 0 auto;gap:6px}
+#view .menu-page .menu-product-actions .btn{min-height:36px;padding:8px 11px;font-size:11px}
+#view .menu-page .panel:has(#menu-form){border-color:#dce9df;box-shadow:0 6px 20px rgba(27,65,43,.055)}
+#view .menu-page #menu-form{gap:13px}
+#view .menu-page #menu-form .field{min-height:42px;border-radius:9px}
+#view .menu-page .stock-unlimited-option{display:flex;align-items:center;gap:8px;padding:11px 12px;border:1px solid #e2eae4;border-radius:10px;background:#f8fbf8}
+#view .menu-page .stock-unlimited-option input{accent-color:#2d7048;width:17px;height:17px}
+#view .menu-page .category-manager{border-color:#e0e9e2}
+#view .menu-page .category-manager-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #edf1ed}
+@media(max-width:760px){
+ #view .menu-page>.menu-list{grid-template-columns:1fr}
+ #view .menu-page .menu-product-card{padding:14px}
+}
+@media(max-width:430px){
+ #view .menu-page-heading{align-items:flex-start}
+ #view .menu-page-heading>.btn{white-space:nowrap;padding:9px 10px;font-size:11px}
+ #view .menu-page .menu-product-card{align-items:flex-start;flex-direction:column}
+ #view .menu-page .menu-product-actions{width:100%}
+ #view .menu-page .menu-product-actions .btn{flex:1}
+ #view .menu-page .category-manager-row{align-items:flex-start;flex-direction:column}
+}
