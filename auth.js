@@ -254,7 +254,7 @@ function logoutConfirm(){
  overlay.querySelector(".ks-logout-cancel").focus();
 }
 function publishLocalSession(){try{window.dispatchEvent(new CustomEvent("kasirku:local-session",{detail:user?{id:String(user.id),name:String(user.name||""),role:String(user.role||"").toLowerCase()}:null}))}catch(e){}}
-function startSession(u){window.KASIRKU_AUTH_MODE="pin";user=u;publishLocalSession();const assigned=Array.isArray(u.branchIds)?u.branchIds:(u.branchId?[u.branchId]:[]);if(!["owner","admin"].includes(u.role)&&assigned.length){const current=localStorage.getItem(ACTIVE_BRANCH_KEY);if(!assigned.includes(current))localStorage.setItem(ACTIVE_BRANCH_KEY,assigned[0])}document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();document.querySelector(".topbar")?.appendChild(b);reset();apply()}
+function startSession(u){window.KASIRKU_AUTH_MODE="pin";user=u;publishLocalSession();const assigned=Array.isArray(u.branchIds)?u.branchIds:(u.branchId?[u.branchId]:[]);if(!["owner","admin"].includes(u.role)&&assigned.length){const current=localStorage.getItem(ACTIVE_BRANCH_KEY);if(!assigned.includes(current))localStorage.setItem(ACTIVE_BRANCH_KEY,assigned[0])}document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();(document.querySelector(".topbar")||document.body).appendChild(b);reset();apply()}
 function openPinEntry(){
  sessionStorage.setItem("kasirku_login_view","pin");
  const url=new URL(location.href);
@@ -329,7 +329,7 @@ window.KASIRKU_AUTH={
   clearTimeout(timer);window.KASIRKU_AUTH_MODE="cloud";
   user={id:"cloud:"+String(cloudUser.id),name:String(cloudUser.name||cloudUser.email||"Pengguna"),role,cloudUserId:String(cloudUser.id),email:String(cloudUser.email||""),branchIds:Array.isArray(cloudUser.branchIds)?cloudUser.branchIds:[]};
   document.getElementById("ks-layer")?.remove();document.getElementById("ks-account")?.remove();
-  const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();document.querySelector(".topbar")?.appendChild(b);
+  const b=document.createElement("button");b.id="ks-account";b.innerHTML='<span class="ks-logout-icon" aria-hidden="true"></span><span>Keluar</span>';b.setAttribute("aria-label","Keluar dari akun KASIRKU");b.title="Keluar dari akun";b.onclick=()=>logoutConfirm();(document.querySelector(".topbar")||document.body).appendChild(b);
   reset();apply();window.dispatchEvent(new CustomEvent("kasirku:cloud-session",{detail:{user:{...user}}}));
  },
  isCloudSession(){return window.KASIRKU_AUTH_MODE==="cloud"&&!!user},
