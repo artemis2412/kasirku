@@ -80,6 +80,11 @@ internal fun NativeCheckoutScreen(
     val cloud = remember { CloudAuthRepository() }
     val tableDao = remember { database.storeTableDao() }
     val tables by tableDao.observeActiveTables(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
+
+    LaunchedEffect(tenant.storeId, tenant.branchId) {
+        runCatching { tableDao.upsertAll(cloud.fetchStoreTables(tenant)) }
+            .onFailure { error = it.message ?: "Gagal memuat status meja dari server." }
+    }
     var search by remember { mutableStateOf("") }
     val products by remember(tenant.storeId, tenant.branchId, search) {
         catalog.observeBranchCatalog(tenant.storeId, tenant.branchId, search)
@@ -135,7 +140,15 @@ internal fun NativeCheckoutScreen(
             FilterChip(selected = orderType == "Dine In", onClick = { orderType = "Dine In" }, label = { Text("Dine In") })
         }
         if (orderType == "Dine In") {
-            Text("Pilih meja", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Pilih meja", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+                TextButton(onClick = {
+                    scope.launch {
+                        runCatching { tableDao.upsertAll(cloud.fetchStoreTables(tenant)) }
+                            .onFailure { error = it.message ?: "Gagal menyegarkan status meja." }
+                    }
+                }, enabled = !busy) { Text("Muat ulang") }
+            }
             if (tables.isEmpty()) Text("Belum ada meja aktif di cabang ini. Tambahkan meja melalui Manajemen Meja.", color = Color(0xFFB42318), fontSize = 12.sp)
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 tables.forEach { table ->
