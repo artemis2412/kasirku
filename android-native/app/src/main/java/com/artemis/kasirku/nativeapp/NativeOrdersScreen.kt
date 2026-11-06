@@ -102,11 +102,16 @@ internal fun NativeOrdersScreen(
     var selectedSale by remember { mutableStateOf<SaleEntity?>(null) }
     var selectedItems by remember { mutableStateOf<List<SaleItemEntity>>(emptyList()) }
     var loadingDetail by remember { mutableStateOf(false) }
+    var detailError by remember { mutableStateOf<String?>(null) }
     var archiveMessage by remember { mutableStateOf<String?>(null) }
     var archiveBusy by remember { mutableStateOf(false) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
     var printingReceipt by remember { mutableStateOf(false) }
     var receiptMessage by remember { mutableStateOf<String?>(null) }
+    val bluetoothPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        receiptMessage = if (granted) "Izin Bluetooth diberikan. Tekan Cetak nota kembali."
+        else "Izin Bluetooth ditolak. Izinkan Bluetooth dari pengaturan aplikasi untuk mencetak nota."
+    }
     val archiveStart = remember(dayStart, branchZone) {
         BranchTime.startOfDayOffset(dayStart, -29, branchZone)
     }
@@ -232,9 +237,14 @@ internal fun NativeOrdersScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable {
                         selectedSale = sale
+                        selectedItems = emptyList()
+                        detailError = null
+                        receiptMessage = null
                         loadingDetail = true
                         scope.launch {
-                            selectedItems = repository.saleItems(tenant, sale.id)
+                            runCatching { repository.saleItems(tenant, sale.id) }
+                                .onSuccess { selectedItems = it }
+                                .onFailure { detailError = it.message ?: "Gagal memuat rincian transaksi." }
                             loadingDetail = false
                         }
                     },
@@ -265,6 +275,7 @@ internal fun NativeOrdersScreen(
                     Text("ID: ${sale.id}", color = OrdersMuted, fontSize = 10.sp)
                     Text(BranchTime.format(sale.createdAt, "dd MMM yyyy", branchZone) + " • " + BranchTime.format(sale.createdAt, "HH:mm", branchZone), color = OrdersMuted, fontSize = 11.sp)
                     if (loadingDetail) Text("Memuat rincian…", color = OrdersMuted)
+                    detailError?.let { Text(it, color = Color(0xFFB42318), fontSize = 11.sp) }
                     selectedItems.forEach { item ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("${item.productName} × ${item.quantity}", color = OrdersNavy, modifier = Modifier.weight(1f))
@@ -286,7 +297,7 @@ internal fun NativeOrdersScreen(
                             if (address == null) receiptMessage = "Pilih printer Bluetooth di halaman Penjualan terlebih dahulu."
                             else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
-                            ) receiptMessage = "Buka halaman Penjualan dan berikan izin Bluetooth terlebih dahulu."
+                            ) bluetoothPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
                             else scope.launch {
                                 printingReceipt = true
                                 receiptMessage = null
