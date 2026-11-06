@@ -150,12 +150,17 @@ internal fun NativeCheckoutScreen(
                     else scope.launch {
                         printing = true
                         printerError = null
-                        runCatching {
+                        try {
                             BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
                                 "TES-PRINTER", listOf(CheckoutLine("test", "Tes cetak Kasirku", 1, 1000L)),
                                 1000L, 1000L, 2000L, 1000L)
-                        }.onFailure { printerError = it.message ?: "Tes printer gagal." }
-                        printing = false
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (failure: Exception) {
+                            printerError = failure.message ?: "Tes printer gagal."
+                        } finally {
+                            printing = false
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -281,12 +286,18 @@ internal fun NativeCheckoutScreen(
                 else scope.launch {
                     printing = true
                     printerError = null
-                    runCatching {
+                    try {
                         BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
                             receipt.saleId, receipt.lines, receipt.subtotal, receipt.total, receipt.paid, receipt.change)
-                    }.onSuccess { success = "Nota berhasil dikirim ke printer." }
-                        .onFailure { printerError = "Transaksi berhasil tersimpan, tetapi nota belum tercetak. " + (it.message ?: "Periksa printer lalu coba cetak ulang.") }
-                    printing = false
+                        success = "Nota berhasil dikirim ke printer."
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (failure: Exception) {
+                        printerError = "Transaksi berhasil tersimpan, tetapi nota belum tercetak. " +
+                            (failure.message ?: "Periksa printer lalu coba cetak ulang.")
+                    } finally {
+                        printing = false
+                    }
                 }
             }, modifier = Modifier.fillMaxWidth(), enabled = !printing) {
                 Text(if (printing) "Mengirim nota…" else "Cetak ulang nota Bluetooth")
