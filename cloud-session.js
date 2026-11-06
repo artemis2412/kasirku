@@ -31,14 +31,14 @@ async function validate(c){
  if(!memberships?.length)throw new Error("Keanggotaan toko aktif tidak ditemukan.");
  if(memberships.length!==1)throw new Error("Akun memiliki lebih dari satu toko aktif; pemilihan toko diperlukan.");
  const membership=memberships[0],role=String(membership.role||"").toLowerCase();
- if(!["owner","admin","cashier"].includes(role))throw new Error("Peran Cloud tidak valid.");
+ if(!["owner","admin","supervisor","cashier"].includes(role))throw new Error("Peran Cloud tidak valid.");
  const {data:store,error:storeError}=await c.from("stores").select("id,name").eq("id",membership.store_id).maybeSingle();
  if(storeError)throw storeError;
  if(!store)throw new Error("Toko tidak ditemukan atau akses ditolak.");
  const {data:branches,error:branchError}=await c.from("branches").select("id,name,is_active").eq("store_id",membership.store_id).eq("is_active",true);
  if(branchError)throw branchError;
  let allowed=branches||[];
- if(role!=="owner"){
+ if(role==="supervisor"||role==="cashier"){
   const {data:assignments,error:assignmentError}=await c.from("branch_memberships").select("branch_id").eq("store_id",membership.store_id).eq("user_id",user.id);
   if(assignmentError)throw assignmentError;
   const ids=new Set((assignments||[]).map(x=>x.branch_id));
@@ -48,14 +48,14 @@ async function validate(c){
  return {id:user.id,email:user.email||"",name:String(user.user_metadata?.display_name||user.user_metadata?.full_name||user.email?.split("@")[0]||"Pengguna"),role,branchIds:allowed.map(x=>x.id),store,branches:allowed};
 }
 async function signOut(){
- try{if(!client)client=await getClient();await client.auth.signOut()}catch(e){console.warn("Gagal mengakhiri sesi Cloud:",e)}
  localStorage.removeItem(MARKER);
+ try{if(!client)client=await getClient();await client.auth.signOut()}catch(e){console.warn("Gagal mengakhiri sesi Cloud:",e)}
 }
 window.KASIRKU_CLOUD_SESSION={signOut};
 async function restore(){
  if(localStorage.getItem(MARKER)!=="1"||localStorage.getItem("ksecurity_session"))return;
  const last=Number(localStorage.getItem(ACTIVITY_KEY));
- if(!Number.isFinite(last)||last<=0||Date.now()-last>=IDLE_TIMEOUT){await signOut();localStorage.removeItem(ACTIVITY_KEY);window.KASIRKU_AUTH?.showWelcome?.();return}
+ if(!Number.isFinite(last)||last<=0||Date.now()-last>=IDLE_TIMEOUT){localStorage.removeItem(ACTIVITY_KEY);window.KASIRKU_AUTH?.showWelcome?.();await signOut();return}
  try{
   client=await getClient();
   const identity=await validate(client);
@@ -63,8 +63,10 @@ async function restore(){
   window.KASIRKU_AUTH.startCloudSession(identity);
  }catch(error){
   console.warn("Pemulihan sesi Cloud gagal:",error);
-  await signOut();
+  localStorage.removeItem(MARKER);
+  localStorage.removeItem(ACTIVITY_KEY);
   window.KASIRKU_AUTH?.showWelcome?.();
+  await signOut();
  }
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",restore,{once:true});else restore();
