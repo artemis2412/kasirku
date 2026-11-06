@@ -465,6 +465,7 @@ internal fun NativeProductsScreen(
     var formError by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    var syncingCloud by remember { mutableStateOf(false) }
     var productFormExpanded by remember { mutableStateOf(true) }
     val canManageCatalog = tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER || tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
     val products by remember(tenant.storeId, tenant.branchId, query) {
@@ -557,6 +558,33 @@ internal fun NativeProductsScreen(
             }
         }
         notice?.let { Text(it, color = AccountTeal, fontSize = 12.sp) }
+        if (canManageCatalog) {
+            Button(
+                onClick = {
+                    scope.launch {
+                        syncingCloud = true
+                        notice = null
+                        cancellationSafeResult { cloudRepository.syncCatalogToCloud(tenant, database.catalogDao()) }
+                            .onSuccess { result ->
+                                notice = "Cloud tersinkron: " + result.products + " produk, " +
+                                    result.categories + " kategori, " + result.inventoryRows +
+                                    " stok, " + result.branchPrices + " harga, " + result.barcodes + " barcode."
+                            }
+                            .onFailure { failure ->
+                                notice = "Data lokal aman. Sinkronisasi Cloud gagal: " +
+                                    (failure.message ?: "periksa koneksi dan migrasi Cloud.")
+                            }
+                        syncingCloud = false
+                    }
+                },
+                enabled = !syncingCloud && !saving,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(11.dp)
+            ) {
+                Text(if (syncingCloud) "Menyinkronkan…" else "Sinkronkan katalog ke Cloud")
+            }
+            Text("Mengirim katalog toko dan stok cabang aktif, tanpa transaksi.", color = AccountMuted, fontSize = 11.sp)
+        }
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
