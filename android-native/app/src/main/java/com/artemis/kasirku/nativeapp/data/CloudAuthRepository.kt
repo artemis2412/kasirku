@@ -87,6 +87,17 @@ data class CloudAccountAccess(
  * All store and branch identifiers are read from Supabase after password
  * authentication. Local PIN data is deliberately not used as an authority.
  */
+
+@Serializable
+private data class StoreTableInsertDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    @SerialName("branch_id") val branchId: String,
+    val name: String,
+    val capacity: Int,
+    @SerialName("is_active") val isActive: Boolean = true
+)
+
 class CloudAuthRepository {
     private val client: io.github.jan.supabase.SupabaseClient
         get() = sharedClient
@@ -160,6 +171,56 @@ class CloudAuthRepository {
                 put("p_items", Json.encodeToJsonElement(ListSerializer(OrderItemSyncDto.serializer()), payload.items))
             }
         )
+    }
+
+
+    suspend fun createStoreTable(
+        tenant: VerifiedTenantContext,
+        id: String,
+        name: String,
+        capacity: Int
+    ) = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+            "Hanya Owner, Admin, atau Supervisor yang dapat mengelola meja."
+        }
+        require(id.isNotBlank() && name.isNotBlank() && capacity in 1..999)
+        client.from("store_tables").insert(
+            StoreTableInsertDto(id, tenant.storeId, tenant.branchId, name.trim(), capacity)
+        )
+    }
+
+    suspend fun claimStoreTable(
+        tenant: VerifiedTenantContext,
+        tableId: String,
+        orderLocalId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+        client.postgrest.rpc(
+            function = "claim_store_table",
+            parameters = buildJsonObject {
+                put("target_store_id", tenant.storeId)
+                put("target_branch_id", tenant.branchId)
+                put("target_table_id", tableId)
+                put("target_order_local_id", orderLocalId)
+            }
+        ).decodeAs<Boolean>()
+    }
+
+    suspend fun releaseStoreTable(
+        tenant: VerifiedTenantContext,
+        tableId: String,
+        orderLocalId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+        client.postgrest.rpc(
+            function = "release_store_table",
+            parameters = buildJsonObject {
+                put("target_store_id", tenant.storeId)
+                put("target_branch_id", tenant.branchId)
+                put("target_table_id", tableId)
+                put("target_order_local_id", orderLocalId)
+            }
+        ).decodeAs<Boolean>()
     }
 
     suspend fun setBranchTimeZone(
