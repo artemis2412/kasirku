@@ -42,8 +42,16 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
     var exporting by remember { mutableStateOf(false) }
     var exportMessage by remember { mutableStateOf<String?>(null) }
     val branchZone = remember(tenant.branchTimeZoneId) { BranchTime.zoneId(tenant) }
-    val endAt = remember(branchZone) {
-        BranchTime.startOfDayOffset(BranchTime.startOfToday(branchZone), 1, branchZone)
+    var endAt by remember(branchZone) {
+        mutableLongStateOf(BranchTime.startOfDayOffset(BranchTime.startOfToday(branchZone), 1, branchZone))
+    }
+    LaunchedEffect(branchZone) {
+        while (true) {
+            val todayStart = BranchTime.startOfToday(branchZone)
+            val nextDayStart = BranchTime.startOfDayOffset(todayStart, 1, branchZone)
+            if (endAt != nextDayStart) endAt = nextDayStart
+            delay((nextDayStart - System.currentTimeMillis()).coerceAtLeast(1_000L))
+        }
     }
     val startAt = remember(period, endAt, branchZone) {
         BranchTime.startOfDayOffset(endAt, -period.toLong(), branchZone)
