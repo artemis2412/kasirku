@@ -44,6 +44,7 @@ import com.artemis.kasirku.nativeapp.data.CatalogRepository
 import com.artemis.kasirku.nativeapp.data.CheckoutLine
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SalesRepository
+import com.artemis.kasirku.nativeapp.data.StoreTableEntity
 import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.CancellationException
@@ -74,6 +75,8 @@ internal fun NativeCheckoutScreen(
     val database = remember { KasirkuRoomDatabase.getInstance(context) }
     val catalog = remember { CatalogRepository(database.catalogDao()) }
     val sales = remember { SalesRepository(database.catalogDao()) }
+    val tableDao = remember { database.storeTableDao() }
+    val tables by tableDao.observeActiveTables(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
     var search by remember { mutableStateOf("") }
     val products by remember(tenant.storeId, tenant.branchId, search) {
         catalog.observeBranchCatalog(tenant.storeId, tenant.branchId, search)
@@ -81,6 +84,8 @@ internal fun NativeCheckoutScreen(
     val cart = remember { mutableStateMapOf<String, CartEntry>() }
     val scope = rememberCoroutineScope()
     var payment by remember { mutableStateOf("") }
+    var orderType by remember { mutableStateOf("Takeaway") }
+    var selectedTableId by remember { mutableStateOf<String?>(null) }
     var paymentMethod by remember { mutableStateOf("CASH") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -120,6 +125,20 @@ internal fun NativeCheckoutScreen(
                 Text(tenant.storeName + " • " + tenant.branchName, color = Color(0xFF718096), fontSize = 12.sp)
             }
             TextButton(onClick = onBack) { Text("Kembali") }
+        }
+        Text("Jenis pesanan", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = orderType == "Takeaway", onClick = { orderType = "Takeaway"; selectedTableId = null }, label = { Text("Takeaway") })
+            FilterChip(selected = orderType == "Dine In", onClick = { orderType = "Dine In" }, label = { Text("Dine In") })
+        }
+        if (orderType == "Dine In") {
+            Text("Pilih meja", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+            if (tables.isEmpty()) Text("Belum ada meja aktif di cabang ini. Tambahkan meja melalui Manajemen Meja.", color = Color(0xFFB42318), fontSize = 12.sp)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                tables.forEach { table ->
+                    FilterChip(selected = selectedTableId == table.id, onClick = { selectedTableId = table.id }, label = { Text(table.name + " · " + table.capacity) })
+                }
+            }
         }
         OutlinedTextField(value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Cari nama produk atau barcode") }, singleLine = true)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -254,7 +273,7 @@ internal fun NativeCheckoutScreen(
                             error = null
                             val receiptLines = cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }
                             try {
-                                val result = sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod)
+                                val chosenTable = tables.firstOrNull { it.id == selectedTableId }\n                                val result = sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod, orderType = orderType, tableLocalId = chosenTable?.id, tableLabel = chosenTable?.name)
                                 if (!tenant.branchTimeZoneId.isNullOrBlank()) {
                                     SaleSyncWorker.enqueue(context, tenant)
                                 }
@@ -272,7 +291,7 @@ internal fun NativeCheckoutScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !busy && cart.isNotEmpty() && paid >= subtotal && subtotal > 0L,
+                    enabled = !busy && cart.isNotEmpty() && paid >= subtotal && subtotal > 0L && (orderType == "Takeaway" || tables.any { it.id == selectedTableId }),
                     shape = RoundedCornerShape(12.dp)
                 ) { Text(if (busy) "Memproses…" else "Selesaikan transaksi") }
             }
