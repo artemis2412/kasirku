@@ -18,6 +18,7 @@ create table if not exists public.branch_ingredient_inventory (
   quantity numeric(14,3) not null default 0 check (quantity >= 0),
   updated_at timestamptz not null default now(),
   primary key (branch_id, ingredient_id),
+  unique (store_id, branch_id, ingredient_id),
   foreign key (store_id, branch_id) references public.branches(store_id, id) on delete cascade,
   foreign key (store_id, ingredient_id) references public.catalog_ingredients(store_id, id) on delete cascade
 );
@@ -121,7 +122,7 @@ create or replace function public.complete_native_production(
   p_store_id uuid, p_branch_id uuid, p_batch_id uuid, p_recipe_id uuid,
   p_output_quantity integer, p_notes text default null
 ) returns uuid
-language plpgsql security invoker set search_path = ''
+language plpgsql security definer set search_path = ''
 as $$
 declare
   v_product_id uuid;
