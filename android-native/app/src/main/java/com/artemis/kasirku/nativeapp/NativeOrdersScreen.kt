@@ -41,6 +41,7 @@ import com.artemis.kasirku.nativeapp.data.SaleEntity
 import com.artemis.kasirku.nativeapp.data.SaleItemEntity
 import com.artemis.kasirku.nativeapp.data.SaleSyncOutboxEntity
 import com.artemis.kasirku.nativeapp.data.SalesRepository
+import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
 import kotlinx.coroutines.launch
@@ -98,6 +99,7 @@ internal fun NativeOrdersScreen(
     var loadingDetail by remember { mutableStateOf(false) }
     var archiveMessage by remember { mutableStateOf<String?>(null) }
     var archiveBusy by remember { mutableStateOf(false) }
+    var syncMessage by remember { mutableStateOf<String?>(null) }
     val archiveStart = remember(dayStart, branchZone) {
         BranchTime.startOfDayOffset(dayStart, -29, branchZone)
     }
@@ -150,6 +152,21 @@ internal fun NativeOrdersScreen(
                 }
                 Text(pendingSync.toString(), color = OrdersTeal, fontWeight = FontWeight.Bold, fontSize = 19.sp)
             }
+        }
+        if (pendingSync > 0 || tenant.branchTimeZoneId.isNullOrBlank()) {
+            OutlinedButton(
+                onClick = {
+                    runCatching { SaleSyncWorker.enqueue(context, tenant) }
+                        .onSuccess { syncMessage = "Sinkronisasi dijadwalkan. Transaksi akan dikirim saat internet tersedia." }
+                        .onFailure { syncMessage = it.message ?: "Gagal menjadwalkan sinkronisasi." }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !tenant.branchTimeZoneId.isNullOrBlank() && pendingSync > 0
+            ) { Text("Coba sinkronkan sekarang") }
+            if (tenant.branchTimeZoneId.isNullOrBlank()) {
+                Text("Atur zona waktu cabang di menu Akun agar sinkronisasi dapat berjalan.", color = Color(0xFFB45309), fontSize = 11.sp)
+            }
+            syncMessage?.let { Text(it, color = OrdersTeal, fontSize = 11.sp) }
         }
         if (syncQueue.isNotEmpty()) {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(13.dp)) {
