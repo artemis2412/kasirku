@@ -70,6 +70,18 @@ begin
 
   get diagnostics v_inserted = row_count;
   if v_inserted = 0 then
+    -- A retry must carry the exact same quantity for each product.
+    -- Refuse a changed payload rather than silently leaving stock inconsistent.
+    if not exists (
+      select 1
+      from public.inventory_sale_deductions d
+      where d.branch_id = v_branch_id
+        and d.order_local_id = v_local_id
+        and d.product_id = new.product_id
+        and d.quantity = new.quantity::integer
+    ) then
+      raise exception 'Isi transaksi berubah setelah stok diproses untuk produk %', new.product_name;
+    end if;
     return new;
   end if;
 
