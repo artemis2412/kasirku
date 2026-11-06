@@ -21,9 +21,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProductBarcodeEntity::class,
         SaleEntity::class,
         SaleItemEntity::class,
-        SaleSyncOutboxEntity::class
+        SaleSyncOutboxEntity::class,
+        StoreTableEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class KasirkuRoomDatabase : RoomDatabase() {
