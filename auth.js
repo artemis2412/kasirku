@@ -171,7 +171,7 @@ function login(){
   const lockedUntil=pinLockout(u.id);
   if(lockedUntil){const seconds=Math.max(1,Math.ceil((lockedUntil-Date.now())/1000));error("Terlalu banyak percobaan. Coba lagi dalam "+seconds+" detik.");return}
   const enteredPin=String(f.get("pin")||"");
-  if(!/^\\d{6}$/.test(enteredPin)){error("PIN harus tepat 6 angka.");return}
+  if(!/^\d{6}$/.test(enteredPin)){error("PIN harus tepat 6 angka.");return}
   if(await hash(u.salt,enteredPin)!==u.hash){
    const cooldown=recordPinFailure(u.id);
    audit("Percobaan login gagal","Akun "+u.name);
