@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.CatalogRepository
+import com.artemis.kasirku.nativeapp.data.CloudAuthRepository
 import com.artemis.kasirku.nativeapp.data.CheckoutLine
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SalesRepository
@@ -49,6 +50,7 @@ import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 private fun formatCheckoutNominal(value: Long): String = value.toString().reversed().chunked(3).joinToString(".").reversed()
 
@@ -75,6 +77,7 @@ internal fun NativeCheckoutScreen(
     val database = remember { KasirkuRoomDatabase.getInstance(context) }
     val catalog = remember { CatalogRepository(database.catalogDao()) }
     val sales = remember { SalesRepository(database.catalogDao()) }
+    val cloud = remember { CloudAuthRepository() }
     val tableDao = remember { database.storeTableDao() }
     val tables by tableDao.observeActiveTables(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
     var search by remember { mutableStateOf("") }
@@ -274,14 +277,36 @@ internal fun NativeCheckoutScreen(
                             val receiptLines = cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }
                             try {
                                 val chosenTable = tables.firstOrNull { it.id == selectedTableId }
-                                val result = sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod, orderType = orderType, tableLocalId = chosenTable?.id, tableLabel = chosenTable?.name)
-                                if (!tenant.branchTimeZoneId.isNullOrBlank()) {
+                                val saleId = UUID.randomUUID().toString()
+                                var cloudTableClaimed = false
+                                try {
+                                    if (orderType == "Dine In") {
+                                        val table = chosenTable ?: error("Pilih meja terlebih dahulu.")
+                                        cloudTableClaimed = cloud.claimStoreTable(tenant, table.id, saleId)
+                                        check(cloudTableClaimed) { "Meja sudah digunakan perangkat lain. Muat ulang daftar meja lalu pilih meja lain." }
+                                    }
+                                    val result = sales.checkout(
+                                        tenant, receiptLines, paid,
+                                        paymentMethod = paymentMethod,
+                                        orderType = orderType,
+                                        tableLocalId = chosenTable?.id,
+                                        tableLabel = chosenTable?.name,
+                                        saleIdOverride = saleId
+                                    )
+                                    cloudTableClaimed = false
+                                    if (!tenant.branchTimeZoneId.isNullOrBlank()) {
                                     SaleSyncWorker.enqueue(context, tenant)
                                 }
                                 receiptDraft = ReceiptDraft(result.saleId, receiptLines, subtotal, result.total, paid, result.change, orderType, chosenTable?.name)
                                 success = "Transaksi tersimpan. Total Rp ${result.total}, kembalian Rp ${result.change}."
-                                cart.clear()
-                                payment = ""
+                                    cart.clear()
+                                    payment = ""
+                                } catch (failure: Exception) {
+                                    if (cloudTableClaimed && chosenTable != null) {
+                                        runCatching { cloud.releaseStoreTable(tenant, chosenTable.id, saleId) }
+                                    }
+                                    throw failure
+                                }
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (failure: Exception) {
