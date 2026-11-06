@@ -64,7 +64,7 @@ private fun csvCell(value: String): String {
 }
 
 private val OrdersNavy = Color(0xFF17324D)
-private val OrdersTeal = Color(0xFF168C83)
+private val OrdersTeal = Color(0xFF6422C7)
 private val OrdersMuted = Color(0xFF718096)
 
 @Composable

@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -57,6 +59,7 @@ private suspend fun <T> cancellationSafeResult(block: suspend () -> T): Result<T
 
 private val AccountNavy = Color(0xFF17324D)
 private val AccountTeal = Color(0xFF168C83)
+private val AccountPurple = Color(0xFF6422C7)
 private val AccountMuted = Color(0xFF718096)
 
 private fun formatNominalInput(value: String): String =
@@ -124,47 +127,93 @@ internal fun CloudAccountScreen(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("AKUN & AKSES", color = AccountTeal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-            Text("Akun Cloud", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
-            Text("Masuk, lalu pilih toko dan cabang yang memang diizinkan untuk akunmu.", color = AccountMuted, fontSize = 13.sp)
+        if (access == null) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp),
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Box(
+                    modifier = Modifier.size(66.dp),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = AccountPurple),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.size(66.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            Text("▣", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Text("Kasirku", color = AccountNavy, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("Aplikasi Kasir & Manajemen Toko", color = AccountMuted, fontSize = 12.sp)
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("AKUN & AKSES", color = AccountPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text("Akun Cloud", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                Text("Masuk, lalu pilih toko dan cabang yang memang diizinkan untuk akunmu.", color = AccountMuted, fontSize = 13.sp)
+            }
         }
 
         if (access == null) {
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Email") },
-                singleLine = true
-            )
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Kata sandi") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
-            )
-            Button(
-                onClick = {
-                    scope.launch {
-                        busy = true
-                        isError = false
-                        message = "Memverifikasi akun, toko, dan cabang…"
-                        cancellationSafeResult { repository.signIn(email, password) }
-                            .onSuccess(::applyAccess)
-                            .onFailure {
-                                message = it.message ?: "Login Cloud gagal."
-                                isError = true
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Masuk ke Akun Anda",
+                        color = AccountNavy,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Email") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Kata sandi") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                busy = true
+                                isError = false
+                                message = "Memverifikasi akun, toko, dan cabang…"
+                                cancellationSafeResult { repository.signIn(email, password) }
+                                    .onSuccess(::applyAccess)
+                                    .onFailure {
+                                        message = it.message ?: "Login Cloud gagal."
+                                        isError = true
+                                    }
+                                busy = false
                             }
-                        busy = false
-                    }
-                },
-                enabled = !busy && email.isNotBlank() && password.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(13.dp)
-            ) { Text(if (busy) "Memeriksa…" else "Masuk ke Cloud") }
+                        },
+                        enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccountPurple),
+                        shape = RoundedCornerShape(13.dp)
+                    ) { Text(if (busy) "Memeriksa…" else "Masuk ke Cloud") }
+                }
+            }
         } else {
             Text("Pilih toko", color = AccountNavy, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             access!!.stores.forEach { store ->
@@ -392,6 +441,7 @@ internal fun NativeProductsScreen(
     var formError by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    var productFormExpanded by remember { mutableStateOf(true) }
     val canManageCatalog = tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER || tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
     val products by remember(tenant.storeId, tenant.branchId, query) {
         repository.observeBranchCatalog(tenant.storeId, tenant.branchId, query)
@@ -416,60 +466,67 @@ internal fun NativeProductsScreen(
         Text(tenant.storeName + " • " + tenant.branchName, color = AccountMuted, fontSize = 12.sp)
 
         if (canManageCatalog) {
-        Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(15.dp)) {
-            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text(if (editingId == null) "Tambah produk" else "Edit produk", color = AccountNavy, fontWeight = FontWeight.Bold)
-                OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nama produk *") }, singleLine = true)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = basePrice, onValueChange = { basePrice = formatNominalInput(it) }, modifier = Modifier.weight(1f), label = { Text("Harga dasar *") }, singleLine = true)
-                    OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = formatNominalInput(it) }, modifier = Modifier.weight(1f), label = { Text("Harga jual cabang (opsional)") }, singleLine = true)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(if (editingId == null) "Tambah produk" else "Edit produk", color = AccountNavy, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Text(if (productFormExpanded) "Isi data produk baru" else "Form disembunyikan", color = AccountMuted, fontSize = 11.sp)
                 }
-                OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit) }, modifier = Modifier.fillMaxWidth(), label = { Text("Stok cabang") }, singleLine = true)
-                OutlinedTextField(value = barcode, onValueChange = { barcode = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Barcode (opsional)") }, singleLine = true)
-                formError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = {
-                            val parsedBase = basePrice.filter(Char::isDigit).toLongOrNull() ?: 0L
-                            val parsedSelling = sellingPrice.filter(Char::isDigit).toLongOrNull()
-                            val parsedQuantity = quantity.toIntOrNull()
-                            if (name.isBlank() || parsedBase <= 0L || (sellingPrice.isNotBlank() && parsedSelling == null) || parsedQuantity == null) {
-                                formError = "Nama, harga dasar, dan stok harus diisi dengan benar. Harga jual cabang boleh dikosongkan."
-                            } else {
-                                scope.launch {
-                                    saving = true
-                                    formError = null
-                                    cancellationSafeResult {
-                                        repository.saveProduct(
-                                            tenant.storeId,
-                                            tenant.branchId,
-                                            CatalogProductDraft(
-                                                id = editingId,
-                                                name = name,
-                                                basePrice = parsedBase,
-                                                sellingPrice = parsedSelling,
-                                                quantity = parsedQuantity,
-                                                barcodes = barcode.split(",").map(String::trim).filter(String::isNotEmpty)
-                                            )
-                                        )
-                                    }.onSuccess {
-                                        notice = if (editingId == null) "Produk berhasil ditambahkan." else "Produk berhasil diperbarui."
-                                        clearForm()
-                                    }.onFailure {
-                                        formError = it.message ?: "Gagal menyimpan produk."
-                                    }
-                                    saving = false
-                                }
-                            }
-                        },
-                        enabled = !saving,
-                        shape = RoundedCornerShape(11.dp)
-                    ) { Text(if (saving) "Menyimpan…" else "Simpan") }
-                    TextButton(onClick = { clearForm() }, enabled = !saving) { Text("Batal") }
+                TextButton(onClick = { productFormExpanded = !productFormExpanded }, enabled = !saving) {
+                    Text(if (productFormExpanded) "Tutup form" else "Tambah produk")
                 }
             }
-        }
-
+            if (productFormExpanded) {
+                Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(15.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nama produk *") }, singleLine = true)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = basePrice, onValueChange = { basePrice = formatNominalInput(it) }, modifier = Modifier.weight(1f), label = { Text("Harga dasar *", maxLines = 1) }, singleLine = true)
+                            OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = formatNominalInput(it) }, modifier = Modifier.weight(1f), label = { Text("Harga jual", maxLines = 1) }, singleLine = true)
+                        }
+                        Text("Harga jual opsional. Kosongkan untuk mengikuti harga dasar.", color = AccountMuted, fontSize = 10.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit) }, modifier = Modifier.weight(1f), label = { Text("Stok") }, singleLine = true)
+                            OutlinedTextField(value = barcode, onValueChange = { barcode = it }, modifier = Modifier.weight(1f), label = { Text("Barcode (opsional)", maxLines = 1) }, singleLine = true)
+                        }
+                        formError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    val parsedBase = basePrice.filter(Char::isDigit).toLongOrNull() ?: 0L
+                                    val parsedSelling = sellingPrice.filter(Char::isDigit).toLongOrNull()
+                                    val parsedQuantity = quantity.toIntOrNull()
+                                    if (name.isBlank() || parsedBase <= 0L || (sellingPrice.isNotBlank() && parsedSelling == null) || parsedQuantity == null) {
+                                        formError = "Nama, harga dasar, dan stok harus diisi dengan benar. Harga jual cabang boleh dikosongkan."
+                                    } else {
+                                        scope.launch {
+                                            saving = true
+                                            formError = null
+                                            cancellationSafeResult {
+                                                repository.saveProduct(
+                                                    tenant.storeId, tenant.branchId,
+                                                    CatalogProductDraft(
+                                                        id = editingId, name = name, basePrice = parsedBase,
+                                                        sellingPrice = parsedSelling, quantity = parsedQuantity,
+                                                        barcodes = barcode.split(",").map(String::trim).filter(String::isNotEmpty)
+                                                    )
+                                                )
+                                            }.onSuccess {
+                                                notice = if (editingId == null) "Produk berhasil ditambahkan." else "Produk berhasil diperbarui."
+                                                clearForm()
+                                                productFormExpanded = false
+                                            }.onFailure { formError = it.message ?: "Gagal menyimpan produk." }
+                                            saving = false
+                                        }
+                                    }
+                                },
+                                enabled = !saving,
+                                shape = RoundedCornerShape(11.dp)
+                            ) { Text(if (saving) "Menyimpan…" else "Simpan") }
+                            TextButton(onClick = { clearForm() }, enabled = !saving) { Text("Batal") }
+                        }
+                    }
+                }
+            }
         } else {
             Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF1F3)), shape = RoundedCornerShape(15.dp)) {
                 Text("Akses lihat katalog saja. Hanya owner dan admin yang dapat menambah atau mengubah produk.", modifier = Modifier.padding(14.dp), color = AccountMuted, fontSize = 12.sp)

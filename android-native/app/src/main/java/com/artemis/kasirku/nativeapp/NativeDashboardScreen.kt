@@ -21,7 +21,7 @@ import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.delay
 
 private val HomeNavy = Color(0xFF17324D)
-private val HomeTeal = Color(0xFF168C83)
+private val HomeTeal = Color(0xFF6422C7)
 private val HomeMuted = Color(0xFF718096)
 private fun homeMoney(value: Long) = value.toString().reversed().chunked(3).joinToString(".").reversed()
 
@@ -56,7 +56,7 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
             Text("Beranda", color=HomeNavy, fontSize=25.sp, fontWeight=FontWeight.Bold)
             Text(tenant.storeName+" • "+tenant.branchName, color=HomeMuted, fontSize=12.sp)
         }
-        Card(colors=CardDefaults.cardColors(containerColor=HomeNavy), shape=RoundedCornerShape(20.dp)) {
+        Card(colors=CardDefaults.cardColors(containerColor=Color(0xFF6422C7)), shape=RoundedCornerShape(20.dp)) {
             Column(Modifier.fillMaxWidth().padding(19.dp), verticalArrangement=Arrangement.spacedBy(8.dp)) {
                 Text("PENJUALAN HARI INI", color=Color(0xFFD3DFE9), fontSize=11.sp, fontWeight=FontWeight.Bold)
                 Text("Rp ${homeMoney(total)}", color=Color.White, fontSize=29.sp, fontWeight=FontWeight.Bold)
@@ -72,7 +72,7 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
             Metric("Stok",stock.toString(),Modifier.weight(1f))
             Metric("Menipis",lowStock.toString(),Modifier.weight(1f))
         }
-        Card(colors=CardDefaults.cardColors(containerColor=Color(0xFFEAF1F3)), shape=RoundedCornerShape(13.dp)) {
+        Card(colors=CardDefaults.cardColors(containerColor=Color(0xFFF1EAFE)), shape=RoundedCornerShape(13.dp)) {
             Row(Modifier.fillMaxWidth().padding(13.dp), horizontalArrangement=Arrangement.SpaceBetween) {
                 Column(Modifier.weight(1f)) {
                     Text("Antrean sinkronisasi", color=HomeNavy, fontWeight=FontWeight.Bold, fontSize=12.sp)

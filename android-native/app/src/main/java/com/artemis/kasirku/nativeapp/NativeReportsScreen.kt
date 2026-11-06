@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
 private val ReportNavy = Color(0xFF17324D)
-private val ReportTeal = Color(0xFF168C83)
+private val ReportTeal = Color(0xFF6422C7)
 private val ReportMuted = Color(0xFF718096)
 private fun reportMoney(value: Long) = value.toString().reversed().chunked(3).joinToString(".").reversed()
 private fun reportCsvCell(value: String): String {
@@ -113,7 +113,7 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
             shape = RoundedCornerShape(12.dp)
         ) { Text(if (exporting) "Menyiapkan laporan…" else "Unduh laporan CSV • $period hari") }
         exportMessage?.let { Text(it, color = ReportTeal, fontSize = 12.sp) }
-        Card(colors = CardDefaults.cardColors(containerColor = ReportNavy), shape = RoundedCornerShape(18.dp)) {
+        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF6422C7)), shape = RoundedCornerShape(18.dp)) {
             Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("TOTAL PENJUALAN • $period HARI", color = Color(0xFFD3DFE9), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                 Text("Rp ${reportMoney(total)}", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
