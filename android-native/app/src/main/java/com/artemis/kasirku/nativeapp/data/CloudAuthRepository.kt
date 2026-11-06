@@ -315,9 +315,6 @@ class CloudAuthRepository {
         tenant: VerifiedTenantContext,
         dao: CatalogDao
     ): CatalogCloudSyncSummary = withContext(Dispatchers.IO) {
-        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN)) {
-            "Hanya Owner atau Admin yang dapat mengambil katalog Cloud."
-        }
         require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
         require(dao.countUnresolvedSaleSync(tenant.storeId, tenant.branchId) == 0) {
             "Masih ada transaksi yang belum tersinkron. Sinkronkan transaksi dahulu agar stok lokal tidak tertimpa."
