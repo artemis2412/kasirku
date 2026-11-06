@@ -23,6 +23,8 @@ data class OrderSyncDto(
     @SerialName("created_at") val createdAt: String,
     @SerialName("created_by") val createdBy: String,
     @SerialName("order_type") val orderType: String,
+    @SerialName("table_label") val tableLabel: String? = null,
+    @SerialName("table_local_id") val tableLocalId: String? = null,
     val subtotal: Long,
     @SerialName("discount_amount") val discountAmount: Long,
     val total: Long,
@@ -80,6 +82,7 @@ object OrderSyncPayloadMapper {
         }
 
         require(sale.orderType in setOf("Takeaway", "Dine In")) { "Jenis pesanan tidak valid." }
+        require(if (sale.orderType == "Dine In") !sale.tableLocalId.isNullOrBlank() && !sale.tableLabel.isNullOrBlank() else sale.orderType == "Takeaway" && sale.tableLocalId == null && sale.tableLabel == null) { "Data meja pesanan tidak valid." }
         val order = OrderSyncDto(
             storeId = sale.storeId,
             branchId = sale.branchId,
@@ -90,6 +93,8 @@ object OrderSyncPayloadMapper {
             createdAt = DateTimeFormatter.ISO_INSTANT.format(instant),
             createdBy = sale.cashierUserId,
             orderType = sale.orderType,
+            tableLabel = sale.tableLabel,
+            tableLocalId = sale.tableLocalId,
             subtotal = sale.subtotal,
             discountAmount = sale.discount,
             total = sale.total,
