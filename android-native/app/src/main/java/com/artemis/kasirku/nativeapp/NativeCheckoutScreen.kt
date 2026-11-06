@@ -280,14 +280,14 @@ internal fun NativeCheckoutScreen(
                         BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
                             receipt.saleId, receipt.lines, receipt.subtotal, receipt.total, receipt.paid, receipt.change)
                     }.onSuccess { success = "Nota berhasil dikirim ke printer." }
-                        .onFailure { printerError = it.message ?: "Gagal mencetak nota." }
+                        .onFailure { printerError = "Transaksi berhasil tersimpan, tetapi nota belum tercetak. " + (it.message ?: "Periksa printer lalu coba cetak ulang.") }
                     printing = false
                 }
             }, modifier = Modifier.fillMaxWidth(), enabled = !printing) {
-                Text(if (printing) "Mengirim nota…" else "Cetak nota Bluetooth")
+                Text(if (printing) "Mengirim nota…" else "Cetak ulang nota Bluetooth")
             }
         }
         printerError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
-        Text("Transaksi tersimpan lokal. Cetak nota dilakukan manual setelah transaksi berhasil.", color = Color(0xFF718096), fontSize = 11.sp)
+        Text("Transaksi tersimpan lokal. Jika printer gagal, nota dapat dicetak ulang tanpa membuat transaksi baru.", color = Color(0xFF718096), fontSize = 11.sp)
     }
 }
