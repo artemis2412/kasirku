@@ -84,7 +84,8 @@ data class SaleEntity(
     val paid: Long,
     val change: Long,
     val paymentMethod: String,
-    val createdAt: Long
+    val createdAt: Long,
+    val orderType: String = "Takeaway"
 )
 
 @Entity(tableName = "sale_items", indices = [Index(value = ["saleId"])])
