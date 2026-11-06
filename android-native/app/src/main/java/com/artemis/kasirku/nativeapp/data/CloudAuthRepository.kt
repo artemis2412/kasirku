@@ -189,47 +189,6 @@ class CloudAuthRepository {
         )
     }
 
-    suspend fun updateStoreTable(
-        tenant: VerifiedTenantContext,
-        tableId: String,
-        name: String,
-        capacity: Int
-    ) = withContext(Dispatchers.IO) {
-        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
-            "Hanya Owner, Admin, atau Supervisor yang dapat mengelola meja."
-        }
-        require(tableId.isNotBlank() && name.isNotBlank() && capacity in 1..999)
-        client.from("store_tables").update({
-            put("name", name.trim())
-            put("capacity", capacity)
-        }) {
-            filter {
-                eq("id", tableId)
-                eq("store_id", tenant.storeId)
-                eq("branch_id", tenant.branchId)
-                eq("is_active", true)
-            }
-        }
-    }
-
-    suspend fun archiveStoreTable(tenant: VerifiedTenantContext, tableId: String) =
-        withContext(Dispatchers.IO) {
-            require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
-                "Hanya Owner, Admin, atau Supervisor yang dapat mengelola meja."
-            }
-            client.from("store_tables").update({
-                put("is_active", false)
-            }) {
-                filter {
-                    eq("id", tableId)
-                    eq("store_id", tenant.storeId)
-                    eq("branch_id", tenant.branchId)
-                    eq("is_active", true)
-                    isNull("occupied_order_local_id")
-                }
-            }
-        }
-
     suspend fun claimStoreTable(
         tenant: VerifiedTenantContext,
         tableId: String,
