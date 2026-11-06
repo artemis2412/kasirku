@@ -54,7 +54,6 @@ internal fun NativeTableManagementScreen(
     var capacity by remember { mutableStateOf("4") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
 
     fun openForm(table: StoreTableEntity?) {
         editing = table
