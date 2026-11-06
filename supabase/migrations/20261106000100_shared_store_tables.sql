@@ -57,7 +57,14 @@ with check (
   )
 );
 
-grant select, insert, update, delete on public.store_tables to authenticated;
+grant select, insert, delete on public.store_tables to authenticated;
+grant update (occupied_order_local_id, occupied_at, updated_at) on public.store_tables to authenticated;
+
+drop policy if exists "store_tables_branch_occupancy_update" on public.store_tables;
+create policy "store_tables_branch_occupancy_update"
+on public.store_tables for update to authenticated
+using (private.has_branch_access(store_id, branch_id))
+with check (private.has_branch_access(store_id, branch_id));
 
 -- Claim is a single conditional UPDATE: concurrent devices cannot claim the same table.
 -- Cashiers can claim/release only within branches they already have access to.
@@ -69,7 +76,7 @@ create or replace function public.claim_store_table(
 )
 returns boolean
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 declare
@@ -108,7 +115,7 @@ create or replace function public.release_store_table(
 )
 returns boolean
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 declare
