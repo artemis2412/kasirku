@@ -74,3 +74,45 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--green)}
  #view .two-col>.panel{padding:15px}
  #view .two-col>.panel .line{font-size:12px;padding:10px 0}
 }
+
+
+/* Kasir POS workspace */
+#view .cashier-layout{grid-template-columns:minmax(0,1.12fr) minmax(340px,.88fr);align-items:start;gap:16px}
+#view .cashier-layout>.cashier-products,
+#view .cashier-layout>.cashier-cart{min-width:0;border:1px solid #e2eae4;box-shadow:0 5px 18px rgba(27,65,43,.045)}
+#view .cashier-layout>.cashier-cart{position:sticky;top:18px}
+#view .cashier-products #cash-search{margin:2px 0 8px;min-height:44px;border-radius:11px;background:#fbfdfb}
+#view .cashier-products .menu-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#view .cashier-products .menu-choice{position:relative;min-height:104px;align-content:start;gap:5px;margin:0;padding:14px;border-color:#e5ece6;border-radius:12px;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+#view .cashier-products .menu-choice:hover{border-color:#9fc7aa;box-shadow:0 5px 14px rgba(27,65,43,.08);transform:translateY(-1px)}
+#view .cashier-products .menu-choice b{font-size:14px;line-height:1.35}
+#view .cashier-products .menu-choice .hint{font-size:11px}
+#view .cashier-products .menu-choice .price{margin-top:4px;font-size:14px;font-weight:800}
+#view .cashier-cart .cart-line{align-items:center;padding:13px 0}
+#view .cashier-cart .cart-line>div:first-child{min-width:0}
+#view .cashier-cart .cart-line>div:first-child b{overflow-wrap:anywhere}
+#view .cashier-cart .qty{gap:6px}
+#view .cashier-cart .qty button{min-width:34px;min-height:34px;border-radius:9px;font-size:15px}
+#view .cashier-cart .remove-item{min-width:32px}
+#view .cashier-cart .pay-label{display:block;color:#56675c;font-size:12px;font-weight:650}
+#view .cashier-cart .pay-label .field{margin-top:6px}
+#view .cashier-cart .total-line{margin-top:14px;padding:16px 0;font-size:17px}
+#view .cashier-cart .checkout-btn{min-height:48px;margin-top:12px;border-radius:11px;box-shadow:0 5px 12px rgba(33,91,57,.12)}
+@media(max-width:1050px){
+ #view .cashier-layout{grid-template-columns:minmax(0,1fr) minmax(300px,.9fr);gap:12px}
+ #view .cashier-products .menu-list{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+ #view .cashier-layout{grid-template-columns:minmax(0,1fr);gap:12px}
+ #view .cashier-layout>.cashier-cart{position:static}
+ #view .cashier-products .menu-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:420px){
+ #view .cashier-products .menu-list{grid-template-columns:1fr}
+ #view .cashier-products .menu-choice{min-height:0}
+ #view .cashier-cart .cart-line{align-items:flex-start;flex-direction:column}
+ #view .cashier-cart .qty{align-self:flex-end}
+}
+@media(prefers-reduced-motion:reduce){
+ #view .cashier-products .menu-choice{transition:none}
+}
