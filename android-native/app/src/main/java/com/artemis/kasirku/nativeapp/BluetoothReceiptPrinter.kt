@@ -99,9 +99,12 @@ object BluetoothReceiptPrinter {
             text.split(Regex("\\s+")).forEach { word ->
                 if (word.length > width) {
                     if (current.isNotEmpty()) { result.add(current.toString()); current = StringBuilder() }
-                    word.chunked(width).forEachIndexed { index, part ->
-                        if (index < word.length / width) result.add(part) else current.append(part)
+                    var remaining = word
+                    while (remaining.length > width) {
+                        result.add(remaining.take(width))
+                        remaining = remaining.drop(width)
                     }
+                    if (remaining.isNotEmpty()) current.append(remaining)
                 } else if (current.isEmpty()) current.append(word)
                 else if (current.length + 1 + word.length <= width) current.append(' ').append(word)
                 else { result.add(current.toString()); current = StringBuilder(word) }
