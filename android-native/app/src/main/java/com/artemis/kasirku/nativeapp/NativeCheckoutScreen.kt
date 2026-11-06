@@ -55,7 +55,7 @@ private fun formatCheckoutNominal(value: Long): String = value.toString().revers
 private fun formatCheckoutNominalInput(value: String): String =
     value.filter(Char::isDigit).reversed().chunked(3).joinToString(".").reversed()
 
-private data class ReceiptDraft(val saleId: String, val lines: List<CheckoutLine>, val subtotal: Long, val total: Long, val paid: Long, val change: Long)
+private data class ReceiptDraft(val saleId: String, val lines: List<CheckoutLine>, val subtotal: Long, val total: Long, val paid: Long, val change: Long, val orderType: String, val tableLabel: String?)
 
 private data class CartEntry(
     val id: String,
@@ -277,7 +277,7 @@ internal fun NativeCheckoutScreen(
                                 if (!tenant.branchTimeZoneId.isNullOrBlank()) {
                                     SaleSyncWorker.enqueue(context, tenant)
                                 }
-                                receiptDraft = ReceiptDraft(result.saleId, receiptLines, subtotal, result.total, paid, result.change)
+                                receiptDraft = ReceiptDraft(result.saleId, receiptLines, subtotal, result.total, paid, result.change, orderType, chosenTable?.name)
                                 success = "Transaksi tersimpan. Total Rp ${result.total}, kembalian Rp ${result.change}."
                                 cart.clear()
                                 payment = ""
@@ -307,7 +307,7 @@ internal fun NativeCheckoutScreen(
                     printerError = null
                     try {
                         BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
-                            receipt.saleId, receipt.lines, receipt.subtotal, receipt.total, receipt.paid, receipt.change)
+                            receipt.saleId, receipt.lines, receipt.subtotal, receipt.total, receipt.paid, receipt.change, orderType = receipt.orderType, tableLabel = receipt.tableLabel)
                         success = "Nota berhasil dikirim ke printer."
                     } catch (cancelled: CancellationException) {
                         throw cancelled
