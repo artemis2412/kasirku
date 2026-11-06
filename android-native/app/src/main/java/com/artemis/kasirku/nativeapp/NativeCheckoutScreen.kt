@@ -46,6 +46,7 @@ import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private fun formatCheckoutNominal(value: Long): String = value.toString().reversed().chunked(3).joinToString(".").reversed()
@@ -247,9 +248,8 @@ internal fun NativeCheckoutScreen(
                             busy = true
                             error = null
                             val receiptLines = cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }
-                            runCatching {
-                                sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod)
-                            }.onSuccess { result ->
+                            try {
+                                val result = sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod)
                                 if (!tenant.branchTimeZoneId.isNullOrBlank()) {
                                     SaleSyncWorker.enqueue(context, tenant)
                                 }
@@ -257,8 +257,13 @@ internal fun NativeCheckoutScreen(
                                 success = "Transaksi tersimpan. Total Rp ${result.total}, kembalian Rp ${result.change}."
                                 cart.clear()
                                 payment = ""
-                            }.onFailure { error = it.message ?: "Transaksi gagal disimpan." }
-                            busy = false
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (failure: Exception) {
+                                error = failure.message ?: "Transaksi gagal disimpan."
+                            } finally {
+                                busy = false
+                            }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
