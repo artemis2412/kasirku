@@ -1,6 +1,9 @@
 package com.artemis.kasirku.nativeapp
 
 import android.net.Uri
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -32,12 +35,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.BranchTime
 import com.artemis.kasirku.nativeapp.data.SaleEntity
+import com.artemis.kasirku.nativeapp.data.CheckoutLine
 import com.artemis.kasirku.nativeapp.data.SaleItemEntity
 import com.artemis.kasirku.nativeapp.data.SaleSyncOutboxEntity
 import com.artemis.kasirku.nativeapp.data.SalesRepository
@@ -100,6 +105,9 @@ internal fun NativeOrdersScreen(
     var archiveMessage by remember { mutableStateOf<String?>(null) }
     var archiveBusy by remember { mutableStateOf(false) }
     var syncMessage by remember { mutableStateOf<String?>(null) }
+    var printingReceipt by remember { mutableStateOf(false) }
+    var receiptMessage by remember { mutableStateOf<String?>(null) }
+    val selectedPrinterAddress = remember { BluetoothReceiptPrinter.selectedAddress(context) }
     val archiveStart = remember(dayStart, branchZone) {
         BranchTime.startOfDayOffset(dayStart, -29, branchZone)
     }
@@ -268,9 +276,36 @@ internal fun NativeOrdersScreen(
                     Text("Diskon: Rp ${formatOrderNominal(sale.discount)}", color = OrdersMuted, fontSize = 12.sp)
                     Text("Total: Rp ${formatOrderNominal(sale.total)}", color = OrdersTeal, fontWeight = FontWeight.Bold)
                     Text("Dibayar: Rp ${formatOrderNominal(sale.paid)} • Kembalian: Rp ${formatOrderNominal(sale.change)}", color = OrdersMuted, fontSize = 11.sp)
+                    receiptMessage?.let { Text(it, color = if (it.startsWith("Nota transaksi berhasil")) OrdersTeal else Color(0xFFB42318), fontSize = 11.sp) }
                 }
             },
-            confirmButton = { TextButton(onClick = { selectedSale = null }) { Text("Tutup") } }
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = {
+                            val address = selectedPrinterAddress
+                            if (address == null) receiptMessage = "Pilih printer Bluetooth di halaman Penjualan terlebih dahulu."
+                            else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+                            ) receiptMessage = "Buka halaman Penjualan dan berikan izin Bluetooth terlebih dahulu."
+                            else scope.launch {
+                                printingReceipt = true
+                                receiptMessage = null
+                                runCatching {
+                                    val items = repository.saleItems(tenant, sale.id)
+                                    BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName, sale.id,
+                                        items.map { CheckoutLine(it.productId, it.productName, it.quantity, it.unitPrice) },
+                                        sale.subtotal, sale.total, sale.paid, sale.change)
+                                }.onSuccess { receiptMessage = "Nota transaksi berhasil dikirim ke printer." }
+                                    .onFailure { receiptMessage = "Transaksi tetap tersimpan, tetapi nota belum tercetak. " + (it.message ?: "Periksa printer lalu coba lagi.") }
+                                printingReceipt = false
+                            }
+                        },
+                        enabled = !loadingDetail && !printingReceipt && selectedItems.isNotEmpty()
+                    ) { Text(if (printingReceipt) "Mencetak…" else "Cetak nota") }
+                    TextButton(onClick = { selectedSale = null; receiptMessage = null }) { Text("Tutup") }
+                }
+            }
         )
     }
 }
