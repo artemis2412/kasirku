@@ -284,7 +284,7 @@ class CloudAuthRepository {
         }
         val productRows = products.map { row ->
             NativeCatalogProductDto(row.id, row.storeId, row.categoryId, row.name, row.description,
-                row.basePrice, row.photoUri, row.isActive,
+                row.basePrice, row.photoUri?.takeIf { it.startsWith("https://", ignoreCase = true) }, row.isActive,
                 java.time.Instant.ofEpochMilli(row.createdAt).toString(),
                 java.time.Instant.ofEpochMilli(row.updatedAt).toString())
         }
