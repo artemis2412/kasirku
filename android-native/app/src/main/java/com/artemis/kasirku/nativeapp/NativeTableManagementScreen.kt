@@ -54,6 +54,7 @@ internal fun NativeTableManagementScreen(
     var capacity by remember { mutableStateOf("4") }
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     fun openForm(table: StoreTableEntity?) {
         editing = table
@@ -76,6 +77,7 @@ internal fun NativeTableManagementScreen(
             Text("Manajemen meja", color = Color(0xFF17324D), fontSize = 25.sp, fontWeight = FontWeight.Bold)
             Text(tenant.storeName + " • " + tenant.branchName, color = Color(0xFF718096), fontSize = 12.sp)
         }
+        error?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
         Button(onClick = { openForm(null) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
             Text("+ Tambah meja")
         }
@@ -94,11 +96,21 @@ internal fun NativeTableManagementScreen(
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Text(table.name, color = Color(0xFF17324D), fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 Text("Kapasitas " + table.capacity + " orang", color = Color(0xFF718096), fontSize = 12.sp)
+                                Text(if (table.occupiedSaleId == null) "Status: Tersedia" else "Status: Terisi • " + table.occupiedSaleId.take(8), color = if (table.occupiedSaleId == null) Color(0xFF168C83) else Color(0xFFB54708), fontSize = 11.sp)
                             }
-                            TextButton(onClick = { openForm(table) }) { Text("Ubah") }
-                            TextButton(onClick = {
-                                scope.launch { dao.archive(tenant.storeId, tenant.branchId, table.id, System.currentTimeMillis()) }
-                            }) { Text("Arsip", color = Color(0xFFB42318)) }
+                            if (table.occupiedSaleId != null) {
+                                TextButton(onClick = {
+                                    scope.launch {
+                                        val released = dao.release(tenant.storeId, tenant.branchId, table.id, table.occupiedSaleId, System.currentTimeMillis())
+                                        if (released != 1) error = "Status meja berubah. Muat ulang lalu coba lagi."
+                                    }
+                                }) { Text("Kosongkan") }
+                            } else {
+                                TextButton(onClick = { openForm(table) }) { Text("Ubah") }
+                                TextButton(onClick = {
+                                    scope.launch { dao.archive(tenant.storeId, tenant.branchId, table.id, System.currentTimeMillis()) }
+                                }) { Text("Arsip", color = Color(0xFFB42318)) }
+                            }
                         }
                     }
                 }
