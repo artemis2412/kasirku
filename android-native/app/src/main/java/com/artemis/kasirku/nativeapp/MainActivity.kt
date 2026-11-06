@@ -110,6 +110,7 @@ private fun KasirkuNativeApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showNewTransaction by remember { mutableStateOf(false) }
     var showTableManagement by remember { mutableStateOf(false) }
+    var showProduction by remember { mutableStateOf(false) }
     var verifiedTenantContext by remember { mutableStateOf<VerifiedTenantContext?>(null) }
 
     LaunchedEffect(verifiedTenantContext?.storeId, verifiedTenantContext?.branchId, verifiedTenantContext?.branchTimeZoneId) {
@@ -139,11 +140,12 @@ private fun KasirkuNativeApp() {
                         NavigationBar(containerColor = Color.White, tonalElevation = 2.dp) {
                             KasirkuTab.values().forEachIndexed { index, tab ->
                                 NavigationBarItem(
-                                    selected = selectedTab == index && !showNewTransaction && !showTableManagement,
+                                    selected = selectedTab == index && !showNewTransaction && !showTableManagement && !showProduction,
                                     onClick = {
                                         selectedTab = index
                                         showNewTransaction = false
                                         showTableManagement = false
+                                        showProduction = false
                                     },
                                     icon = { Text(tab.symbol, fontSize = 21.sp, fontWeight = FontWeight.SemiBold) },
                                     label = { Text(tab.title, fontSize = 11.sp) }
@@ -154,6 +156,7 @@ private fun KasirkuNativeApp() {
                 }
             ) { innerPadding ->
                 when {
+                    showProduction && verifiedTenantContext != null -> NativeProductionScreen(tenant = verifiedTenantContext!!, onBack = { showProduction = false }, modifier = Modifier.padding(innerPadding))
                     showTableManagement && verifiedTenantContext != null -> NativeTableManagementScreen(tenant = verifiedTenantContext!!, onBack = { showTableManagement = false }, modifier = Modifier.padding(innerPadding))
                     showNewTransaction -> if (verifiedTenantContext != null) {
                         NativeCheckoutScreen(
@@ -184,7 +187,8 @@ private fun KasirkuNativeApp() {
                     selectedTab == 1 -> if (verifiedTenantContext != null) {
                         NativeProductsScreen(
                             tenant = verifiedTenantContext!!,
-                            modifier = Modifier.padding(innerPadding)
+                            modifier = Modifier.padding(innerPadding),
+                            onOpenProduction = { showProduction = true }
                         )
                     } else {
                         CloudAccountScreen(
