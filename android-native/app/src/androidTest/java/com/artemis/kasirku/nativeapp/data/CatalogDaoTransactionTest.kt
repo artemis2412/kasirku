@@ -83,16 +83,47 @@ class CatalogDaoTransactionTest {
         assertEquals(0, dao.getSalesRange("store-1", "branch-1", 0, Long.MAX_VALUE).size)
     }
 
-    private suspend fun seedProduct(id: String, name: String, stock: Int) {
-        dao.upsertProduct(ProductEntity(
-            id = id, storeId = "store-1", categoryId = null, name = name,
-            basePrice = 10_000, createdAt = 1, updatedAt = 1
-        ))
-        dao.upsertInventory(BranchInventoryEntity("branch-1", id, stock, 1))
+    @Test
+    fun pendingSyncQueueIsIsolatedByStoreAndBranch() = runBlocking {
+        seedProduct("product-a", "Kopi A", 5, storeId = "store-a", branchId = "branch-a")
+        seedProduct("product-b", "Kopi B", 5, storeId = "store-b", branchId = "branch-b")
+
+        dao.completeSale(
+            sale("sale-a", 10_000, storeId = "store-a", branchId = "branch-a"),
+            listOf(item("item-a", "sale-a", "product-a", "Kopi A", 1))
+        )
+        dao.completeSale(
+            sale("sale-b", 10_000, storeId = "store-b", branchId = "branch-b"),
+            listOf(item("item-b", "sale-b", "product-b", "Kopi B", 1))
+        )
+
+        assertEquals(listOf("sale-a"), dao.getPendingSaleSync("store-a", "branch-a").map { it.saleId })
+        assertEquals(listOf("sale-b"), dao.getPendingSaleSync("store-b", "branch-b").map { it.saleId })
+        assertEquals(0, dao.getPendingSaleSync("store-a", "branch-b").size)
+        assertEquals(0, dao.getPendingSaleSync("store-b", "branch-a").size)
     }
 
-    private fun sale(id: String, subtotal: Long) = SaleEntity(
-        id = id, storeId = "store-1", branchId = "branch-1",
+    private suspend fun seedProduct(
+        id: String,
+        name: String,
+        stock: Int,
+        storeId: String = "store-1",
+        branchId: String = "branch-1"
+    ) {
+        dao.upsertProduct(ProductEntity(
+            id = id, storeId = storeId, categoryId = null, name = name,
+            basePrice = 10_000, createdAt = 1, updatedAt = 1
+        ))
+        dao.upsertInventory(BranchInventoryEntity(branchId, id, stock, 1))
+    }
+
+    private fun sale(
+        id: String,
+        subtotal: Long,
+        storeId: String = "store-1",
+        branchId: String = "branch-1"
+    ) = SaleEntity(
+        id = id, storeId = storeId, branchId = branchId,
         cashierUserId = "user-1", subtotal = subtotal, discount = 0,
         total = subtotal, paid = subtotal, change = 0,
         paymentMethod = "CASH", createdAt = 10
