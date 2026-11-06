@@ -259,6 +259,9 @@ class CloudAuthRepository {
             "Hanya Owner atau Admin yang dapat menyinkronkan katalog."
         }
         require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+        require(dao.countUnresolvedSaleSync(tenant.storeId, tenant.branchId) == 0) {
+            "Ada transaksi yang belum tersinkron. Sinkronkan transaksi dahulu sebelum mengirim stok Cloud."
+        }
         val products = dao.getProductsForCloudSync(tenant.storeId)
         val categories = dao.getCategoriesForCloudSync(tenant.storeId)
         val prices = dao.getBranchPricesForCloudSync(tenant.branchId)
