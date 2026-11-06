@@ -112,7 +112,8 @@ object BluetoothReceiptPrinter {
             if (current.isNotEmpty()) result.add(current.toString())
             return result
         }
-        fun rupiah(value: Long) = "Rp " + value.toString()
+        fun money(value: Long) = value.toString().reversed().chunked(3).joinToString(".").reversed()
+        fun rupiah(value: Long) = "Rp " + money(value)
         raw(0x1B, 0x40) // initialize
         raw(0x1B, 0x61, 1)
         raw(0x1B, 0x45, 1)
@@ -125,14 +126,14 @@ object BluetoothReceiptPrinter {
         line("--------------------------------")
         lines.forEach { item ->
             wrapped(item.productName).forEach(::line)
-            line("  ${item.quantity} x ${item.unitPrice} = ${item.lineTotal}")
+            wrapped("  ${item.quantity} x ${money(item.unitPrice)} = ${money(item.lineTotal)}").forEach(::line)
         }
         line("--------------------------------")
-        line("Subtotal : ${rupiah(subtotal)}")
-        if (discount > 0L) line("Diskon   : ${rupiah(discount)}")
-        line("TOTAL    : ${rupiah(total)}")
-        line("Tunai    : ${rupiah(paid)}")
-        line("Kembali  : ${rupiah(change)}")
+        wrapped("Subtotal : ${rupiah(subtotal)}").forEach(::line)
+        if (discount > 0L) wrapped("Diskon   : ${rupiah(discount)}").forEach(::line)
+        wrapped("TOTAL    : ${rupiah(total)}").forEach(::line)
+        wrapped("Tunai    : ${rupiah(paid)}").forEach(::line)
+        wrapped("Kembali  : ${rupiah(change)}").forEach(::line)
         raw(0x1B, 0x61, 1)
         line("")
         line("Terima kasih")
