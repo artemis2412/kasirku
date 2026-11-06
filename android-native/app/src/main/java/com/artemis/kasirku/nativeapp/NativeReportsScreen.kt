@@ -21,6 +21,7 @@ import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 private val ReportNavy = Color(0xFF17324D)
 private val ReportTeal = Color(0xFF168C83)
