@@ -107,7 +107,6 @@ internal fun NativeOrdersScreen(
     var syncMessage by remember { mutableStateOf<String?>(null) }
     var printingReceipt by remember { mutableStateOf(false) }
     var receiptMessage by remember { mutableStateOf<String?>(null) }
-    val selectedPrinterAddress = remember { BluetoothReceiptPrinter.selectedAddress(context) }
     val archiveStart = remember(dayStart, branchZone) {
         BranchTime.startOfDayOffset(dayStart, -29, branchZone)
     }
@@ -283,7 +282,7 @@ internal fun NativeOrdersScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(
                         onClick = {
-                            val address = selectedPrinterAddress
+                            val address = BluetoothReceiptPrinter.selectedAddress(context)
                             if (address == null) receiptMessage = "Pilih printer Bluetooth di halaman Penjualan terlebih dahulu."
                             else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                                 ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
@@ -295,7 +294,7 @@ internal fun NativeOrdersScreen(
                                     val items = repository.saleItems(tenant, sale.id)
                                     BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName, sale.id,
                                         items.map { CheckoutLine(it.productId, it.productName, it.quantity, it.unitPrice) },
-                                        sale.subtotal, sale.total, sale.paid, sale.change)
+                                        sale.subtotal, sale.total, sale.paid, sale.change, discount = sale.discount)
                                 }.onSuccess { receiptMessage = "Nota transaksi berhasil dikirim ke printer." }
                                     .onFailure { receiptMessage = "Transaksi tetap tersimpan, tetapi nota belum tercetak. " + (it.message ?: "Periksa printer lalu coba lagi.") }
                                 printingReceipt = false
