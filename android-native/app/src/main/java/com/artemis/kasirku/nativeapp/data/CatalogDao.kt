@@ -60,8 +60,8 @@ interface CatalogDao {
 
     @Query("""
         SELECT p.*, 
-            (SELECT sellingPrice FROM branch_product_prices
-                      WHERE branchId = :branchId AND productId = p.id) AS activeSellingPrice,
+            COALESCE((SELECT sellingPrice FROM branch_product_prices
+                      WHERE branchId = :branchId AND productId = p.id), p.basePrice) AS activeSellingPrice,
             COALESCE((SELECT quantity FROM branch_inventory
                       WHERE branchId = :branchId AND productId = p.id), 0) AS branchQuantity
         FROM catalog_products AS p
