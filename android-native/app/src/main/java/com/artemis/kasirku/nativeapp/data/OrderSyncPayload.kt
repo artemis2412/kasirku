@@ -79,6 +79,7 @@ object OrderSyncPayloadMapper {
             require(sale.paid == sale.total && sale.change == 0L) { "Pembayaran non-tunai tidak sesuai total." }
         }
 
+        require(sale.orderType in setOf("Takeaway", "Dine In")) { "Jenis pesanan tidak valid." }
         val order = OrderSyncDto(
             storeId = sale.storeId,
             branchId = sale.branchId,
@@ -88,7 +89,7 @@ object OrderSyncPayloadMapper {
             orderTime = localDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
             createdAt = DateTimeFormatter.ISO_INSTANT.format(instant),
             createdBy = sale.cashierUserId,
-            orderType = "Takeaway",
+            orderType = sale.orderType,
             subtotal = sale.subtotal,
             discountAmount = sale.discount,
             total = sale.total,
