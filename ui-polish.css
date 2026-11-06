@@ -116,3 +116,46 @@ input[type="checkbox"],input[type="radio"]{accent-color:var(--green)}
 @media(prefers-reduced-motion:reduce){
  #view .cashier-products .menu-choice{transition:none}
 }
+
+
+/* Pesanan: readable order management */
+#view .order-page{gap:16px}
+#view .order-page-heading{align-items:center;padding:2px 1px}
+#view .order-page-heading h2{font-size:24px;letter-spacing:-.45px;color:#183d2b}
+#view .order-period-tabs{display:flex;gap:8px;padding:5px;background:#edf4ef;border:1px solid #e1ebe3;border-radius:13px;width:max-content;max-width:100%}
+#view .order-period-tab{min-height:40px;padding:8px 15px;border:0;border-radius:9px;background:transparent;color:#587062;font-weight:700}
+#view .order-period-tab.selected{background:#fff;color:#24583a;box-shadow:0 2px 7px rgba(25,61,39,.09)}
+#view .order-period-tab span{display:inline-flex;min-width:21px;justify-content:center;margin-left:5px;padding:2px 6px;border-radius:20px;background:#e5eee7;font-size:11px}
+#view .order-filters.order-filter-bar{display:flex;gap:8px;flex-wrap:wrap;padding-bottom:2px}
+#view .order-filter{min-height:38px;padding:8px 13px;border:1px solid #e0e9e2;border-radius:10px;background:#fff;color:#53665a;font-weight:650}
+#view .order-filter.selected{border-color:#2f7048;background:#eaf4ed;color:#205b37}
+#view .order-filter span{margin-left:5px;font-variant-numeric:tabular-nums;opacity:.8}
+#view .order-list-area{display:grid;gap:11px;min-width:0}
+#view .order-day-group{display:grid;gap:10px}
+#view .order-day-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 2px;color:#385844;font-size:13px;font-weight:800}
+#view .order-day-heading span{color:#829187;font-size:11px;font-weight:600}
+#view .order-card{padding:17px;border:1px solid #e3ebe5;border-radius:15px;box-shadow:0 4px 15px rgba(27,65,43,.035)}
+#view .order-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid #edf1ed}
+#view .order-card-head>div{min-width:0}
+#view .order-card-head>div>b{font-size:14px;color:#244b33;overflow-wrap:anywhere}
+#view .order-card-head .hint{margin-top:4px;line-height:1.55}
+#view .order-status{flex:0 0 auto;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:800}
+#view .order-items{padding:5px 0}
+#view .order-card .line{align-items:center;padding:9px 0;font-size:12px}
+#view .order-card .line b{white-space:nowrap;font-variant-numeric:tabular-nums}
+#view .order-card .order-card-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
+#view .order-card .order-card-actions .btn{min-height:37px;padding:8px 12px;font-size:11px}
+#view .order-card>.hint{margin-top:9px;padding-top:9px;border-top:1px solid #edf1ed}
+#view .order-history-date{display:grid;gap:6px;max-width:320px;color:#52675a;font-size:12px;font-weight:700}
+#view .order-history-date .field{min-height:42px}
+@media(max-width:650px){
+ #view .order-page{gap:13px}
+ #view .order-page-heading h2{font-size:21px}
+ #view .order-period-tabs{width:100%}
+ #view .order-period-tab{flex:1;padding:8px 10px}
+ #view .order-filter{padding:8px 10px;font-size:11px}
+ #view .order-card{padding:14px}
+ #view .order-card-head{gap:8px}
+ #view .order-card .order-card-actions{justify-content:stretch}
+ #view .order-card .order-card-actions .btn{flex:1}
+}
