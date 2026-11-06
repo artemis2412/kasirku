@@ -99,6 +99,8 @@ object BluetoothReceiptPrinter {
         line("--------------------------------")
         raw(0x1B, 0x61, 0)
         line("No: " + saleId.take(12))
+        line("Jenis: " + orderType)
+        if (orderType == "Dine In" && !tableLabel.isNullOrBlank()) line("Meja: " + tableLabel)
         line("--------------------------------")
         lines.forEach { item ->
             wrapped(item.productName).forEach(::line)
