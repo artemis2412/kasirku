@@ -100,6 +100,7 @@ private enum class KasirkuTab(val title: String, val symbol: String) {
     Home("Beranda", "⌂"),
     Products("Produk", "▦"),
     Orders("Pesanan", "▤"),
+    Production("Produksi", "⚒"),
     Reports("Laporan", "▥"),
     Account("Akun", "◎")
 }
@@ -200,6 +201,17 @@ private fun KasirkuNativeApp() {
                         )
                     }
                     selectedTab == 3 -> if (verifiedTenantContext != null) {
+                        NativeProductionScreen(
+                            tenant = verifiedTenantContext!!,
+                            modifier = Modifier.padding(innerPadding)
+                        )
+                    } else {
+                        CloudAccountScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onContextChanged = { verifiedTenantContext = it }
+                        )
+                    }
+                    selectedTab == 4 -> if (verifiedTenantContext != null) {
                         if (verifiedTenantContext!!.role == com.artemis.kasirku.nativeapp.data.StoreRole.CASHIER) {
                             SimpleFeatureScreen(
                                 title = "Laporan terbatas",

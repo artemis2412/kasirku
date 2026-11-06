@@ -16,6 +16,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.builtins.ListSerializer
 import java.time.ZoneId
@@ -57,6 +59,99 @@ data class AuthorizedStore(
     val name: String,
     val role: StoreRole,
     val branches: List<AuthorizedBranch>
+)
+
+@Serializable
+data class ProductionInventoryItemDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    @SerialName("branch_id") val branchId: String,
+    val name: String,
+    @SerialName("item_type") val itemType: String,
+    @SerialName("base_unit") val baseUnit: String,
+    @SerialName("on_hand") val onHand: Double,
+    @SerialName("minimum_stock") val minimumStock: Double,
+    @SerialName("average_unit_cost") val averageUnitCost: Double
+)
+
+@Serializable
+data class ProductionRecipeDto(
+    val id: String,
+    val name: String,
+    @SerialName("output_item_id") val outputItemId: String,
+    @SerialName("yield_quantity") val yieldQuantity: Double,
+    val notes: String
+)
+
+@Serializable
+data class ProductionRecipeItemDto(
+    val id: String,
+    @SerialName("recipe_id") val recipeId: String,
+    @SerialName("inventory_item_id") val inventoryItemId: String,
+    val quantity: Double
+)
+
+@Serializable
+data class ProductionMenuProductDto(val id: String, val name: String)
+
+@Serializable
+data class ProductionMenuRecipeItemDto(
+    val id: String,
+    @SerialName("product_id") val productId: String,
+    @SerialName("inventory_item_id") val inventoryItemId: String,
+    @SerialName("quantity_per_menu") val quantityPerMenu: Double
+)
+
+@Serializable
+data class ProductionBatchDto(
+    val id: String,
+    @SerialName("recipe_id") val recipeId: String,
+    @SerialName("output_item_id") val outputItemId: String,
+    @SerialName("actual_output_quantity") val actualOutputQuantity: Double,
+    @SerialName("total_input_cost") val totalInputCost: Double,
+    @SerialName("completed_at") val completedAt: String
+)
+
+@Serializable
+data class InventoryMovementDto(
+    val id: String,
+    @SerialName("inventory_item_id") val inventoryItemId: String,
+    @SerialName("movement_type") val movementType: String,
+    @SerialName("quantity_delta") val quantityDelta: Double,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class ProductionInventoryInsertDto(
+    @SerialName("store_id") val storeId: String,
+    @SerialName("branch_id") val branchId: String,
+    val name: String,
+    @SerialName("item_type") val itemType: String,
+    @SerialName("base_unit") val baseUnit: String,
+    @SerialName("minimum_stock") val minimumStock: Double,
+    @SerialName("created_by") val createdBy: String
+)
+
+@Serializable
+data class ProductionIngredientInputDto(
+    @SerialName("inventory_item_id") val inventoryItemId: String,
+    val quantity: Double
+)
+
+@Serializable
+data class MenuIngredientInputDto(
+    @SerialName("inventory_item_id") val inventoryItemId: String,
+    @SerialName("quantity_per_menu") val quantityPerMenu: Double
+)
+
+data class ProductionCloudSnapshot(
+    val items: List<ProductionInventoryItemDto>,
+    val recipes: List<ProductionRecipeDto>,
+    val recipeItems: List<ProductionRecipeItemDto>,
+    val products: List<ProductionMenuProductDto>,
+    val menuRecipeItems: List<ProductionMenuRecipeItemDto>,
+    val batches: List<ProductionBatchDto>,
+    val movements: List<InventoryMovementDto>
 )
 
 data class CloudAccountAccess(
@@ -181,6 +276,106 @@ class CloudAuthRepository {
         )
         loadAuthorizedAccess()
     }
+
+    suspend fun loadProductionSnapshot(tenant: VerifiedTenantContext): ProductionCloudSnapshot =
+        withContext(Dispatchers.IO) {
+            val items = client.from("inventory_items").select {
+                filter { eq("store_id", tenant.storeId); eq("branch_id", tenant.branchId); eq("is_active", true) }
+            }.decodeList<ProductionInventoryItemDto>()
+            val recipes = client.from("production_recipes").select {
+                filter { eq("store_id", tenant.storeId); eq("branch_id", tenant.branchId); eq("is_active", true) }
+            }.decodeList<ProductionRecipeDto>()
+            val recipeItems = client.from("production_recipe_items").select {
+                filter { eq("store_id", tenant.storeId); eq("branch_id", tenant.branchId) }
+            }.decodeList<ProductionRecipeItemDto>()
+            val products = client.from("products").select {
+                filter { eq("store_id", tenant.storeId); eq("branch_id", tenant.branchId); eq("is_active", true) }
+            }.decodeList<ProductionMenuProductDto>()
+            val menuItems = client.from("menu_recipe_items").select {
+                filter { eq("store_id", tenant.storeId); eq("branch_id", tenant.branchId) }
+            }.decodeList<ProductionMenuRecipeItemDto>()
+            val batches = client.from("production_batches").select {
+                filter { eq("store_id", tenant.storeId); eq("branch_id", tenant.branchId) }
+            }.decodeList<ProductionBatchDto>()
+            val movements = client.from("inventory_movements").select {
+                filter { eq("store_id", tenant.storeId); eq("branch_id", tenant.branchId) }
+            }.decodeList<InventoryMovementDto>()
+            ProductionCloudSnapshot(items, recipes, recipeItems, products, menuItems, batches, movements)
+        }
+
+    suspend fun createProductionInventoryItem(tenant: VerifiedTenantContext, name: String, itemType: String, baseUnit: String, minimumStock: Double) =
+        withContext(Dispatchers.IO) {
+            require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+                "Akses pengelolaan bahan hanya untuk Owner, Admin, dan Supervisor."
+            }
+            client.from("inventory_items").insert(
+                ProductionInventoryInsertDto(tenant.storeId, tenant.branchId, name.trim(), itemType, baseUnit.trim(), minimumStock, tenant.userId)
+            )
+        }
+
+    suspend fun adjustProductionStock(tenant: VerifiedTenantContext, itemId: String, quantityDelta: Double, movementType: String, unitCost: Double, note: String) =
+        withContext(Dispatchers.IO) {
+            require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+                "Akses pengelolaan stok tidak diizinkan."
+            }
+            client.postgrest.rpc("adjust_inventory_stock", buildJsonObject {
+                put("p_store_id", tenant.storeId)
+                put("p_branch_id", tenant.branchId)
+                put("p_item_id", itemId)
+                put("p_quantity_delta", quantityDelta)
+                put("p_movement_type", movementType)
+                put("p_unit_cost", unitCost)
+                put("p_note", note)
+                put("p_idempotency_key", java.util.UUID.randomUUID().toString())
+            })
+        }
+
+    suspend fun saveProductionRecipe(
+        tenant: VerifiedTenantContext, recipeId: String?, name: String, outputItemId: String,
+        yieldQuantity: Double, notes: String, ingredients: List<ProductionIngredientInputDto>
+    ) = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+            "Akses pengelolaan resep tidak diizinkan."
+        }
+        client.postgrest.rpc("save_production_recipe", buildJsonObject {
+            put("p_store_id", tenant.storeId)
+            put("p_branch_id", tenant.branchId)
+            if (recipeId == null) put("p_recipe_id", JsonNull) else put("p_recipe_id", recipeId)
+            put("p_name", name.trim())
+            put("p_output_item_id", outputItemId)
+            put("p_yield_quantity", yieldQuantity)
+            put("p_notes", notes)
+            put("p_items", Json.encodeToJsonElement(ListSerializer(ProductionIngredientInputDto.serializer()), ingredients))
+        })
+    }
+
+    suspend fun completeProduction(tenant: VerifiedTenantContext, recipeId: String, outputQuantity: Double, notes: String) =
+        withContext(Dispatchers.IO) {
+            require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+                "Akses pencatatan produksi tidak diizinkan."
+            }
+            client.postgrest.rpc("complete_production_batch", buildJsonObject {
+                put("p_store_id", tenant.storeId)
+                put("p_branch_id", tenant.branchId)
+                put("p_recipe_id", recipeId)
+                put("p_output_quantity", outputQuantity)
+                put("p_actual_inputs", buildJsonArray { })
+                put("p_notes", notes)
+            })
+        }
+
+    suspend fun replaceMenuRecipe(tenant: VerifiedTenantContext, productId: String, ingredients: List<MenuIngredientInputDto>) =
+        withContext(Dispatchers.IO) {
+            require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+                "Akses pengelolaan resep menu tidak diizinkan."
+            }
+            client.postgrest.rpc("replace_menu_recipe", buildJsonObject {
+                put("p_store_id", tenant.storeId)
+                put("p_branch_id", tenant.branchId)
+                put("p_product_id", productId)
+                put("p_items", Json.encodeToJsonElement(ListSerializer(MenuIngredientInputDto.serializer()), ingredients))
+            })
+        }
 
     suspend fun signOut() = withContext(Dispatchers.IO) {
         client.auth.signOut()
