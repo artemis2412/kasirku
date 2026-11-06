@@ -51,7 +51,8 @@ object BluetoothReceiptPrinter {
         subtotal: Long,
         total: Long,
         paid: Long,
-        change: Long
+        change: Long,
+        discount: Long = 0L
     ) = withContext(Dispatchers.IO) {
         require(address.isNotBlank()) { "Pilih printer Bluetooth terlebih dahulu." }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -67,7 +68,7 @@ object BluetoothReceiptPrinter {
             socket = device.createRfcommSocketToServiceRecord(sppUuid)
             socket.connect()
             socket.outputStream.use { output ->
-                output.write(receiptBytes(storeName, branchName, saleId, lines, subtotal, total, paid, change))
+                output.write(receiptBytes(storeName, branchName, saleId, lines, subtotal, discount, total, paid, change))
                 output.flush()
             }
         } finally {
@@ -77,28 +78,55 @@ object BluetoothReceiptPrinter {
 
     private fun receiptBytes(
         storeName: String, branchName: String, saleId: String, lines: List<CheckoutLine>,
-        subtotal: Long, total: Long, paid: Long, change: Long
+        subtotal: Long, discount: Long, total: Long, paid: Long, change: Long
     ): ByteArray {
         val out = ArrayList<Byte>()
         fun raw(vararg values: Int) { values.forEach { out.add(it.toByte()) } }
-        fun line(value: String) { (value + "\n").toByteArray(Charsets.US_ASCII).forEach(out::add) }
+        fun printable(value: String): String {
+            val normalized = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+                .replace("\\p{M}+".toRegex(), "")
+                .replace('–', '-').replace('—', '-')
+                .replace('’', '\'').replace('‘', '\'')
+                .replace('“', '"').replace('”', '"')
+            return normalized.map { if (it.code in 32..126) it else '?' }.joinToString("")
+        }
+        fun line(value: String) { (printable(value) + "\n").toByteArray(Charsets.US_ASCII).forEach(out::add) }
+        fun wrapped(value: String, width: Int = 32): List<String> {
+            val text = printable(value).trim()
+            if (text.isEmpty()) return listOf("")
+            val result = mutableListOf<String>()
+            var current = StringBuilder()
+            text.split(Regex("\\s+")).forEach { word ->
+                if (word.length > width) {
+                    if (current.isNotEmpty()) { result.add(current.toString()); current = StringBuilder() }
+                    word.chunked(width).forEachIndexed { index, part ->
+                        if (index < word.length / width) result.add(part) else current.append(part)
+                    }
+                } else if (current.isEmpty()) current.append(word)
+                else if (current.length + 1 + word.length <= width) current.append(' ').append(word)
+                else { result.add(current.toString()); current = StringBuilder(word) }
+            }
+            if (current.isNotEmpty()) result.add(current.toString())
+            return result
+        }
         fun rupiah(value: Long) = "Rp " + value.toString()
         raw(0x1B, 0x40) // initialize
         raw(0x1B, 0x61, 1)
         raw(0x1B, 0x45, 1)
-        line(storeName.take(32))
+        wrapped(storeName).forEach(::line)
         raw(0x1B, 0x45, 0)
-        line(branchName.take(32))
+        wrapped(branchName).forEach(::line)
         line("--------------------------------")
         raw(0x1B, 0x61, 0)
         line("No: " + saleId.take(12))
         line("--------------------------------")
         lines.forEach { item ->
-            line(item.productName.take(32))
+            wrapped(item.productName).forEach(::line)
             line("  ${item.quantity} x ${item.unitPrice} = ${item.lineTotal}")
         }
         line("--------------------------------")
         line("Subtotal : ${rupiah(subtotal)}")
+        if (discount > 0L) line("Diskon   : ${rupiah(discount)}")
         line("TOTAL    : ${rupiah(total)}")
         line("Tunai    : ${rupiah(paid)}")
         line("Kembali  : ${rupiah(change)}")
