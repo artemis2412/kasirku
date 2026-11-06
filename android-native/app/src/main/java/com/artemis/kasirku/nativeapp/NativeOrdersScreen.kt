@@ -49,6 +49,7 @@ import com.artemis.kasirku.nativeapp.data.SalesRepository
 import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import java.io.OutputStreamWriter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
@@ -102,6 +103,7 @@ internal fun NativeOrdersScreen(
     var selectedSale by remember { mutableStateOf<SaleEntity?>(null) }
     var selectedItems by remember { mutableStateOf<List<SaleItemEntity>>(emptyList()) }
     var loadingDetail by remember { mutableStateOf(false) }
+    var detailRequestToken by remember { mutableLongStateOf(0L) }
     var detailError by remember { mutableStateOf<String?>(null) }
     var archiveMessage by remember { mutableStateOf<String?>(null) }
     var archiveBusy by remember { mutableStateOf(false) }
@@ -240,12 +242,22 @@ internal fun NativeOrdersScreen(
                         selectedItems = emptyList()
                         detailError = null
                         receiptMessage = null
+                        val requestToken = detailRequestToken + 1L
+                        detailRequestToken = requestToken
                         loadingDetail = true
                         scope.launch {
-                            runCatching { repository.saleItems(tenant, sale.id) }
-                                .onSuccess { selectedItems = it }
-                                .onFailure { detailError = it.message ?: "Gagal memuat rincian transaksi." }
-                            loadingDetail = false
+                            try {
+                                val items = repository.saleItems(tenant, sale.id)
+                                if (detailRequestToken == requestToken) selectedItems = items
+                            } catch (error: CancellationException) {
+                                throw error
+                            } catch (error: Exception) {
+                                if (detailRequestToken == requestToken) {
+                                    detailError = error.message ?: "Gagal memuat rincian transaksi."
+                                }
+                            } finally {
+                                if (detailRequestToken == requestToken) loadingDetail = false
+                            }
                         }
                     },
                     colors = CardDefaults.cardColors(containerColor = Color.White),
