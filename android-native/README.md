@@ -74,4 +74,4 @@ Build otomatis dijalankan melalui GitHub Actions workflow:
 Output saat ini adalah APK debug untuk pengujian internal, bukan APK rilis Play Store. Unit test dan build APK dijalankan di CI; Room instrumentation test juga disiapkan melalui Android Emulator. Sebelum rilis, lakukan pengujian perangkat nyata untuk alur login, checkout, sinkronisasi, dan printer thermal.
 
 ### Harga jual per cabang
-Harga jual cabang bersifat opsional. Produk tanpa harga jual pada cabang tertentu tetap tersimpan di katalog toko, tetapi tidak ditampilkan pada pemilihan produk saat checkout cabang tersebut. Harga nominal pada formulir produk ditampilkan dengan pemisah ribuan Indonesia; nilai disimpan sebagai angka.
+Harga jual cabang bersifat opsional. Jika harga jual khusus cabang kosong, aplikasi menggunakan harga dasar produk sebagai harga jual. Jika harga khusus diisi, harga cabang tersebut yang dipakai saat checkout. Harga nominal pada formulir produk ditampilkan dengan pemisah ribuan Indonesia; nilai disimpan sebagai angka.
