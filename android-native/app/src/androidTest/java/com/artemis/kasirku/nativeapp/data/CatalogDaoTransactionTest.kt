@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import android.content.Context
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -28,6 +29,26 @@ class CatalogDaoTransactionTest {
     @After
     fun closeDatabase() {
         database.close()
+    }
+
+    @Test
+    fun branchCatalogFallsBackToBasePriceWhenNoBranchOverrideExists() = runBlocking {
+        seedProduct("product-default-price", "Air Mineral", 12)
+
+        val product = dao.observeBranchCatalog("store-1", "branch-1", "").first().single()
+
+        assertEquals(10_000L, product.activeSellingPrice)
+        assertEquals(12, product.branchQuantity)
+    }
+
+    @Test
+    fun branchCatalogPrefersBranchSellingPriceOverBasePrice() = runBlocking {
+        seedProduct("product-branch-price", "Kopi Susu", 8)
+        dao.upsertBranchPrice(BranchProductPriceEntity("branch-1", "product-branch-price", 15_000L, 2))
+
+        val product = dao.observeBranchCatalog("store-1", "branch-1", "").first().single()
+
+        assertEquals(15_000L, product.activeSellingPrice)
     }
 
     @Test
