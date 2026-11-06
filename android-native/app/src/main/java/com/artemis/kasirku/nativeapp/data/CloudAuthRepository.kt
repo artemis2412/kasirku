@@ -227,6 +227,45 @@ class CloudAuthRepository {
         )
     }
 
+    suspend fun updateStoreTable(
+        tenant: VerifiedTenantContext,
+        tableId: String,
+        name: String,
+        capacity: Int
+    ): Boolean = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+            "Hanya Owner, Admin, atau Supervisor yang dapat mengelola meja."
+        }
+        require(tableId.isNotBlank() && name.isNotBlank() && capacity in 1..999)
+        client.postgrest.rpc(
+            function = "update_store_table",
+            parameters = buildJsonObject {
+                put("target_store_id", tenant.storeId)
+                put("target_branch_id", tenant.branchId)
+                put("target_table_id", tableId)
+                put("target_name", name.trim())
+                put("target_capacity", capacity)
+            }
+        ).decodeAs<Boolean>()
+    }
+
+    suspend fun archiveStoreTable(
+        tenant: VerifiedTenantContext,
+        tableId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+            "Hanya Owner, Admin, atau Supervisor yang dapat mengelola meja."
+        }
+        client.postgrest.rpc(
+            function = "archive_store_table",
+            parameters = buildJsonObject {
+                put("target_store_id", tenant.storeId)
+                put("target_branch_id", tenant.branchId)
+                put("target_table_id", tableId)
+            }
+        ).decodeAs<Boolean>()
+    }
+
     suspend fun claimStoreTable(
         tenant: VerifiedTenantContext,
         tableId: String,
