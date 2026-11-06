@@ -126,10 +126,37 @@ internal fun CloudAccountScreen(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("AKUN & AKSES", color = AccountPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-            Text("Akun Cloud", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
-            Text("Masuk, lalu pilih toko dan cabang yang memang diizinkan untuk akunmu.", color = AccountMuted, fontSize = 13.sp)
+        if (access == null) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp),
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Box(
+                    modifier = Modifier.size(66.dp),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = AccountPurple),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.size(66.dp),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
+                        ) {
+                            Text("▣", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Text("Kasirku", color = AccountNavy, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("Aplikasi Kasir & Manajemen Toko", color = AccountMuted, fontSize = 12.sp)
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("AKUN & AKSES", color = AccountPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text("Akun Cloud", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+                Text("Masuk, lalu pilih toko dan cabang yang memang diizinkan untuk akunmu.", color = AccountMuted, fontSize = 13.sp)
+            }
         }
 
         if (access == null) {
