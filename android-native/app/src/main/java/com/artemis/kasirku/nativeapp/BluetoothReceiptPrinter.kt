@@ -52,7 +52,9 @@ object BluetoothReceiptPrinter {
         total: Long,
         paid: Long,
         change: Long,
-        discount: Long = 0L
+        discount: Long = 0L,
+        orderType: String = "Takeaway",
+        tableLabel: String? = null
     ) = withContext(Dispatchers.IO) {
         require(address.isNotBlank()) { "Pilih printer Bluetooth terlebih dahulu." }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -68,7 +70,7 @@ object BluetoothReceiptPrinter {
             socket = device.createRfcommSocketToServiceRecord(sppUuid)
             socket.connect()
             socket.outputStream.use { output ->
-                output.write(receiptBytes(storeName, branchName, saleId, lines, subtotal, discount, total, paid, change))
+                output.write(receiptBytes(storeName, branchName, saleId, lines, subtotal, discount, total, paid, change, orderType, tableLabel))
                 output.flush()
             }
         } finally {
@@ -78,7 +80,8 @@ object BluetoothReceiptPrinter {
 
     private fun receiptBytes(
         storeName: String, branchName: String, saleId: String, lines: List<CheckoutLine>,
-        subtotal: Long, discount: Long, total: Long, paid: Long, change: Long
+        subtotal: Long, discount: Long, total: Long, paid: Long, change: Long,
+        orderType: String, tableLabel: String?
     ): ByteArray {
         val out = ArrayList<Byte>()
         fun raw(vararg values: Int) { values.forEach { out.add(it.toByte()) } }
