@@ -24,7 +24,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         SaleSyncOutboxEntity::class,
         StoreTableEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class KasirkuRoomDatabase : RoomDatabase() {
@@ -63,6 +63,12 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE sales ADD COLUMN orderType TEXT NOT NULL DEFAULT 'Takeaway'")
+            }
+        }
+
         @Volatile
         private var INSTANCE: KasirkuRoomDatabase? = null
 
@@ -72,7 +78,7 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
                     context.applicationContext,
                     KasirkuRoomDatabase::class.java,
                     "kasirku_room.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build().also { INSTANCE = it }
             }
     }
 }
