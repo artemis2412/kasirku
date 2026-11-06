@@ -150,5 +150,105 @@ revoke all on function public.release_store_table(uuid, uuid, text, text) from p
 grant execute on function public.claim_store_table(uuid, uuid, text, text) to authenticated;
 grant execute on function public.release_store_table(uuid, uuid, text, text) to authenticated;
 
+
+-- Metadata changes are exposed only through role-checked functions.
+-- SECURITY DEFINER is used narrowly because authenticated clients intentionally
+-- receive column-level UPDATE grants for occupancy only.
+create or replace function public.update_store_table(
+  target_store_id uuid,
+  target_branch_id uuid,
+  target_table_id text,
+  target_name text,
+  target_capacity integer
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  changed integer;
+begin
+  if auth.uid() is null
+     or target_table_id is null or btrim(target_table_id) = ''
+     or target_name is null or btrim(target_name) = ''
+     or target_capacity is null or target_capacity < 1 or target_capacity > 999 then
+    raise exception 'Invalid table update request';
+  end if;
+
+  if not private.has_branch_access(target_store_id, target_branch_id)
+     or not exists (
+       select 1 from public.store_memberships sm
+       where sm.store_id = target_store_id
+         and sm.user_id = (select auth.uid())
+         and sm.is_active = true
+         and sm.role in ('owner','admin','supervisor')
+     ) then
+    raise exception 'Table management access denied';
+  end if;
+
+  update public.store_tables
+     set name = btrim(target_name),
+         capacity = target_capacity,
+         updated_at = now()
+   where store_id = target_store_id
+     and branch_id = target_branch_id
+     and id = target_table_id
+     and is_active = true
+     and occupied_order_local_id is null;
+
+  get diagnostics changed = row_count;
+  return changed = 1;
+end;
+$;
+
+create or replace function public.archive_store_table(
+  target_store_id uuid,
+  target_branch_id uuid,
+  target_table_id text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  changed integer;
+begin
+  if auth.uid() is null
+     or target_table_id is null or btrim(target_table_id) = '' then
+    raise exception 'Invalid table archive request';
+  end if;
+
+  if not private.has_branch_access(target_store_id, target_branch_id)
+     or not exists (
+       select 1 from public.store_memberships sm
+       where sm.store_id = target_store_id
+         and sm.user_id = (select auth.uid())
+         and sm.is_active = true
+         and sm.role in ('owner','admin','supervisor')
+     ) then
+    raise exception 'Table management access denied';
+  end if;
+
+  update public.store_tables
+     set is_active = false,
+         updated_at = now()
+   where store_id = target_store_id
+     and branch_id = target_branch_id
+     and id = target_table_id
+     and is_active = true
+     and occupied_order_local_id is null;
+
+  get diagnostics changed = row_count;
+  return changed = 1;
+end;
+$;
+
+revoke all on function public.update_store_table(uuid, uuid, text, text, integer) from public, anon;
+revoke all on function public.archive_store_table(uuid, uuid, text) from public, anon;
+grant execute on function public.update_store_table(uuid, uuid, text, text, integer) to authenticated;
+grant execute on function public.archive_store_table(uuid, uuid, text) to authenticated;
+
 comment on table public.store_tables is
   'Shared dine-in table master and occupancy state, scoped by store and branch.';
