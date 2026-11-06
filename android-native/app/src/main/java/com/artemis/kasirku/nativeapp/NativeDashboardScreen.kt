@@ -69,7 +69,7 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
                     Text("Antrean sinkronisasi", color=HomeNavy, fontWeight=FontWeight.Bold, fontSize=12.sp)
                     Text(
                         if (tenant.branchTimeZoneId.isNullOrBlank())
-                            "Atur zona waktu cabang di menu Akun. Transaksi tetap aman tersimpan di perangkat."
+                            "Zona waktu cabang belum diatur. Tanggal dan ringkasan sementara mengikuti zona waktu perangkat; atur zona waktu cabang di menu Akun agar sesuai operasional."
                         else
                             "Transaksi tersimpan aman di perangkat dan menunggu pengiriman cloud.",
                         color=HomeMuted,
