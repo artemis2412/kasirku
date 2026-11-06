@@ -95,7 +95,12 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
         Text("Laporan penjualan", color = ReportNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = ReportMuted, fontSize = 12.sp)
         if (tenant.branchTimeZoneId.isNullOrBlank()) {
-            Text("Zona waktu cabang belum diatur. Tanggal laporan sementara mengikuti zona waktu perangkat dan bisa berbeda dari tanggal operasional. Atur di menu Akun.", color = Color(0xFFB45309), fontSize = 11.sp)
+            Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4E5)), shape = RoundedCornerShape(12.dp)) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Zona waktu belum diatur", color = Color(0xFF9A4D00), fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
+                    Text("Tanggal laporan sementara mengikuti perangkat. Atur zona waktu cabang di menu Akun.", color = Color(0xFF9A4D00), fontSize = 10.sp)
+                }
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { period = 7 }, shape = RoundedCornerShape(12.dp)) { Text(if (period == 7) "✓ 7 hari" else "7 hari") }
@@ -115,10 +120,18 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
                 Text("$count transaksi tercatat", color = Color(0xFFD3DFE9), fontSize = 12.sp)
             }
         }
-        Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(14.dp)) {
-            Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("Rata-rata transaksi", color = ReportMuted, fontSize = 11.sp)
-                Text("Rp ${reportMoney(if (count > 0) total / count else 0L)}", color = ReportNavy, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(14.dp)) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("Rata-rata transaksi", color = ReportMuted, fontSize = 11.sp)
+                    Text("Rp ${reportMoney(if (count > 0) total / count else 0L)}", color = ReportNavy, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(14.dp)) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("Jumlah transaksi", color = ReportMuted, fontSize = 11.sp)
+                    Text(count.toString(), color = ReportTeal, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
         Text("Transaksi terbaru", color = ReportNavy, fontSize = 16.sp, fontWeight = FontWeight.Bold)
