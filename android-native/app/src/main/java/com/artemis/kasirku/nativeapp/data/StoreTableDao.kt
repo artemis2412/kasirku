@@ -14,6 +14,9 @@ interface StoreTableDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(table: StoreTableEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(tables: List<StoreTableEntity>)
+
     @Query("UPDATE store_tables SET name = :name, capacity = :capacity, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND isActive = 1 AND occupiedSaleId IS NULL")
     suspend fun update(storeId: String, branchId: String, id: String, name: String, capacity: Int, updatedAt: Long): Int
 
