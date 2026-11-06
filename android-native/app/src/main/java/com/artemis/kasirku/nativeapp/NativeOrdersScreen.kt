@@ -144,6 +144,9 @@ internal fun NativeOrdersScreen(
         Text("Pesanan", color = OrdersNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = OrdersMuted, fontSize = 12.sp)
         Text("Hari ini • ${BranchTime.format(dayStart, "dd MMM yyyy", branchZone)}", color = OrdersMuted, fontSize = 12.sp)
+        if (tenant.branchTimeZoneId.isNullOrBlank()) {
+            Text("Zona waktu cabang belum diatur. Tanggal sementara mengikuti zona waktu perangkat dan bisa berbeda dari tanggal operasional.", color = Color(0xFFB45309), fontSize = 11.sp)
+        }
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF1F3)), shape = RoundedCornerShape(13.dp)) {
             Row(Modifier.fillMaxWidth().padding(13.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
