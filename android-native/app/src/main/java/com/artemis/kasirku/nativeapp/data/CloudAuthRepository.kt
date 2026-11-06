@@ -21,6 +21,65 @@ import kotlinx.serialization.builtins.ListSerializer
 import java.time.ZoneId
 
 @Serializable
+private data class NativeCatalogCategoryDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    val name: String,
+    @SerialName("sort_order") val sortOrder: Int,
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+private data class NativeCatalogProductDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    @SerialName("category_id") val categoryId: String? = null,
+    val name: String,
+    val description: String,
+    @SerialName("base_price") val basePrice: Long,
+    @SerialName("photo_uri") val photoUri: String? = null,
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+private data class NativeBranchPriceDto(
+    @SerialName("store_id") val storeId: String,
+    @SerialName("branch_id") val branchId: String,
+    @SerialName("product_id") val productId: String,
+    @SerialName("selling_price") val sellingPrice: Long,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+private data class NativeBranchInventoryDto(
+    @SerialName("store_id") val storeId: String,
+    @SerialName("branch_id") val branchId: String,
+    @SerialName("product_id") val productId: String,
+    val quantity: Int,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+private data class NativeProductBarcodeDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    @SerialName("product_id") val productId: String,
+    val barcode: String,
+    @SerialName("created_at") val createdAt: String
+)
+
+data class CatalogCloudSyncSummary(
+    val categories: Int,
+    val products: Int,
+    val branchPrices: Int,
+    val inventoryRows: Int,
+    val barcodes: Int
+)
+
+@Serializable
 private data class StoreMembershipDto(
     @SerialName("store_id") val storeId: String,
     val role: String,
@@ -187,6 +246,66 @@ class CloudAuthRepository {
         )
     }
 
+
+    /**
+     * Uploads the current local store catalog and the selected branch's prices/stock.
+     * Cloud RLS remains the authority for tenant and role access.
+     */
+    suspend fun syncCatalogToCloud(
+        tenant: VerifiedTenantContext,
+        dao: CatalogDao
+    ): CatalogCloudSyncSummary = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN)) {
+            "Hanya Owner atau Admin yang dapat menyinkronkan katalog."
+        }
+        require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+        val products = dao.getProductsForCloudSync(tenant.storeId)
+        val categories = dao.getCategoriesForCloudSync(tenant.storeId)
+        val prices = dao.getBranchPricesForCloudSync(tenant.branchId)
+        val inventory = dao.getBranchInventoryForCloudSync(tenant.branchId)
+        val barcodes = dao.getBarcodesForCloudSync(tenant.storeId)
+
+        require(products.all { it.storeId == tenant.storeId }) { "Katalog memuat produk dari toko lain." }
+        require(categories.all { it.storeId == tenant.storeId }) { "Katalog memuat kategori dari toko lain." }
+        require(prices.all { price -> products.any { it.id == price.productId } }) { "Harga cabang memuat produk yang tidak dikenal." }
+        require(inventory.all { row -> row.branchId == tenant.branchId && products.any { it.id == row.productId } }) {
+            "Stok memuat produk atau cabang yang tidak sesuai."
+        }
+        require(barcodes.all { code -> code.storeId == tenant.storeId && products.any { it.id == code.productId } }) {
+            "Barcode memuat produk dari toko lain."
+        }
+
+        val categoryRows = categories.map { row ->
+            NativeCatalogCategoryDto(row.id, row.storeId, row.name, row.sortOrder, row.isActive,
+                java.time.Instant.ofEpochMilli(row.updatedAt).toString())
+        }
+        val productRows = products.map { row ->
+            NativeCatalogProductDto(row.id, row.storeId, row.categoryId, row.name, row.description,
+                row.basePrice, row.photoUri, row.isActive,
+                java.time.Instant.ofEpochMilli(row.createdAt).toString(),
+                java.time.Instant.ofEpochMilli(row.updatedAt).toString())
+        }
+        val priceRows = prices.map { row ->
+            NativeBranchPriceDto(tenant.storeId, tenant.branchId, row.productId, row.sellingPrice,
+                java.time.Instant.ofEpochMilli(row.updatedAt).toString())
+        }
+        val inventoryRows = inventory.map { row ->
+            NativeBranchInventoryDto(tenant.storeId, tenant.branchId, row.productId, row.quantity,
+                java.time.Instant.ofEpochMilli(row.updatedAt).toString())
+        }
+        val barcodeRows = barcodes.map { row ->
+            NativeProductBarcodeDto(row.id, row.storeId, row.productId, row.barcode,
+                java.time.Instant.ofEpochMilli(row.createdAt).toString())
+        }
+
+        if (categoryRows.isNotEmpty()) client.from("catalog_categories").upsert(categoryRows)
+        if (productRows.isNotEmpty()) client.from("catalog_products").upsert(productRows)
+        if (priceRows.isNotEmpty()) client.from("branch_product_prices").upsert(priceRows)
+        if (inventoryRows.isNotEmpty()) client.from("branch_inventory").upsert(inventoryRows)
+        if (barcodeRows.isNotEmpty()) client.from("product_barcodes").upsert(barcodeRows)
+
+        CatalogCloudSyncSummary(categoryRows.size, productRows.size, priceRows.size, inventoryRows.size, barcodeRows.size)
+    }
 
     suspend fun fetchStoreTables(tenant: VerifiedTenantContext): List<StoreTableEntity> =
         withContext(Dispatchers.IO) {
