@@ -10,6 +10,7 @@ const pages=[
 ["Meja",icon("meja")],
 ["Menu",icon("menu")],
 ["Dapur",icon("dapur")],
+["Produksi",icon("dapur")],
 ["Laporan",icon("laporan")],
 ["Kas",icon("kas")],
 ["Pengaturan",icon("pengaturan")]
@@ -132,7 +133,7 @@ function createArchiveDownload(){
  render();done("Arsip berhasil dibuat. Data lama sudah diringankan dari penyimpanan aktif.");
 }
 
-function otherPage(){const desc={Dapur:"Pesanan aktif dapur akan ditampilkan di sini.",Laporan:"Ringkasan penjualan akan dibangun pada tahap berikutnya."};return current==="Laporan"?reportPage():current==="Kas"?cashPage():current==="Arsip"?archivePage():current==="Pengaturan"?settingsPage():'<div class="panel"><h2>'+esc(current)+'</h2><p>'+esc(desc[current]||"")+'</p></div>'}
+function otherPage(){const desc={Dapur:"Pesanan aktif dapur akan ditampilkan di sini.",Produksi:"Kelola bahan baku, resep, dan produksi.",Laporan:"Ringkasan penjualan akan dibangun pada tahap berikutnya."};return current==="Produksi"?(window.KASIRKU_PRODUCTION?.render?.()||'<div class="panel">Modul Produksi belum siap.</div>'):current==="Laporan"?reportPage():current==="Kas"?cashPage():current==="Arsip"?archivePage():current==="Pengaturan"?settingsPage():'<div class="panel"><h2>'+esc(current)+'</h2><p>'+esc(desc[current]||"")+'</p></div>'}
 function orderStartMs(order){const created=Number(order?.createdAt);if(Number.isFinite(created)&&created>0)return created;const idTime=Number(order?.id);if(Number.isFinite(idTime)&&idTime>1000000000000)return idTime;if(order?.date){const dateParts=String(order.date).split("-").map(Number);if(dateParts.length===3&&dateParts.every(Number.isFinite)){const timeMatch=String(order.time||"00:00").match(/(\d{1,2})[.:](\d{2})/);const hour=timeMatch?Number(timeMatch[1]):0,minute=timeMatch?Number(timeMatch[2]):0;const dt=new Date(dateParts[0],dateParts[1]-1,dateParts[2],hour,minute,0,0);if(!Number.isNaN(dt.getTime()))return Math.min(dt.getTime(),Date.now())}}return Date.now()}
 function durationLabel(start){const mins=Math.max(0,Math.floor((Date.now()-Number(start||Date.now()))/60000));return mins<60?mins+" menit":Math.floor(mins/60)+" jam "+(mins%60)+" menit"}
 
