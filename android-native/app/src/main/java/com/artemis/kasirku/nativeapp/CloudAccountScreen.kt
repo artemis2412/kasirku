@@ -392,6 +392,7 @@ internal fun NativeProductsScreen(
     var formError by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    var productFormExpanded by remember { mutableStateOf(true) }
     val canManageCatalog = tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER || tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
     val products by remember(tenant.storeId, tenant.branchId, query) {
         repository.observeBranchCatalog(tenant.storeId, tenant.branchId, query)
@@ -416,26 +417,68 @@ internal fun NativeProductsScreen(
         Text(tenant.storeName + " • " + tenant.branchName, color = AccountMuted, fontSize = 12.sp)
 
         if (canManageCatalog) {
-        Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(15.dp)) {
-            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text(if (editingId == null) "Tambah produk" else "Edit produk", color = AccountNavy, fontWeight = FontWeight.Bold)
-                OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nama produk *") }, singleLine = true)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = basePrice, onValueChange = { basePrice = formatNominalInput(it) }, modifier = Modifier.weight(1f), label = { Text("Harga dasar *") }, singleLine = true)
-                    OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = formatNominalInput(it) }, modifier = Modifier.weight(1f), label = { Text("Harga jual cabang (opsional)") }, singleLine = true)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(if (editingId == null) "Tambah produk" else "Edit produk", color = AccountNavy, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                    Text(if (productFormExpanded) "Isi data produk baru" else "Form disembunyikan", color = AccountMuted, fontSize = 11.sp)
                 }
-                OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit) }, modifier = Modifier.fillMaxWidth(), label = { Text("Stok cabang") }, singleLine = true)
-                OutlinedTextField(value = barcode, onValueChange = { barcode = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Barcode (opsional)") }, singleLine = true)
-                formError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = {
-                            val parsedBase = basePrice.filter(Char::isDigit).toLongOrNull() ?: 0L
-                            val parsedSelling = sellingPrice.filter(Char::isDigit).toLongOrNull()
-                            val parsedQuantity = quantity.toIntOrNull()
-                            if (name.isBlank() || parsedBase <= 0L || (sellingPrice.isNotBlank() && parsedSelling == null) || parsedQuantity == null) {
-                                formError = "Nama, harga dasar, dan stok harus diisi dengan benar. Harga jual cabang boleh dikosongkan."
-                            } else {
+                TextButton(onClick = { productFormExpanded = !productFormExpanded }, enabled = !saving) {
+                    Text(if (productFormExpanded) "Tutup form" else "Tambah produk")
+                }
+            }
+            if (productFormExpanded) {
+                Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(15.dp)) {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Nama produk *") }, singleLine = true)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = basePrice, onValueChange = { basePrice = formatNominalInput(it) }, modifier = Modifier.weight(1f), label = { Text("Harga dasar *", maxLines = 1) }, singleLine = true)
+                            OutlinedTextField(value = sellingPrice, onValueChange = { sellingPrice = formatNominalInput(it) }, modifier = Modifier.weight(1f), label = { Text("Harga jual", maxLines = 1) }, singleLine = true)
+                        }
+                        Text("Harga jual opsional. Kosongkan untuk mengikuti harga dasar.", color = AccountMuted, fontSize = 10.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(value = quantity, onValueChange = { quantity = it.filter(Char::isDigit) }, modifier = Modifier.weight(1f), label = { Text("Stok") }, singleLine = true)
+                            OutlinedTextField(value = barcode, onValueChange = { barcode = it }, modifier = Modifier.weight(1f), label = { Text("Barcode (opsional)", maxLines = 1) }, singleLine = true)
+                        }
+                        formError?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = {
+                                    val parsedBase = basePrice.filter(Char::isDigit).toLongOrNull() ?: 0L
+                                    val parsedSelling = sellingPrice.filter(Char::isDigit).toLongOrNull()
+                                    val parsedQuantity = quantity.toIntOrNull()
+                                    if (name.isBlank() || parsedBase <= 0L || (sellingPrice.isNotBlank() && parsedSelling == null) || parsedQuantity == null) {
+                                        formError = "Nama, harga dasar, dan stok harus diisi dengan benar. Harga jual cabang boleh dikosongkan."
+                                    } else {
+                                        scope.launch {
+                                            saving = true
+                                            formError = null
+                                            cancellationSafeResult {
+                                                repository.saveProduct(
+                                                    tenant.storeId, tenant.branchId,
+                                                    CatalogProductDraft(
+                                                        id = editingId, name = name, basePrice = parsedBase,
+                                                        sellingPrice = parsedSelling, quantity = parsedQuantity,
+                                                        barcodes = barcode.split(",").map(String::trim).filter(String::isNotEmpty)
+                                                    )
+                                                )
+                                            }.onSuccess {
+                                                notice = if (editingId == null) "Produk berhasil ditambahkan." else "Produk berhasil diperbarui."
+                                                clearForm()
+                                                productFormExpanded = false
+                                            }.onFailure { formError = it.message ?: "Gagal menyimpan produk." }
+                                            saving = false
+                                        }
+                                    }
+                                },
+                                enabled = !saving,
+                                shape = RoundedCornerShape(11.dp)
+                            ) { Text(if (saving) "Menyimpan…" else "Simpan") }
+                            TextButton(onClick = { clearForm() }, enabled = !saving) { Text("Batal") }
+                        }
+                    }
+                }
+            }
+        } else {
                                 scope.launch {
                                     saving = true
                                     formError = null
