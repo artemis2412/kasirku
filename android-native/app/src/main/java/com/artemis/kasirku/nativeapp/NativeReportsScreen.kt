@@ -89,6 +89,9 @@ internal fun NativeReportsScreen(tenant: VerifiedTenantContext, modifier: Modifi
         Text("ANALISIS TOKO", color = ReportTeal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
         Text("Laporan penjualan", color = ReportNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = ReportMuted, fontSize = 12.sp)
+        if (tenant.branchTimeZoneId.isNullOrBlank()) {
+            Text("Zona waktu cabang belum diatur. Tanggal laporan sementara mengikuti zona waktu perangkat dan bisa berbeda dari tanggal operasional. Atur di menu Akun.", color = Color(0xFFB45309), fontSize = 11.sp)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = { period = 7 }, shape = RoundedCornerShape(12.dp)) { Text(if (period == 7) "✓ 7 hari" else "7 hari") }
             OutlinedButton(onClick = { period = 30 }, shape = RoundedCornerShape(12.dp)) { Text(if (period == 30) "✓ 30 hari" else "30 hari") }
