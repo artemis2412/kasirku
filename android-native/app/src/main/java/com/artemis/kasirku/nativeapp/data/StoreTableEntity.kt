@@ -16,5 +16,7 @@ data class StoreTableEntity(
     val capacity: Int = 4,
     val isActive: Boolean = true,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val occupiedSaleId: String? = null,
+    val occupiedAt: Long? = null
 )
