@@ -29,6 +29,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 )
 abstract class KasirkuRoomDatabase : RoomDatabase() {
     abstract fun catalogDao(): CatalogDao
+    abstract fun storeTableDao(): StoreTableDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
