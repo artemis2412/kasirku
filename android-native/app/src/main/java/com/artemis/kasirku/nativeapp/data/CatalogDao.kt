@@ -158,6 +158,27 @@ interface CatalogDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBarcodes(barcodes: List<ProductBarcodeEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertBarcodes(barcodes: List<ProductBarcodeEntity>)
+
+    @Query("SELECT COUNT(*) FROM sale_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY', 'FAILED')")
+    suspend fun countUnresolvedSaleSync(storeId: String, branchId: String): Int
+
+    @Transaction
+    suspend fun applyCloudCatalogSnapshot(
+        products: List<ProductEntity>,
+        categories: List<CategoryEntity>,
+        prices: List<BranchProductPriceEntity>,
+        inventory: List<BranchInventoryEntity>,
+        barcodes: List<ProductBarcodeEntity>
+    ) {
+        if (categories.isNotEmpty()) upsertCategories(categories)
+        if (products.isNotEmpty()) upsertProducts(products)
+        if (prices.isNotEmpty()) upsertBranchPrices(prices)
+        if (inventory.isNotEmpty()) upsertInventories(inventory)
+        if (barcodes.isNotEmpty()) upsertBarcodes(barcodes)
+    }
+
     @Transaction
     suspend fun importLegacyCatalog(
         categories: List<CategoryEntity>,
