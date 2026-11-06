@@ -585,31 +585,31 @@ internal fun NativeProductsScreen(
             }
             Text("Mengirim katalog toko dan stok cabang aktif, tanpa transaksi.", color = AccountMuted, fontSize = 11.sp)
 
-            Button(
-                onClick = {
-                    scope.launch {
-                        syncingCloud = true
-                        notice = null
-                        cancellationSafeResult { cloudRepository.fetchCatalogFromCloud(tenant, database.catalogDao()) }
-                            .onSuccess { result ->
-                                notice = "Katalog Cloud dimuat: " + result.products + " produk, " +
-                                    result.categories + " kategori, " + result.inventoryRows +
-                                    " stok, " + result.branchPrices + " harga, " + result.barcodes + " barcode."
-                            }
-                            .onFailure { failure ->
-                                notice = failure.message ?: "Gagal mengambil katalog dari Cloud."
-                            }
-                        syncingCloud = false
-                    }
-                },
-                enabled = !syncingCloud && !saving,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(11.dp)
-            ) {
-                Text(if (syncingCloud) "Memuat katalog…" else "Ambil katalog dari Cloud")
-            }
-            Text("Pengambilan stok ditolak jika masih ada transaksi lokal yang belum tersinkron.", color = AccountMuted, fontSize = 11.sp)
         }
+        Button(
+            onClick = {
+                scope.launch {
+                    syncingCloud = true
+                    notice = null
+                    cancellationSafeResult { cloudRepository.fetchCatalogFromCloud(tenant, database.catalogDao()) }
+                        .onSuccess { result ->
+                            notice = "Katalog Cloud dimuat: " + result.products + " produk, " +
+                                result.categories + " kategori, " + result.inventoryRows +
+                                " stok, " + result.branchPrices + " harga, " + result.barcodes + " barcode."
+                        }
+                        .onFailure { failure ->
+                            notice = failure.message ?: "Gagal mengambil katalog dari Cloud."
+                        }
+                    syncingCloud = false
+                }
+            },
+            enabled = !syncingCloud && !saving,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(11.dp)
+        ) {
+            Text(if (syncingCloud) "Memuat katalog…" else "Ambil katalog dari Cloud")
+        }
+        Text("Pengambilan stok ditolak jika masih ada transaksi lokal yang belum tersinkron.", color = AccountMuted, fontSize = 11.sp)
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
