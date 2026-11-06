@@ -29,8 +29,8 @@ class SaleSyncWorker(
             val database = KasirkuRoomDatabase.getInstance(applicationContext)
             val report = SaleSyncRepository(database.catalogDao(), cloud).syncPending(tenant)
             if (report.failed > 0 || report.pending > 0) Result.retry() else Result.success()
-        } catch (_: CancellationException) {
-            throw
+        } catch (error: CancellationException) {
+            throw error
         } catch (_: SecurityException) {
             Result.failure()
         } catch (_: IllegalArgumentException) {
