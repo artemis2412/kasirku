@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -57,6 +58,7 @@ private suspend fun <T> cancellationSafeResult(block: suspend () -> T): Result<T
 
 private val AccountNavy = Color(0xFF17324D)
 private val AccountTeal = Color(0xFF168C83)
+private val AccountPurple = Color(0xFF6422C7)
 private val AccountMuted = Color(0xFF718096)
 
 private fun formatNominalInput(value: String): String =
@@ -125,46 +127,65 @@ internal fun CloudAccountScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("AKUN & AKSES", color = AccountTeal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            Text("AKUN & AKSES", color = AccountPurple, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
             Text("Akun Cloud", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
             Text("Masuk, lalu pilih toko dan cabang yang memang diizinkan untuk akunmu.", color = AccountMuted, fontSize = 13.sp)
         }
 
         if (access == null) {
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Email") },
-                singleLine = true
-            )
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Kata sandi") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation()
-            )
-            Button(
-                onClick = {
-                    scope.launch {
-                        busy = true
-                        isError = false
-                        message = "Memverifikasi akun, toko, dan cabang…"
-                        cancellationSafeResult { repository.signIn(email, password) }
-                            .onSuccess(::applyAccess)
-                            .onFailure {
-                                message = it.message ?: "Login Cloud gagal."
-                                isError = true
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "Masuk ke Akun Anda",
+                        color = AccountNavy,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Email") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Kata sandi") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation()
+                    )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                busy = true
+                                isError = false
+                                message = "Memverifikasi akun, toko, dan cabang…"
+                                cancellationSafeResult { repository.signIn(email, password) }
+                                    .onSuccess(::applyAccess)
+                                    .onFailure {
+                                        message = it.message ?: "Login Cloud gagal."
+                                        isError = true
+                                    }
+                                busy = false
                             }
-                        busy = false
-                    }
-                },
-                enabled = !busy && email.isNotBlank() && password.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(13.dp)
-            ) { Text(if (busy) "Memeriksa…" else "Masuk ke Cloud") }
+                        },
+                        enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccountPurple),
+                        shape = RoundedCornerShape(13.dp)
+                    ) { Text(if (busy) "Memeriksa…" else "Masuk ke Cloud") }
+                }
+            }
         } else {
             Text("Pilih toko", color = AccountNavy, fontWeight = FontWeight.Bold, fontSize = 15.sp)
             access!!.stores.forEach { store ->
