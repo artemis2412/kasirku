@@ -65,6 +65,7 @@ import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 
 private val Navy = Color(0xFF17324D)
 private val Teal = Color(0xFF168C83)
+private val Purple = Color(0xFF6422C7)
 private val Canvas = Color(0xFFF5F7F9)
 private val Muted = Color(0xFF718096)
 
@@ -118,7 +119,7 @@ private fun KasirkuNativeApp() {
 
     MaterialTheme(
         colorScheme = lightColorScheme(
-            primary = Navy,
+            primary = Purple,
             secondary = Teal,
             background = Canvas,
             surface = Color.White,
@@ -133,17 +134,19 @@ private fun KasirkuNativeApp() {
             Scaffold(
                 containerColor = Canvas,
                 bottomBar = {
-                    NavigationBar(containerColor = Color.White, tonalElevation = 2.dp) {
-                        KasirkuTab.values().forEachIndexed { index, tab ->
-                            NavigationBarItem(
-                                selected = selectedTab == index && !showNewTransaction,
-                                onClick = {
-                                    selectedTab = index
-                                    showNewTransaction = false
-                                },
-                                icon = { Text(tab.symbol, fontSize = 21.sp, fontWeight = FontWeight.SemiBold) },
-                                label = { Text(tab.title, fontSize = 11.sp) }
-                            )
+                    if (verifiedTenantContext != null) {
+                        NavigationBar(containerColor = Color.White, tonalElevation = 2.dp) {
+                            KasirkuTab.values().forEachIndexed { index, tab ->
+                                NavigationBarItem(
+                                    selected = selectedTab == index && !showNewTransaction,
+                                    onClick = {
+                                        selectedTab = index
+                                        showNewTransaction = false
+                                    },
+                                    icon = { Text(tab.symbol, fontSize = 21.sp, fontWeight = FontWeight.SemiBold) },
+                                    label = { Text(tab.title, fontSize = 11.sp) }
+                                )
+                            }
                         }
                     }
                 }
