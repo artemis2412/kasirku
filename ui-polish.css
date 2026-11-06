@@ -1,0 +1,47 @@
+/* KASIRKU Stage 2 — shared visual refinement.
+   Layout and component behavior remain owned by the existing app styles. */
+:root{
+  --forest:#123b2a;
+  --forest2:#1b5138;
+  --green:#168653;
+  --cream:#f4f7f4;
+  --ink:#1d3026;
+  --muted:#6f8075;
+  --line:#e2eae4;
+  --white:#fff;
+  --surface-shadow:0 8px 24px rgba(24,57,39,.045);
+  --surface-shadow-hover:0 12px 28px rgba(24,57,39,.075);
+}
+body{background:var(--cream);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit}
+button:focus-visible,[role="button"]:focus-visible,a:focus-visible{outline:3px solid rgba(36,153,96,.38);outline-offset:2px}
+#sidebar{background:linear-gradient(180deg,#123b2a 0%,#102f23 100%)}
+#sidebar .branch-name{border-color:rgba(190,226,202,.22);background:rgba(255,255,255,.075)}
+.navbtn{transition:background .16s ease,color .16s ease,transform .16s ease}
+.navbtn:hover{background:rgba(255,255,255,.09);color:#fff}
+.navbtn.active{background:linear-gradient(100deg,#286548,#23563e);box-shadow:inset 3px 0 #8de0ad}
+.topbar{box-shadow:0 3px 14px rgba(20,47,37,.035)}
+.topbar h1{letter-spacing:-.45px}
+#view{width:100%}
+.card,.panel{border-color:var(--line);box-shadow:var(--surface-shadow);transition:box-shadow .18s ease,border-color .18s ease}
+.panel h3,.page-heading h2{letter-spacing:-.35px}
+.btn{min-height:40px;box-shadow:0 3px 9px rgba(25,134,83,.12);transition:filter .16s ease,transform .16s ease,box-shadow .16s ease}
+.btn:hover{filter:brightness(1.035);box-shadow:0 5px 13px rgba(25,134,83,.17)}
+.btn:active{transform:translateY(1px)}
+.btn-light{box-shadow:none}
+.field{min-height:44px;border-color:#dce6df;border-radius:11px;transition:border-color .16s ease,box-shadow .16s ease}
+.field:focus{outline:none;border-color:#269363;box-shadow:0 0 0 3px rgba(38,147,99,.12)}
+input[type="checkbox"],input[type="radio"]{accent-color:var(--green)}
+.empty{background:rgba(255,255,255,.62)}
+#bottom-nav{box-shadow:0 -5px 20px rgba(20,47,37,.055)}
+.connection-status{border:1px solid rgba(220,232,224,.9);box-shadow:0 5px 18px rgba(20,47,37,.08);backdrop-filter:blur(12px)}
+@media(max-width:650px){
+  .topbar{box-shadow:0 2px 12px rgba(20,47,37,.035)}
+  #view{padding-top:14px}
+  .card,.panel{box-shadow:0 5px 18px rgba(24,57,39,.045)}
+  .page-heading{flex-wrap:wrap}
+  .page-heading h2{font-size:19px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
