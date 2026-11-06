@@ -18,6 +18,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +58,14 @@ internal fun NativeTableManagementScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
 
+    LaunchedEffect(tenant.storeId, tenant.branchId) {
+        try {
+            dao.upsertAll(cloud.fetchStoreTables(tenant))
+        } catch (failure: Exception) {
+            error = failure.message ?: "Gagal memuat status meja dari server."
+        }
+    }
+
     fun openForm(table: StoreTableEntity?) {
         editing = table
         name = table?.name.orEmpty()
@@ -79,8 +88,23 @@ internal fun NativeTableManagementScreen(
             Text(tenant.storeName + " • " + tenant.branchName, color = Color(0xFF718096), fontSize = 12.sp)
         }
         error?.let { Text(it, color = Color(0xFFB42318), fontSize = 12.sp) }
-        Button(onClick = { openForm(null) }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) {
-            Text("+ Tambah meja")
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { openForm(null) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
+                Text("+ Tambah meja")
+            }
+            TextButton(onClick = {
+                scope.launch {
+                    busy = true
+                    try {
+                        dao.upsertAll(cloud.fetchStoreTables(tenant))
+                        error = null
+                    } catch (failure: Exception) {
+                        error = failure.message ?: "Gagal menyegarkan status meja."
+                    } finally {
+                        busy = false
+                    }
+                }
+            }, enabled = !busy) { Text(if (busy) "Memuat…" else "Muat ulang") }
         }
         if (tables.isEmpty()) {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(16.dp)) {
