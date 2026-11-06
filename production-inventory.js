@@ -153,5 +153,52 @@
     } catch(error) { toast(error?.message||"Gagal menyimpan data.",true); }
     finally {if(button){button.disabled=false;button.textContent=button.dataset.oldText||"Simpan";}}
   });
-  window.KASIRKU_PRODUCTION={render,refresh};
+
+  const OUTBOX_KEY="kasirku_web_inventory_outbox_v1";
+  let flushingOutbox=false;
+  function readOutbox(){try{const value=JSON.parse(localStorage.getItem(OUTBOX_KEY)||"[]");return Array.isArray(value)?value:[]}catch{return []}}
+  function writeOutbox(rows){try{localStorage.setItem(OUTBOX_KEY,JSON.stringify(rows.slice(-500)));return true}catch{return false}}
+  async function sendWebOrder(entry){
+    const cloud=await window.KASIRKU_CLOUD.refresh();
+    if(!cloud.authenticated||!cloud.linked||!cloud.store?.id)throw new Error(cloud.error||"Akun Cloud belum terhubung.");
+    const mappings=window.KASIRKU_CLOUD.getLocalBranchMappings?.()?.mappings||[];
+    const mapping=mappings.find(x=>String(x.localBranchId)===String(entry.localBranchId));
+    const branch=(mapping&&cloud.branches.find(x=>x.id===mapping.cloudBranchId))||(cloud.branches.length===1?cloud.branches[0]:null);
+    if(!branch)throw new Error("Cabang Web belum dipasangkan dengan cabang Cloud. Cocokkan cabang terlebih dahulu.");
+    const client=await window.KASIRKU_CLOUD.getScopedClient();
+    const {error}=await client.rpc("consume_web_order_inventory",{
+      p_store_id:cloud.store.id,p_branch_id:branch.id,p_order_local_id:String(entry.orderId),p_items:entry.items
+    });
+    if(error)throw error;
+    return true;
+  }
+  async function syncPaidOrder(order){
+    if(!order?.id||!Array.isArray(order.items)||!order.items.length)return {queued:false,skipped:true};
+    const localBranchId=window.KASIRKU_BRANCH_STORAGE?.activeBranch?.()||"main";
+    const entry={orderId:String(order.id),localBranchId,items:order.items.map(x=>({product_local_id:String(x.id??""),quantity:num(x.qty||1)})).filter(x=>x.product_local_id&&x.quantity>0)};
+    if(!entry.items.length)return {queued:false,skipped:true};
+    try{await sendWebOrder(entry);return {queued:false}}
+    catch(error){
+      const queue=readOutbox();
+      if(!queue.some(x=>x.orderId===entry.orderId&&x.localBranchId===entry.localBranchId)){queue.push({...entry,lastError:String(error?.message||error),queuedAt:new Date().toISOString()});writeOutbox(queue)}
+      return {queued:true,error:String(error?.message||error)};
+    }
+  }
+  async function flushOutbox(){
+    if(flushingOutbox||!navigator.onLine)return;
+    const queue=readOutbox();if(!queue.length)return;
+    flushingOutbox=true;
+    try{
+      const remaining=[];
+      for(const entry of queue){
+        try{await sendWebOrder(entry)}
+        catch(error){remaining.push({...entry,lastError:String(error?.message||error)})}
+      }
+      writeOutbox(remaining);
+    }finally{flushingOutbox=false}
+  }
+  window.addEventListener("online",()=>{void flushOutbox()});
+  window.addEventListener("kasirku:cloud-context",()=>{if(!flushingOutbox)void flushOutbox()});
+  setTimeout(()=>{void flushOutbox()},1200);
+\n  window.KASIRKU_PRODUCTION={render,refresh,syncPaidOrder,flushOutbox};
 })();
