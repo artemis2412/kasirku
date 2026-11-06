@@ -448,7 +448,8 @@ private fun SelectionCard(
 @Composable
 internal fun NativeProductsScreen(
     tenant: VerifiedTenantContext,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenProduction: () -> Unit = {}
 ) {
     val context = LocalContext.current.applicationContext
     val database = remember { KasirkuRoomDatabase.getInstance(context) }
@@ -489,6 +490,9 @@ internal fun NativeProductsScreen(
         Text("KATALOG CABANG", color = AccountTeal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
         Text("Produk", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = AccountMuted, fontSize = 12.sp)
+        Button(onClick = onOpenProduction, modifier = Modifier.fillMaxWidth()) {
+            Text("Bahan baku & produksi")
+        }
 
         if (canManageCatalog) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
