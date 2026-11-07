@@ -448,12 +448,13 @@ private fun SelectionCard(
 @Composable
 internal fun NativeProductsScreen(
     tenant: VerifiedTenantContext,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenProduction: () -> Unit = {}
 ) {
     val context = LocalContext.current.applicationContext
-    val repository = remember {
-        CatalogRepository(KasirkuRoomDatabase.getInstance(context).catalogDao())
-    }
+    val database = remember { KasirkuRoomDatabase.getInstance(context) }
+    val repository = remember { CatalogRepository(database.catalogDao()) }
+    val cloudRepository = remember { CloudAuthRepository() }
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var editingId by remember { mutableStateOf<String?>(null) }
@@ -465,6 +466,7 @@ internal fun NativeProductsScreen(
     var formError by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    var syncingCloud by remember { mutableStateOf(false) }
     var productFormExpanded by remember { mutableStateOf(true) }
     val canManageCatalog = tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER || tenant.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
     val products by remember(tenant.storeId, tenant.branchId, query) {
@@ -488,6 +490,9 @@ internal fun NativeProductsScreen(
         Text("KATALOG CABANG", color = AccountTeal, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
         Text("Produk", color = AccountNavy, fontSize = 25.sp, fontWeight = FontWeight.Bold)
         Text(tenant.storeName + " • " + tenant.branchName, color = AccountMuted, fontSize = 12.sp)
+        Button(onClick = onOpenProduction, modifier = Modifier.fillMaxWidth()) {
+            Text("Bahan baku & produksi")
+        }
 
         if (canManageCatalog) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -557,6 +562,58 @@ internal fun NativeProductsScreen(
             }
         }
         notice?.let { Text(it, color = AccountTeal, fontSize = 12.sp) }
+        if (canManageCatalog) {
+            Button(
+                onClick = {
+                    scope.launch {
+                        syncingCloud = true
+                        notice = null
+                        cancellationSafeResult { cloudRepository.syncCatalogToCloud(tenant, database.catalogDao()) }
+                            .onSuccess { result ->
+                                notice = "Cloud tersinkron: " + result.products + " produk, " +
+                                    result.categories + " kategori, " + result.inventoryRows +
+                                    " stok, " + result.branchPrices + " harga, " + result.barcodes + " barcode."
+                            }
+                            .onFailure { failure ->
+                                notice = "Data lokal aman. Sinkronisasi Cloud gagal: " +
+                                    (failure.message ?: "periksa koneksi dan migrasi Cloud.")
+                            }
+                        syncingCloud = false
+                    }
+                },
+                enabled = !syncingCloud && !saving,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(11.dp)
+            ) {
+                Text(if (syncingCloud) "Menyinkronkan…" else "Sinkronkan katalog ke Cloud")
+            }
+            Text("Mengirim katalog toko dan stok cabang aktif, tanpa transaksi.", color = AccountMuted, fontSize = 11.sp)
+
+        }
+        Button(
+            onClick = {
+                scope.launch {
+                    syncingCloud = true
+                    notice = null
+                    cancellationSafeResult { cloudRepository.fetchCatalogFromCloud(tenant, database.catalogDao()) }
+                        .onSuccess { result ->
+                            notice = "Katalog Cloud dimuat: " + result.products + " produk, " +
+                                result.categories + " kategori, " + result.inventoryRows +
+                                " stok, " + result.branchPrices + " harga, " + result.barcodes + " barcode."
+                        }
+                        .onFailure { failure ->
+                            notice = failure.message ?: "Gagal mengambil katalog dari Cloud."
+                        }
+                    syncingCloud = false
+                }
+            },
+            enabled = !syncingCloud && !saving,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(11.dp)
+        ) {
+            Text(if (syncingCloud) "Memuat katalog…" else "Ambil katalog dari Cloud")
+        }
+        Text("Pengambilan stok ditolak jika masih ada transaksi lokal yang belum tersinkron.", color = AccountMuted, fontSize = 11.sp)
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
