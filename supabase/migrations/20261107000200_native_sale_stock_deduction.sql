@@ -63,7 +63,12 @@ begin
     if v_product_store_id <> v_store_id then
       raise exception 'Product belongs to a different store';
     end if;
-    if v_quantity <= 0 then
+    if v_quantity <= 0 or exists (
+      select 1 from public.order_items oi
+      where oi.order_id = new.order_id
+        and oi.product_id = v_product_id
+        and (oi.quantity <= 0 or oi.quantity <> trunc(oi.quantity))
+    ) then
       raise exception 'Invalid native stock deduction quantity';
     end if;
 
