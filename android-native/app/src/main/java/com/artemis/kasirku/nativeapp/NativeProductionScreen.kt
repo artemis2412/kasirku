@@ -143,7 +143,10 @@ internal fun NativeProductionScreen(
                         scope.launch {
                             busy = true
                             runCatching { dao.completeProduction(tenant.storeId, tenant.branchId, tenant.userId, selectedRecipeId!!, productionQuantity.toInt(), null) }
-                                .onSuccess { status = "Produksi tersimpan. ID batch: " + it }
+                                .onSuccess {
+                                    ProductionSyncWorker.enqueue(context, tenant)
+                                    status = "Produksi tersimpan lokal. Menunggu sinkronisasi Cloud; ID batch: " + it
+                                }
                                 .onFailure { status = it.message ?: "Produksi gagal." }
                             busy = false
                         }
