@@ -171,6 +171,58 @@ private data class StoreTableInsertDto(
     @SerialName("is_active") val isActive: Boolean = true
 )
 
+
+@Serializable
+private data class NativeIngredientCloudDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    val name: String,
+    val unit: String,
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+private data class NativeIngredientStockCloudDto(
+    @SerialName("store_id") val storeId: String,
+    @SerialName("branch_id") val branchId: String,
+    @SerialName("ingredient_id") val ingredientId: String,
+    val quantity: Double,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+private data class NativeRecipeCloudDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    @SerialName("product_id") val productId: String,
+    val name: String,
+    @SerialName("output_quantity") val outputQuantity: Int,
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+private data class NativeRecipeItemCloudDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    @SerialName("recipe_id") val recipeId: String,
+    @SerialName("ingredient_id") val ingredientId: String,
+    val quantity: Double,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+private data class NativeProductionBatchIdDto(val id: String)
+
+data class ProductionCatalogSyncSummary(
+    val ingredients: Int,
+    val branchStock: Int,
+    val recipes: Int,
+    val recipeItems: Int,
+    val seededCloudRows: Int
+)
+
 class CloudAuthRepository {
     private val client: io.github.jan.supabase.SupabaseClient
         get() = sharedClient
@@ -407,6 +459,134 @@ class CloudAuthRepository {
             }
         )
         CatalogCloudSyncSummary(categories.size, products.size, prices.size, inventory.size, barcodes.size)
+    }
+
+
+    /**
+     * Synchronizes production master data across devices.
+     * Existing Cloud rows are canonical: local rows are only inserted when their IDs
+     * do not exist remotely. Branch stock is seeded only before the first Cloud batch
+     * and never overwritten after production has started.
+     */
+    suspend fun syncProductionCatalog(
+        tenant: VerifiedTenantContext,
+        dao: ProductionDao
+    ): ProductionCatalogSyncSummary = withContext(Dispatchers.IO) {
+        require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+        val canSeed = tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN)
+        val localIngredients = dao.getIngredientsForCloudSync(tenant.storeId)
+        val localStock = dao.getIngredientStockForCloudSync(tenant.storeId, tenant.branchId)
+        val localRecipes = dao.getRecipesForCloudSync(tenant.storeId)
+        val localItems = dao.getRecipeItemsForCloudSync(tenant.storeId)
+
+        var seeded = 0
+        var cloudIngredients = client.from("catalog_ingredients").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeIngredientCloudDto>()
+        var cloudRecipes = client.from("product_recipes").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeRecipeCloudDto>()
+        var cloudItems = client.from("product_recipe_items").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeRecipeItemCloudDto>()
+        var cloudStock = client.from("branch_ingredient_inventory").select {
+            filter {
+                eq("store_id", tenant.storeId)
+                eq("branch_id", tenant.branchId)
+            }
+        }.decodeList<NativeIngredientStockCloudDto>()
+
+        if (canSeed) {
+            val missingIngredients = localIngredients.filter { row -> cloudIngredients.none { it.id == row.id } }
+            val missingRecipes = localRecipes.filter { row -> cloudRecipes.none { it.id == row.id } }
+            val missingItems = localItems.filter { row -> cloudItems.none { it.id == row.id } }
+            require(missingRecipes.all { recipe -> localIngredients.any { it.id == localItems.firstOrNull { item -> item.recipeId == recipe.id }?.ingredientId } || localItems.none { it.recipeId == recipe.id } }) {
+                "Resep lokal memiliki bahan baku yang tidak dikenal."
+            }
+
+            if (missingIngredients.isNotEmpty()) {
+                client.from("catalog_ingredients").insert(missingIngredients.map {
+                    NativeIngredientCloudDto(it.id, it.storeId, it.name, it.unit, it.isActive,
+                        java.time.Instant.ofEpochMilli(it.updatedAt).toString())
+                })
+                seeded += missingIngredients.size
+            }
+            if (missingRecipes.isNotEmpty()) {
+                client.from("product_recipes").insert(missingRecipes.map {
+                    NativeRecipeCloudDto(it.id, it.storeId, it.productId, it.name, it.outputQuantity, it.isActive,
+                        java.time.Instant.ofEpochMilli(it.updatedAt).toString())
+                })
+                seeded += missingRecipes.size
+            }
+            if (missingItems.isNotEmpty()) {
+                client.from("product_recipe_items").insert(missingItems.map {
+                    NativeRecipeItemCloudDto(it.id, it.storeId, it.recipeId, it.ingredientId, it.quantity,
+                        java.time.Instant.ofEpochMilli(it.createdAt).toString())
+                })
+                seeded += missingItems.size
+            }
+
+            val cloudBatches = client.from("production_batches").select {
+                filter {
+                    eq("store_id", tenant.storeId)
+                    eq("branch_id", tenant.branchId)
+                }
+            }.decodeList<NativeProductionBatchIdDto>()
+            if (cloudBatches.isEmpty() && cloudStock.isEmpty() &&
+                dao.countPendingProductionSync(tenant.storeId, tenant.branchId) == 0 &&
+                localStock.isNotEmpty()) {
+                client.from("branch_ingredient_inventory").insert(localStock.map {
+                    NativeIngredientStockCloudDto(it.storeId, it.branchId, it.ingredientId, it.quantity,
+                        java.time.Instant.ofEpochMilli(it.updatedAt).toString())
+                })
+                seeded += localStock.size
+            }
+        }
+
+        cloudIngredients = client.from("catalog_ingredients").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeIngredientCloudDto>()
+        cloudRecipes = client.from("product_recipes").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeRecipeCloudDto>()
+        cloudItems = client.from("product_recipe_items").select {
+            filter { eq("store_id", tenant.storeId) }
+        }.decodeList<NativeRecipeItemCloudDto>()
+        cloudStock = client.from("branch_ingredient_inventory").select {
+            filter {
+                eq("store_id", tenant.storeId)
+                eq("branch_id", tenant.branchId)
+            }
+        }.decodeList<NativeIngredientStockCloudDto>()
+
+        val ingredientIds = cloudIngredients.map { it.id }.toSet()
+        val recipeIds = cloudRecipes.map { it.id }.toSet()
+        val productIds = localRecipes.map { it.productId }.toSet()
+        require(cloudIngredients.all { it.storeId == tenant.storeId } &&
+            cloudRecipes.all { it.storeId == tenant.storeId } &&
+            cloudItems.all { it.storeId == tenant.storeId && it.recipeId in recipeIds && it.ingredientId in ingredientIds } &&
+            cloudStock.all { it.storeId == tenant.storeId && it.branchId == tenant.branchId && it.ingredientId in ingredientIds }) {
+            "Data produksi Cloud memiliki referensi toko, cabang, resep, atau bahan yang tidak valid."
+        }
+
+        fun epoch(value: String) = java.time.Instant.parse(value).toEpochMilli()
+        dao.applyCloudProductionSnapshot(
+            storeId = tenant.storeId,
+            branchId = tenant.branchId,
+            ingredients = cloudIngredients.map {
+                IngredientEntity(it.id, it.storeId, it.name, it.unit, it.isActive, epoch(it.updatedAt))
+            },
+            stock = cloudStock.map {
+                BranchIngredientInventoryEntity(it.storeId, it.branchId, it.ingredientId, it.quantity, epoch(it.updatedAt))
+            },
+            recipes = cloudRecipes.map {
+                ProductRecipeEntity(it.id, it.storeId, it.productId, it.name, it.outputQuantity, it.isActive, epoch(it.updatedAt))
+            },
+            items = cloudItems.map {
+                ProductRecipeItemEntity(it.id, it.storeId, it.recipeId, it.ingredientId, it.quantity, epoch(it.createdAt))
+            }
+        )
+        ProductionCatalogSyncSummary(cloudIngredients.size, cloudStock.size, cloudRecipes.size, cloudItems.size, seeded)
     }
 
     suspend fun fetchStoreTables(tenant: VerifiedTenantContext): List<StoreTableEntity> =
