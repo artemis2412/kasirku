@@ -212,9 +212,6 @@ private data class NativeRecipeItemCloudDto(
     @SerialName("created_at") val createdAt: String
 )
 
-@Serializable
-private data class NativeProductionBatchIdDto(val id: String)
-
 data class ProductionCatalogSyncSummary(
     val ingredients: Int,
     val branchStock: Int,
@@ -528,12 +525,6 @@ class CloudAuthRepository {
                 seeded += missingItems.size
             }
 
-            val cloudBatches = client.from("production_batches").select {
-                filter {
-                    eq("store_id", tenant.storeId)
-                    eq("branch_id", tenant.branchId)
-                }
-            }.decodeList<NativeProductionBatchIdDto>()
             val cloudStockIds = cloudStock.map { it.ingredientId }.toSet()
             val missingStock = localStock.filter { it.ingredientId !in cloudStockIds }
             if (missingStock.isNotEmpty()) {
