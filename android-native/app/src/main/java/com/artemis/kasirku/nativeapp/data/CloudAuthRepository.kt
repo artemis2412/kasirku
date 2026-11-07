@@ -498,6 +498,12 @@ class CloudAuthRepository {
             val missingIngredients = localIngredients.filter { row -> cloudIngredients.none { it.id == row.id } }
             val missingRecipes = localRecipes.filter { row -> cloudRecipes.none { it.id == row.id } }
             val missingItems = localItems.filter { row -> cloudItems.none { it.id == row.id } }
+            val cloudProductIds = client.from("catalog_products").select {
+                filter { eq("store_id", tenant.storeId) }
+            }.decodeList<NativeCatalogProductDto>().map { it.id }.toSet()
+            require(missingRecipes.all { it.productId in cloudProductIds }) {
+                "Produk untuk resep belum tersedia di katalog Cloud. Sinkronkan katalog produk terlebih dahulu."
+            }
             require(missingItems.all { item ->
                 localIngredients.any { it.id == item.ingredientId } ||
                     cloudIngredients.any { it.id == item.ingredientId }
