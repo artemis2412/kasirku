@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
+import com.artemis.kasirku.nativeapp.data.ProductionSyncWorker
 
 private val Navy = Color(0xFF17324D)
 private val Teal = Color(0xFF168C83)
@@ -116,6 +117,7 @@ private fun KasirkuNativeApp() {
     LaunchedEffect(verifiedTenantContext?.storeId, verifiedTenantContext?.branchId, verifiedTenantContext?.branchTimeZoneId) {
         verifiedTenantContext?.takeIf { !it.branchTimeZoneId.isNullOrBlank() }?.let {
             SaleSyncWorker.enqueue(appContext, it)
+            ProductionSyncWorker.enqueue(appContext, it)
         }
     }
 
