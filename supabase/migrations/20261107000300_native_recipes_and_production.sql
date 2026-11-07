@@ -161,6 +161,15 @@ begin
     return p_batch_id;
   end if;
 
+  if not exists (select 1 from public.product_recipe_items ri where ri.store_id = p_store_id and ri.recipe_id = p_recipe_id) then
+    raise exception 'Resep belum memiliki bahan baku';
+  end if;
+
+  -- Create the parent batch before its item rows to satisfy the immediate FK.
+  -- Any later stock failure rolls the entire RPC transaction back.
+  insert into public.production_batches (id, store_id, branch_id, recipe_id, product_id, output_quantity, produced_by, notes)
+  values (p_batch_id, p_store_id, p_branch_id, p_recipe_id, v_product_id, p_output_quantity, v_user_id, nullif(btrim(p_notes), ''));
+
   for v_ingredient in
     select ri.ingredient_id, ri.quantity
     from public.product_recipe_items ri
@@ -176,11 +185,6 @@ begin
     insert into public.production_batch_items (id, store_id, branch_id, batch_id, ingredient_id, quantity_used)
     values (gen_random_uuid(), p_store_id, p_branch_id, p_batch_id, v_ingredient.ingredient_id, v_required);
   end loop;
-  if not exists (select 1 from public.product_recipe_items ri where ri.store_id = p_store_id and ri.recipe_id = p_recipe_id) then
-    raise exception 'Resep belum memiliki bahan baku';
-  end if;
-  insert into public.production_batches (id, store_id, branch_id, recipe_id, product_id, output_quantity, produced_by, notes)
-  values (p_batch_id, p_store_id, p_branch_id, p_recipe_id, v_product_id, p_output_quantity, v_user_id, nullif(btrim(p_notes), ''));
   insert into public.branch_inventory (store_id, branch_id, product_id, quantity, updated_at)
   values (p_store_id, p_branch_id, v_product_id, p_output_quantity, now())
   on conflict (branch_id, product_id) do update
