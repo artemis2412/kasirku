@@ -474,9 +474,7 @@ class CloudAuthRepository {
     ): ProductionCatalogSyncSummary = withContext(Dispatchers.IO) {
         require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
         val canSeed = tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN)
-        require(dao.countPendingProductionSync(tenant.storeId, tenant.branchId) == 0) {
-            "Ada produksi yang belum tersinkron. Hubungkan internet dan selesaikan sinkronisasi produksi dahulu."
-        }
+        val pendingOutbox = dao.getPendingProductionOutbox(tenant.storeId, tenant.branchId)
         val localIngredients = dao.getIngredientsForCloudSync(tenant.storeId)
         val localStock = dao.getIngredientStockForCloudSync(tenant.storeId, tenant.branchId)
         val localRecipes = dao.getRecipesForCloudSync(tenant.storeId)
@@ -536,14 +534,22 @@ class CloudAuthRepository {
                     eq("branch_id", tenant.branchId)
                 }
             }.decodeList<NativeProductionBatchIdDto>()
-            if (cloudBatches.isEmpty() && cloudStock.isEmpty() &&
-                dao.countPendingProductionSync(tenant.storeId, tenant.branchId) == 0 &&
-                localStock.isNotEmpty()) {
-                client.from("branch_ingredient_inventory").insert(localStock.map {
+            if (cloudBatches.isEmpty() && cloudStock.isEmpty() && localStock.isNotEmpty()) {
+                // Local production already deducts stock. Add the still-pending
+                // batch usage back before bootstrapping Cloud so its RPC can deduct once.
+                val pendingUsage = mutableMapOf<String, Double>()
+                pendingOutbox.forEach { outbox ->
+                    dao.getProductionBatchItems(tenant.storeId, tenant.branchId, outbox.batchId)
+                        .forEach { line -> pendingUsage[line.ingredientId] = (pendingUsage[line.ingredientId] ?: 0.0) + line.quantityUsed }
+                }
+                val bootstrapStock = localStock.map { row ->
+                    row.copy(quantity = row.quantity + (pendingUsage[row.ingredientId] ?: 0.0))
+                }
+                client.from("branch_ingredient_inventory").insert(bootstrapStock.map {
                     NativeIngredientStockCloudDto(it.storeId, it.branchId, it.ingredientId, it.quantity,
                         java.time.Instant.ofEpochMilli(it.updatedAt).toString())
                 })
-                seeded += localStock.size
+                seeded += bootstrapStock.size
             }
         }
 
@@ -579,7 +585,7 @@ class CloudAuthRepository {
             ingredients = cloudIngredients.map {
                 IngredientEntity(it.id, it.storeId, it.name, it.unit, it.isActive, epoch(it.updatedAt))
             },
-            stock = cloudStock.map {
+            stock = if (pendingOutbox.isNotEmpty()) localStock else cloudStock.map {
                 BranchIngredientInventoryEntity(it.storeId, it.branchId, it.ingredientId, it.quantity, epoch(it.updatedAt))
             },
             recipes = cloudRecipes.map {
@@ -589,7 +595,9 @@ class CloudAuthRepository {
                 ProductRecipeItemEntity(it.id, it.storeId, it.recipeId, it.ingredientId, it.quantity, epoch(it.createdAt))
             }
         )
-        ProductionCatalogSyncSummary(cloudIngredients.size, cloudStock.size, cloudRecipes.size, cloudItems.size, seeded)
+        ProductionCatalogSyncSummary(cloudIngredients.size,
+            if (pendingOutbox.isNotEmpty()) localStock.size else cloudStock.size,
+            cloudRecipes.size, cloudItems.size, seeded)
     }
 
     suspend fun fetchStoreTables(tenant: VerifiedTenantContext): List<StoreTableEntity> =
