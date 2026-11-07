@@ -129,6 +129,7 @@ declare
   v_output_per_recipe integer;
   v_ingredient record;
   v_required numeric(14,3);
+  v_existing public.production_batches%rowtype;
   v_user_id uuid := auth.uid();
 begin
   if v_user_id is null then raise exception 'Harus login terlebih dahulu'; end if;
@@ -143,7 +144,23 @@ begin
   if not exists (select 1 from public.catalog_products p where p.id = v_product_id and p.store_id = p_store_id and p.is_active) then
     raise exception 'Produk hasil produksi tidak aktif';
   end if;
-  if exists (select 1 from public.production_batches b where b.id = p_batch_id) then raise exception 'ID produksi sudah digunakan'; end if;
+  -- Stable batch IDs make client retries safe: a previously committed batch
+  -- returns successfully without consuming ingredients or adding stock again.
+  select * into v_existing
+  from public.production_batches b
+  where b.id = p_batch_id;
+  if found then
+    if v_existing.store_id <> p_store_id
+       or v_existing.branch_id <> p_branch_id
+       or v_existing.recipe_id <> p_recipe_id
+       or v_existing.product_id <> v_product_id
+       or v_existing.output_quantity <> p_output_quantity
+       or v_existing.produced_by <> v_user_id then
+      raise exception 'ID produksi sudah digunakan dengan data berbeda';
+    end if;
+    return p_batch_id;
+  end if;
+
   for v_ingredient in
     select ri.ingredient_id, ri.quantity
     from public.product_recipe_items ri
