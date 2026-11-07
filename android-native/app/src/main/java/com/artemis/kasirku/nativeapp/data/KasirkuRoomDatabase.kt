@@ -104,6 +104,14 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS production_sync_outbox (batchId TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, branchId TEXT NOT NULL, producedBy TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL, lastError TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_production_sync_outbox_storeId_branchId_status_createdAt ON production_sync_outbox(storeId, branchId, status, createdAt)")
+                database.execSQL("INSERT OR IGNORE INTO production_sync_outbox (batchId, storeId, branchId, producedBy, status, attempts, lastError, createdAt, updatedAt) SELECT id, storeId, branchId, producedBy, 'PENDING', 0, NULL, createdAt, createdAt FROM production_batches")
+            }
+        }
+
         @Volatile
         private var INSTANCE: KasirkuRoomDatabase? = null
 
@@ -113,7 +121,7 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
                     context.applicationContext,
                     KasirkuRoomDatabase::class.java,
                     "kasirku_room.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10).build().also { INSTANCE = it }
             }
     }
 }
