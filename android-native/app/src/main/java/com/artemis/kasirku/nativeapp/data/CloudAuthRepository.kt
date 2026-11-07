@@ -474,6 +474,9 @@ class CloudAuthRepository {
     ): ProductionCatalogSyncSummary = withContext(Dispatchers.IO) {
         require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
         val canSeed = tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN)
+        require(dao.countPendingProductionSync(tenant.storeId, tenant.branchId) == 0) {
+            "Ada produksi yang belum tersinkron. Hubungkan internet dan selesaikan sinkronisasi produksi dahulu."
+        }
         val localIngredients = dao.getIngredientsForCloudSync(tenant.storeId)
         val localStock = dao.getIngredientStockForCloudSync(tenant.storeId, tenant.branchId)
         val localRecipes = dao.getRecipesForCloudSync(tenant.storeId)
@@ -500,9 +503,10 @@ class CloudAuthRepository {
             val missingIngredients = localIngredients.filter { row -> cloudIngredients.none { it.id == row.id } }
             val missingRecipes = localRecipes.filter { row -> cloudRecipes.none { it.id == row.id } }
             val missingItems = localItems.filter { row -> cloudItems.none { it.id == row.id } }
-            require(missingRecipes.all { recipe -> localIngredients.any { it.id == localItems.firstOrNull { item -> item.recipeId == recipe.id }?.ingredientId } || localItems.none { it.recipeId == recipe.id } }) {
-                "Resep lokal memiliki bahan baku yang tidak dikenal."
-            }
+            require(missingItems.all { item ->
+                localIngredients.any { it.id == item.ingredientId } ||
+                    cloudIngredients.any { it.id == item.ingredientId }
+            }) { "Resep lokal memiliki bahan baku yang tidak dikenal." }
 
             if (missingIngredients.isNotEmpty()) {
                 client.from("catalog_ingredients").insert(missingIngredients.map {
@@ -561,7 +565,6 @@ class CloudAuthRepository {
 
         val ingredientIds = cloudIngredients.map { it.id }.toSet()
         val recipeIds = cloudRecipes.map { it.id }.toSet()
-        val productIds = localRecipes.map { it.productId }.toSet()
         require(cloudIngredients.all { it.storeId == tenant.storeId } &&
             cloudRecipes.all { it.storeId == tenant.storeId } &&
             cloudItems.all { it.storeId == tenant.storeId && it.recipeId in recipeIds && it.ingredientId in ingredientIds } &&
