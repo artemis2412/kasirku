@@ -37,6 +37,12 @@ abstract class ProductionDao {
     @Query("SELECT COUNT(*) FROM production_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY')")
     abstract suspend fun countPendingProductionSync(storeId: String, branchId: String): Int
 
+    @Query("SELECT * FROM production_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY')")
+    abstract suspend fun getPendingProductionOutbox(storeId: String, branchId: String): List<ProductionSyncOutboxEntity>
+
+    @Query("SELECT * FROM production_batch_items WHERE batchId = :batchId AND storeId = :storeId AND branchId = :branchId")
+    abstract suspend fun getProductionBatchItems(storeId: String, branchId: String, batchId: String): List<ProductionBatchItemEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun putIngredient(row: IngredientEntity)
 
