@@ -67,3 +67,18 @@ data class ProductionBatchItemEntity(
     val quantityUsed: Double,
     val createdAt: Long
 )
+
+@Entity(tableName = "production_sync_outbox", indices = [
+    Index(value = ["storeId", "branchId", "status", "createdAt"])
+])
+data class ProductionSyncOutboxEntity(
+    @PrimaryKey val batchId: String,
+    val storeId: String,
+    val branchId: String,
+    val producedBy: String,
+    val status: String = "PENDING",
+    val attempts: Int = 0,
+    val lastError: String? = null,
+    val createdAt: Long,
+    val updatedAt: Long
+)
