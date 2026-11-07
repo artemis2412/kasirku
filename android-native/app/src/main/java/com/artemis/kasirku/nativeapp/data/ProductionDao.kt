@@ -40,6 +40,21 @@ abstract class ProductionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun putBatchItem(row: ProductionBatchItemEntity)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    abstract suspend fun enqueueProductionSync(row: ProductionSyncOutboxEntity): Long
+
+    @Query("SELECT * FROM production_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY') ORDER BY createdAt ASC")
+    abstract suspend fun getPendingProductionSync(storeId: String, branchId: String): List<ProductionSyncOutboxEntity>
+
+    @Query("UPDATE production_sync_outbox SET status = 'SYNCED', attempts = attempts + 1, lastError = NULL, updatedAt = :updatedAt WHERE batchId = :batchId AND storeId = :storeId AND branchId = :branchId")
+    abstract suspend fun markProductionSynced(storeId: String, branchId: String, batchId: String, updatedAt: Long): Int
+
+    @Query("UPDATE production_sync_outbox SET status = :status, attempts = attempts + 1, lastError = :error, updatedAt = :updatedAt WHERE batchId = :batchId AND storeId = :storeId AND branchId = :branchId")
+    abstract suspend fun updateProductionSyncStatus(storeId: String, branchId: String, batchId: String, status: String, error: String?, updatedAt: Long): Int
+
+    @Query("SELECT * FROM production_batches WHERE id = :batchId AND storeId = :storeId AND branchId = :branchId LIMIT 1")
+    abstract suspend fun getProductionBatch(storeId: String, branchId: String, batchId: String): ProductionBatchEntity?
+
     @Query("SELECT * FROM branch_ingredient_inventory WHERE branchId = :branchId AND ingredientId = :ingredientId LIMIT 1")
     abstract suspend fun getIngredientStock(branchId: String, ingredientId: String): BranchIngredientInventoryEntity?
 
@@ -100,6 +115,15 @@ abstract class ProductionDao {
             check(increaseFinishedStock(branchId, product.id, outputQuantity, now) == 1)
         }
         putBatch(ProductionBatchEntity(batchId, storeId, branchId, recipe.id, product.id, outputQuantity, userId, notes?.takeIf { it.isNotBlank() }, now))
+        enqueueProductionSync(ProductionSyncOutboxEntity(
+            batchId = batchId,
+            storeId = storeId,
+            branchId = branchId,
+            producedBy = userId,
+            status = "PENDING",
+            createdAt = now,
+            updatedAt = now
+        ))
         return batchId
     }
 
