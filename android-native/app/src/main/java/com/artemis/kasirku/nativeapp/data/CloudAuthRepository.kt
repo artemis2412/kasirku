@@ -534,15 +534,17 @@ class CloudAuthRepository {
                     eq("branch_id", tenant.branchId)
                 }
             }.decodeList<NativeProductionBatchIdDto>()
-            if (cloudBatches.isEmpty() && cloudStock.isEmpty() && localStock.isNotEmpty()) {
+            val cloudStockIds = cloudStock.map { it.ingredientId }.toSet()
+            val missingStock = localStock.filter { it.ingredientId !in cloudStockIds }
+            if (missingStock.isNotEmpty()) {
                 // Local production already deducts stock. Add the still-pending
-                // batch usage back before bootstrapping Cloud so its RPC can deduct once.
+                // batch usage back before seeding a missing Cloud stock row.
                 val pendingUsage = mutableMapOf<String, Double>()
                 pendingOutbox.forEach { outbox ->
                     dao.getProductionBatchItems(tenant.storeId, tenant.branchId, outbox.batchId)
                         .forEach { line -> pendingUsage[line.ingredientId] = (pendingUsage[line.ingredientId] ?: 0.0) + line.quantityUsed }
                 }
-                val bootstrapStock = localStock.map { row ->
+                val bootstrapStock = missingStock.map { row ->
                     row.copy(quantity = row.quantity + (pendingUsage[row.ingredientId] ?: 0.0))
                 }
                 client.from("branch_ingredient_inventory").insert(bootstrapStock.map {
