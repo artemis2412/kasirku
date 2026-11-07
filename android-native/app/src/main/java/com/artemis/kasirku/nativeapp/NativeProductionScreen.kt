@@ -47,7 +47,8 @@ internal fun NativeProductionScreen(
     val stock by remember(tenant.storeId, tenant.branchId) { dao.observeIngredientStock(tenant.storeId, tenant.branchId) }.collectAsState(initial = emptyList())
     val recipes by remember(tenant.storeId) { dao.observeRecipes(tenant.storeId) }.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
-    val canProduce = tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)
+    val canManageDefinitions = tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN)
+    val canProduce = canManageDefinitions || tenant.role == StoreRole.SUPERVISOR
     var ingredientName by remember { mutableStateOf("") }
     var ingredientUnit by remember { mutableStateOf("gram") }
     var ingredientQuantity by remember { mutableStateOf("0") }
@@ -85,6 +86,7 @@ internal fun NativeProductionScreen(
         if (!canProduce) {
             Text("Modul produksi hanya dapat digunakan Owner, Admin, dan Supervisor.", color = Color(0xFFB42318))
         } else {
+            if (canManageDefinitions) {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("1. Bahan baku", fontWeight = FontWeight.Bold, color = Color(0xFF17324D))
@@ -142,6 +144,7 @@ internal fun NativeProductionScreen(
                         }
                     }, modifier = Modifier.fillMaxWidth()) { Text("Simpan resep") }
                 }
+            }
             }
             Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
