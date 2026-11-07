@@ -67,7 +67,20 @@ internal fun NativeProductionScreen(
                 Text("Produksi", color = Color(0xFF17324D), fontSize = 25.sp, fontWeight = FontWeight.Bold)
                 Text(tenant.storeName + " • " + tenant.branchName, color = Color(0xFF718096), fontSize = 12.sp)
             }
-            TextButton(onClick = onBack) { Text("Kembali") }
+            Column {
+                TextButton(enabled = !busy, onClick = {
+                    scope.launch {
+                        busy = true
+                        runCatching { CloudAuthRepository().syncProductionCatalog(tenant, dao) }
+                            .onSuccess { result ->
+                                status = "Cloud tersinkron: ${result.ingredients} bahan, ${result.recipes} resep, ${result.branchStock} stok cabang. Data baru dikirim: ${result.seededCloudRows}."
+                            }
+                            .onFailure { status = it.message ?: "Sinkronisasi data produksi gagal." }
+                        busy = false
+                    }
+                }) { Text(if (busy) "Menyinkronkan…" else "Sinkronkan data") }
+                TextButton(onClick = onBack) { Text("Kembali") }
+            }
         }
         if (!canProduce) {
             Text("Modul produksi hanya dapat digunakan Owner, Admin, dan Supervisor.", color = Color(0xFFB42318))
