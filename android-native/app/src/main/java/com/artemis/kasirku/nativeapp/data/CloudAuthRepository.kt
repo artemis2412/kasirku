@@ -248,6 +248,35 @@ class CloudAuthRepository {
 
 
     /**
+     * Upload one locally committed production batch through the idempotent RPC.
+     * The server validates the authenticated producer and branch membership.
+     */
+    suspend fun uploadProductionBatch(
+        tenant: VerifiedTenantContext,
+        batch: ProductionBatchEntity
+    ): String = withContext(Dispatchers.IO) {
+        require(batch.storeId == tenant.storeId && batch.branchId == tenant.branchId) {
+            "Batch produksi bukan milik toko/cabang aktif."
+        }
+        require(batch.producedBy == tenant.userId) {
+            "Produksi hanya dapat disinkronkan oleh akun pembuatnya."
+        }
+        client.postgrest.rpc(
+            function = "complete_native_production",
+            parameters = buildJsonObject {
+                put("p_store_id", batch.storeId)
+                put("p_branch_id", batch.branchId)
+                put("p_batch_id", batch.id)
+                put("p_recipe_id", batch.recipeId)
+                put("p_output_quantity", batch.outputQuantity)
+                put("p_notes", batch.notes)
+            }
+        ).decodeAs<String>().also { returnedId ->
+            check(returnedId == batch.id) { "ID batch Cloud tidak cocok." }
+        }
+    }
+
+    /**
      * Uploads the current local store catalog and the selected branch's prices/stock.
      * Cloud RLS remains the authority for tenant and role access.
      */
