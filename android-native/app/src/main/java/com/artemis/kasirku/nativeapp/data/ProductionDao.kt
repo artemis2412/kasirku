@@ -52,6 +52,41 @@ abstract class ProductionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun putBatch(row: ProductionBatchEntity)
 
+    @Query("DELETE FROM catalog_ingredients WHERE storeId = :storeId")
+    abstract suspend fun deleteIngredientsForStore(storeId: String)
+
+    @Query("DELETE FROM branch_ingredient_inventory WHERE storeId = :storeId AND branchId = :branchId")
+    abstract suspend fun deleteIngredientStockForBranch(storeId: String, branchId: String)
+
+    @Query("DELETE FROM product_recipe_items WHERE storeId = :storeId")
+    abstract suspend fun deleteRecipeItemsForStore(storeId: String)
+
+    @Query("DELETE FROM product_recipes WHERE storeId = :storeId")
+    abstract suspend fun deleteRecipesForStore(storeId: String)
+
+    @Transaction
+    open suspend fun applyCloudProductionSnapshot(
+        storeId: String,
+        branchId: String,
+        ingredients: List<IngredientEntity>,
+        stock: List<BranchIngredientInventoryEntity>,
+        recipes: List<ProductRecipeEntity>,
+        items: List<ProductRecipeItemEntity>
+    ) {
+        require(ingredients.all { it.storeId == storeId })
+        require(stock.all { it.storeId == storeId && it.branchId == branchId })
+        require(recipes.all { it.storeId == storeId })
+        require(items.all { it.storeId == storeId })
+        deleteRecipeItemsForStore(storeId)
+        deleteRecipesForStore(storeId)
+        deleteIngredientStockForBranch(storeId, branchId)
+        deleteIngredientsForStore(storeId)
+        ingredients.forEach { putIngredient(it) }
+        stock.forEach { putIngredientStock(it) }
+        recipes.forEach { putRecipe(it) }
+        items.forEach { putRecipeItem(it) }
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun putBatchItem(row: ProductionBatchItemEntity)
 
