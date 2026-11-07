@@ -114,4 +114,31 @@ class ProductionDaoTransactionTest {
         assertEquals(3, catalogDao.getInventory("branch-1", product.id)?.quantity)
         assertEquals(0, dao.getPendingProductionSync("store-1", "branch-1", "user-1").size)
     }
+    @Test
+    fun cloudSnapshotReplacesSelectedBranchStockAndPreservesOtherBranchStock() = runBlocking {
+        val now = 200L
+        dao.putIngredient(IngredientEntity("old-ingredient", "store-1", "Lama", "gram", true, now))
+        dao.putIngredientStock(
+            BranchIngredientInventoryEntity("store-1", "branch-1", "old-ingredient", 12.0, now)
+        )
+        dao.putIngredientStock(
+            BranchIngredientInventoryEntity("store-1", "branch-2", "old-ingredient", 30.0, now)
+        )
+
+        val fresh = IngredientEntity("new-ingredient", "store-1", "Baru", "gram", true, now + 1)
+        dao.applyCloudProductionSnapshot(
+            storeId = "store-1",
+            branchId = "branch-1",
+            ingredients = listOf(fresh),
+            stock = listOf(BranchIngredientInventoryEntity("store-1", "branch-1", fresh.id, 75.0, now + 1)),
+            recipes = emptyList(),
+            items = emptyList()
+        )
+
+        assertEquals(listOf("new-ingredient"), dao.getIngredientsForCloudSync("store-1").map { it.id })
+        assertEquals(75.0, dao.getIngredientStock("branch-1", "new-ingredient")?.quantity ?: -1.0, 0.0001)
+        assertEquals(30.0, dao.getIngredientStock("branch-2", "old-ingredient")?.quantity ?: -1.0, 0.0001)
+        assertEquals(null, dao.getIngredientStock("branch-1", "old-ingredient"))
+    }
+
 }
