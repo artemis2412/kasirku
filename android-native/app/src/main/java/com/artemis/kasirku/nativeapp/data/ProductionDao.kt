@@ -43,8 +43,8 @@ abstract class ProductionDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     abstract suspend fun enqueueProductionSync(row: ProductionSyncOutboxEntity): Long
 
-    @Query("SELECT * FROM production_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY') ORDER BY createdAt ASC")
-    abstract suspend fun getPendingProductionSync(storeId: String, branchId: String): List<ProductionSyncOutboxEntity>
+    @Query("SELECT * FROM production_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND producedBy = :userId AND status IN ('PENDING', 'RETRY') ORDER BY createdAt ASC")
+    abstract suspend fun getPendingProductionSync(storeId: String, branchId: String, userId: String): List<ProductionSyncOutboxEntity>
 
     @Query("UPDATE production_sync_outbox SET status = 'SYNCED', attempts = attempts + 1, lastError = NULL, updatedAt = :updatedAt WHERE batchId = :batchId AND storeId = :storeId AND branchId = :branchId")
     abstract suspend fun markProductionSynced(storeId: String, branchId: String, batchId: String, updatedAt: Long): Int
