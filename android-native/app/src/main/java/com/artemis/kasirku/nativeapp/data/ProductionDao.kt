@@ -110,9 +110,16 @@ abstract class ProductionDao {
         }
         val existingStock = getFinishedStock(branchId, product.id)
         if (existingStock == null) {
-            insertFinishedStock(BranchInventoryEntity(branchId, product.id, outputQuantity, now))
+            val inserted = insertFinishedStock(BranchInventoryEntity(branchId, product.id, outputQuantity, now))
+            if (inserted == -1L) {
+                check(increaseFinishedStock(branchId, product.id, outputQuantity, now) == 1) {
+                    "Stok produk jadi gagal diperbarui."
+                }
+            }
         } else {
-            check(increaseFinishedStock(branchId, product.id, outputQuantity, now) == 1)
+            check(increaseFinishedStock(branchId, product.id, outputQuantity, now) == 1) {
+                "Stok produk jadi gagal diperbarui."
+            }
         }
         putBatch(ProductionBatchEntity(batchId, storeId, branchId, recipe.id, product.id, outputQuantity, userId, notes?.takeIf { it.isNotBlank() }, now))
         enqueueProductionSync(ProductionSyncOutboxEntity(
