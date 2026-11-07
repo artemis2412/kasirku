@@ -69,7 +69,7 @@ internal fun NativeProductionScreen(
                 Text(tenant.storeName + " • " + tenant.branchName, color = Color(0xFF718096), fontSize = 12.sp)
             }
             Column {
-                TextButton(enabled = !busy, onClick = {
+                if (canProduce) TextButton(enabled = !busy, onClick = {
                     scope.launch {
                         busy = true
                         runCatching { CloudAuthRepository().syncProductionCatalog(tenant, dao) }
