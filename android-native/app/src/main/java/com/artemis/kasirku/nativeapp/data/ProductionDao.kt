@@ -22,6 +22,21 @@ abstract class ProductionDao {
     @Query("SELECT * FROM product_recipe_items WHERE recipeId = :recipeId")
     abstract suspend fun getRecipeItems(recipeId: String): List<ProductRecipeItemEntity>
 
+    @Query("SELECT * FROM catalog_ingredients WHERE storeId = :storeId")
+    abstract suspend fun getIngredientsForCloudSync(storeId: String): List<IngredientEntity>
+
+    @Query("SELECT * FROM branch_ingredient_inventory WHERE storeId = :storeId AND branchId = :branchId")
+    abstract suspend fun getIngredientStockForCloudSync(storeId: String, branchId: String): List<BranchIngredientInventoryEntity>
+
+    @Query("SELECT * FROM product_recipes WHERE storeId = :storeId")
+    abstract suspend fun getRecipesForCloudSync(storeId: String): List<ProductRecipeEntity>
+
+    @Query("SELECT * FROM product_recipe_items WHERE storeId = :storeId")
+    abstract suspend fun getRecipeItemsForCloudSync(storeId: String): List<ProductRecipeItemEntity>
+
+    @Query("SELECT COUNT(*) FROM production_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY')")
+    abstract suspend fun countPendingProductionSync(storeId: String, branchId: String): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun putIngredient(row: IngredientEntity)
 
