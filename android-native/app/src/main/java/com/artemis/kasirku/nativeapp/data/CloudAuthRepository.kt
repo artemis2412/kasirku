@@ -269,7 +269,7 @@ class CloudAuthRepository {
                 put("p_batch_id", batch.id)
                 put("p_recipe_id", batch.recipeId)
                 put("p_output_quantity", batch.outputQuantity)
-                put("p_notes", batch.notes)
+                put("p_notes", batch.notes ?: "")
             }
         ).decodeAs<String>().also { returnedId ->
             check(returnedId == batch.id) { "ID batch Cloud tidak cocok." }
