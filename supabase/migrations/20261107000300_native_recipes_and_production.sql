@@ -97,8 +97,8 @@ create policy catalog_ingredients_manage on public.catalog_ingredients for all t
 create policy branch_ingredient_inventory_read on public.branch_ingredient_inventory for select to authenticated
   using (private.has_branch_access(store_id, branch_id));
 create policy branch_ingredient_inventory_manage on public.branch_ingredient_inventory for all to authenticated
-  using (private.has_branch_access(store_id, branch_id) and exists (select 1 from public.store_memberships sm where sm.store_id = branch_ingredient_inventory.store_id and sm.user_id = (select auth.uid()) and sm.is_active and sm.role in ('owner','admin','supervisor')))
-  with check (private.has_branch_access(store_id, branch_id) and exists (select 1 from public.store_memberships sm where sm.store_id = branch_ingredient_inventory.store_id and sm.user_id = (select auth.uid()) and sm.is_active and sm.role in ('owner','admin','supervisor')));
+  using (private.has_branch_access(store_id, branch_id) and exists (select 1 from public.store_memberships sm where sm.store_id = branch_ingredient_inventory.store_id and sm.user_id = (select auth.uid()) and sm.is_active and sm.role in ('owner','admin')))
+  with check (private.has_branch_access(store_id, branch_id) and exists (select 1 from public.store_memberships sm where sm.store_id = branch_ingredient_inventory.store_id and sm.user_id = (select auth.uid()) and sm.is_active and sm.role in ('owner','admin')));
 
 create policy product_recipes_read on public.product_recipes for select to authenticated using (private.is_store_member(store_id));
 create policy product_recipes_manage on public.product_recipes for all to authenticated
