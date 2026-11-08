@@ -433,6 +433,19 @@ begin
     raise exception 'Nominal transaksi tidak valid';
   end if;
 
+  if coalesce(p_order->>'order_type', 'Takeaway') not in ('Takeaway', 'Dine In') then
+    raise exception 'Jenis pesanan tidak valid';
+  end if;
+
+  if (coalesce(p_order->>'order_type', 'Takeaway') = 'Dine In'
+      and (nullif(p_order->>'table_local_id', '') is null
+           or nullif(p_order->>'table_label', '') is null))
+     or (coalesce(p_order->>'order_type', 'Takeaway') = 'Takeaway'
+         and (nullif(p_order->>'table_local_id', '') is not null
+              or nullif(p_order->>'table_label', '') is not null)) then
+    raise exception 'Data meja pesanan tidak valid';
+  end if;
+
   if nullif(p_order->>'order_number', '') is null
      or p_order->>'payment_method' is null
      or p_order->>'payment_method' not in ('CASH', 'QRIS', 'TRANSFER') then
@@ -471,7 +484,8 @@ begin
 
   insert into public.orders (
     store_id, branch_id, local_id, order_number, order_date, order_time,
-    created_at, created_by, order_type, subtotal, discount_amount, total,
+    created_at, created_by, order_type, table_label, table_local_id,
+    subtotal, discount_amount, total,
     order_status, payment_status, payment_method, paid_amount, change_amount
   ) values (
     (p_order->>'store_id')::uuid,
@@ -483,6 +497,8 @@ begin
     (p_order->>'created_at')::timestamptz,
     (p_order->>'created_by')::uuid,
     coalesce(p_order->>'order_type', 'Takeaway'),
+    nullif(p_order->>'table_label', ''),
+    nullif(p_order->>'table_local_id', ''),
     (p_order->>'subtotal')::numeric,
     coalesce((p_order->>'discount_amount')::numeric, 0),
     (p_order->>'total')::numeric,
@@ -500,6 +516,8 @@ begin
     created_at = excluded.created_at,
     created_by = excluded.created_by,
     order_type = excluded.order_type,
+    table_label = excluded.table_label,
+    table_local_id = excluded.table_local_id,
     subtotal = excluded.subtotal,
     discount_amount = excluded.discount_amount,
     total = excluded.total,
