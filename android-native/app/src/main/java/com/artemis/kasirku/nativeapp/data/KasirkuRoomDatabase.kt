@@ -21,13 +21,23 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProductBarcodeEntity::class,
         SaleEntity::class,
         SaleItemEntity::class,
-        SaleSyncOutboxEntity::class
+        SaleSyncOutboxEntity::class,
+        StoreTableEntity::class,
+        IngredientEntity::class,
+        BranchIngredientInventoryEntity::class,
+        ProductRecipeEntity::class,
+        ProductRecipeItemEntity::class,
+        ProductionBatchEntity::class,
+        ProductionBatchItemEntity::class,
+        ProductionSyncOutboxEntity::class
     ],
-    version = 4,
+    version = 10,
     exportSchema = true
 )
 abstract class KasirkuRoomDatabase : RoomDatabase() {
     abstract fun catalogDao(): CatalogDao
+    abstract fun storeTableDao(): StoreTableDao
+    abstract fun productionDao(): ProductionDao
 
     companion object {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -53,6 +63,56 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS store_tables (id TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, branchId TEXT NOT NULL, name TEXT NOT NULL, capacity INTEGER NOT NULL, isActive INTEGER NOT NULL, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_store_tables_branchId_name ON store_tables(branchId, name)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_store_tables_storeId_branchId_isActive ON store_tables(storeId, branchId, isActive)")
+            }
+        }
+
+        private val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE sales ADD COLUMN orderType TEXT NOT NULL DEFAULT 'Takeaway'")
+            }
+        }
+
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE sales ADD COLUMN tableLocalId TEXT")
+                database.execSQL("ALTER TABLE sales ADD COLUMN tableLabel TEXT")
+            }
+        }
+
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS catalog_ingredients (id TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, name TEXT NOT NULL, unit TEXT NOT NULL, isActive INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_catalog_ingredients_storeId_name ON catalog_ingredients(storeId, name)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS branch_ingredient_inventory (storeId TEXT NOT NULL, branchId TEXT NOT NULL, ingredientId TEXT NOT NULL, quantity REAL NOT NULL, updatedAt INTEGER NOT NULL, PRIMARY KEY(branchId, ingredientId))")
+                database.execSQL("CREATE TABLE IF NOT EXISTS product_recipes (id TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, productId TEXT NOT NULL, name TEXT NOT NULL, outputQuantity INTEGER NOT NULL, isActive INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_product_recipes_storeId_productId ON product_recipes(storeId, productId)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS product_recipe_items (id TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, recipeId TEXT NOT NULL, ingredientId TEXT NOT NULL, quantity REAL NOT NULL, createdAt INTEGER NOT NULL)")
+                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_product_recipe_items_recipeId_ingredientId ON product_recipe_items(recipeId, ingredientId)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS production_batches (id TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, branchId TEXT NOT NULL, recipeId TEXT NOT NULL, productId TEXT NOT NULL, outputQuantity INTEGER NOT NULL, producedBy TEXT NOT NULL, notes TEXT, createdAt INTEGER NOT NULL)")
+                database.execSQL("CREATE TABLE IF NOT EXISTS production_batch_items (id TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, branchId TEXT NOT NULL, batchId TEXT NOT NULL, ingredientId TEXT NOT NULL, quantityUsed REAL NOT NULL, createdAt INTEGER NOT NULL)")
+            }
+        }
+
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE store_tables ADD COLUMN occupiedSaleId TEXT")
+                database.execSQL("ALTER TABLE store_tables ADD COLUMN occupiedAt INTEGER")
+            }
+        }
+
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE TABLE IF NOT EXISTS production_sync_outbox (batchId TEXT NOT NULL PRIMARY KEY, storeId TEXT NOT NULL, branchId TEXT NOT NULL, producedBy TEXT NOT NULL, status TEXT NOT NULL, attempts INTEGER NOT NULL, lastError TEXT, createdAt INTEGER NOT NULL, updatedAt INTEGER NOT NULL)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_production_sync_outbox_storeId_branchId_status_createdAt ON production_sync_outbox(storeId, branchId, status, createdAt)")
+                database.execSQL("INSERT OR IGNORE INTO production_sync_outbox (batchId, storeId, branchId, producedBy, status, attempts, lastError, createdAt, updatedAt) SELECT id, storeId, branchId, producedBy, 'PENDING', 0, NULL, createdAt, createdAt FROM production_batches")
+            }
+        }
+
         @Volatile
         private var INSTANCE: KasirkuRoomDatabase? = null
 
@@ -62,7 +122,7 @@ abstract class KasirkuRoomDatabase : RoomDatabase() {
                     context.applicationContext,
                     KasirkuRoomDatabase::class.java,
                     "kasirku_room.db"
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build().also { INSTANCE = it }
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10).build().also { INSTANCE = it }
             }
     }
 }

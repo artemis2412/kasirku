@@ -26,7 +26,7 @@ private val HomeMuted = Color(0xFF718096)
 private fun homeMoney(value: Long) = value.toString().reversed().chunked(3).joinToString(".").reversed()
 
 @Composable
-internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modifier = Modifier, onNewTransaction: () -> Unit, onOpenTab: (Int) -> Unit) {
+internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modifier = Modifier, onNewTransaction: () -> Unit, onOpenTab: (Int) -> Unit, onOpenTables: () -> Unit) {
     val context = LocalContext.current.applicationContext
     val dao = remember { KasirkuRoomDatabase.getInstance(context).catalogDao() }
     val repository = remember { SalesRepository(dao) }
@@ -94,6 +94,7 @@ internal fun NativeDashboardScreen(tenant: VerifiedTenantContext, modifier: Modi
             Action("Produk",Modifier.weight(1f)){onOpenTab(1)}
             Action("Pesanan",Modifier.weight(1f)){onOpenTab(2)}
             Action("Laporan",Modifier.weight(1f)){onOpenTab(3)}
+            Action("Meja",Modifier.weight(1f),onOpenTables)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement=Arrangement.SpaceBetween) {
             Text("Aktivitas terbaru", color=HomeNavy, fontSize=16.sp, fontWeight=FontWeight.Bold)

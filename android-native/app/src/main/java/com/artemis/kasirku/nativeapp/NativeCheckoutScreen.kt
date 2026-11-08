@@ -41,20 +41,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.artemis.kasirku.nativeapp.data.CatalogRepository
+import com.artemis.kasirku.nativeapp.data.CloudAuthRepository
 import com.artemis.kasirku.nativeapp.data.CheckoutLine
 import com.artemis.kasirku.nativeapp.data.KasirkuRoomDatabase
 import com.artemis.kasirku.nativeapp.data.SalesRepository
+import com.artemis.kasirku.nativeapp.data.StoreTableEntity
 import com.artemis.kasirku.nativeapp.data.SaleSyncWorker
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 private fun formatCheckoutNominal(value: Long): String = value.toString().reversed().chunked(3).joinToString(".").reversed()
 
 private fun formatCheckoutNominalInput(value: String): String =
     value.filter(Char::isDigit).reversed().chunked(3).joinToString(".").reversed()
 
-private data class ReceiptDraft(val saleId: String, val lines: List<CheckoutLine>, val subtotal: Long, val total: Long, val paid: Long, val change: Long)
+private data class ReceiptDraft(val saleId: String, val lines: List<CheckoutLine>, val subtotal: Long, val total: Long, val paid: Long, val change: Long, val orderType: String, val tableLabel: String?)
 
 private data class CartEntry(
     val id: String,
@@ -74,6 +77,15 @@ internal fun NativeCheckoutScreen(
     val database = remember { KasirkuRoomDatabase.getInstance(context) }
     val catalog = remember { CatalogRepository(database.catalogDao()) }
     val sales = remember { SalesRepository(database.catalogDao()) }
+    val cloud = remember { CloudAuthRepository() }
+    val tableDao = remember { database.storeTableDao() }
+    val tables by tableDao.observeActiveTables(tenant.storeId, tenant.branchId).collectAsState(initial = emptyList())
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(tenant.storeId, tenant.branchId) {
+        runCatching { tableDao.upsertAll(cloud.fetchStoreTables(tenant)) }
+            .onFailure { error = it.message ?: "Gagal memuat status meja dari server." }
+    }
     var search by remember { mutableStateOf("") }
     val products by remember(tenant.storeId, tenant.branchId, search) {
         catalog.observeBranchCatalog(tenant.storeId, tenant.branchId, search)
@@ -81,9 +93,10 @@ internal fun NativeCheckoutScreen(
     val cart = remember { mutableStateMapOf<String, CartEntry>() }
     val scope = rememberCoroutineScope()
     var payment by remember { mutableStateOf("") }
+    var orderType by remember { mutableStateOf("Takeaway") }
+    var selectedTableId by remember { mutableStateOf<String?>(null) }
     var paymentMethod by remember { mutableStateOf("CASH") }
     var busy by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
     var success by remember { mutableStateOf<String?>(null) }
     var printerError by remember { mutableStateOf<String?>(null) }
     var printerList by remember { mutableStateOf<List<PairedPrinter>>(emptyList()) }
@@ -120,6 +133,28 @@ internal fun NativeCheckoutScreen(
                 Text(tenant.storeName + " • " + tenant.branchName, color = Color(0xFF718096), fontSize = 12.sp)
             }
             TextButton(onClick = onBack) { Text("Kembali") }
+        }
+        Text("Jenis pesanan", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = orderType == "Takeaway", onClick = { orderType = "Takeaway"; selectedTableId = null }, label = { Text("Takeaway") })
+            FilterChip(selected = orderType == "Dine In", onClick = { orderType = "Dine In" }, label = { Text("Dine In") })
+        }
+        if (orderType == "Dine In") {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Pilih meja", color = Color(0xFF17324D), fontWeight = FontWeight.Bold)
+                TextButton(onClick = {
+                    scope.launch {
+                        runCatching { tableDao.upsertAll(cloud.fetchStoreTables(tenant)) }
+                            .onFailure { error = it.message ?: "Gagal menyegarkan status meja." }
+                    }
+                }, enabled = !busy) { Text("Muat ulang") }
+            }
+            if (tables.isEmpty()) Text("Belum ada meja aktif di cabang ini. Tambahkan meja melalui Manajemen Meja.", color = Color(0xFFB42318), fontSize = 12.sp)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                tables.forEach { table ->
+                    FilterChip(selected = selectedTableId == table.id, enabled = table.occupiedSaleId == null, onClick = { selectedTableId = table.id }, label = { Text(table.name + " · " + if (table.occupiedSaleId == null) "Kosong" else "Terisi") })
+                }
+            }
         }
         OutlinedTextField(value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Cari nama produk atau barcode") }, singleLine = true)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -254,14 +289,37 @@ internal fun NativeCheckoutScreen(
                             error = null
                             val receiptLines = cart.values.map { CheckoutLine(it.id, it.name, it.quantity, it.price) }
                             try {
-                                val result = sales.checkout(tenant, receiptLines, paid, paymentMethod = paymentMethod)
-                                if (!tenant.branchTimeZoneId.isNullOrBlank()) {
+                                val chosenTable = tables.firstOrNull { it.id == selectedTableId }
+                                val saleId = UUID.randomUUID().toString()
+                                var cloudTableClaimed = false
+                                try {
+                                    if (orderType == "Dine In") {
+                                        val table = chosenTable ?: error("Pilih meja terlebih dahulu.")
+                                        cloudTableClaimed = cloud.claimStoreTable(tenant, table.id, saleId)
+                                        check(cloudTableClaimed) { "Meja sudah digunakan perangkat lain. Muat ulang daftar meja lalu pilih meja lain." }
+                                    }
+                                    val result = sales.checkout(
+                                        tenant, receiptLines, paid,
+                                        paymentMethod = paymentMethod,
+                                        orderType = orderType,
+                                        tableLocalId = chosenTable?.id,
+                                        tableLabel = chosenTable?.name,
+                                        saleIdOverride = saleId
+                                    )
+                                    cloudTableClaimed = false
+                                    if (!tenant.branchTimeZoneId.isNullOrBlank()) {
                                     SaleSyncWorker.enqueue(context, tenant)
                                 }
-                                receiptDraft = ReceiptDraft(result.saleId, receiptLines, subtotal, result.total, paid, result.change)
+                                receiptDraft = ReceiptDraft(result.saleId, receiptLines, subtotal, result.total, paid, result.change, orderType, chosenTable?.name)
                                 success = "Transaksi tersimpan. Total Rp ${result.total}, kembalian Rp ${result.change}."
-                                cart.clear()
-                                payment = ""
+                                    cart.clear()
+                                    payment = ""
+                                } catch (failure: Exception) {
+                                    if (cloudTableClaimed && chosenTable != null) {
+                                        runCatching { cloud.releaseStoreTable(tenant, chosenTable.id, saleId) }
+                                    }
+                                    throw failure
+                                }
                             } catch (cancelled: CancellationException) {
                                 throw cancelled
                             } catch (failure: Exception) {
@@ -272,7 +330,7 @@ internal fun NativeCheckoutScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !busy && cart.isNotEmpty() && paid >= subtotal && subtotal > 0L,
+                    enabled = !busy && cart.isNotEmpty() && paid >= subtotal && subtotal > 0L && (orderType == "Takeaway" || tables.any { it.id == selectedTableId && it.occupiedSaleId == null }),
                     shape = RoundedCornerShape(12.dp)
                 ) { Text(if (busy) "Memproses…" else "Selesaikan transaksi") }
             }
@@ -288,7 +346,7 @@ internal fun NativeCheckoutScreen(
                     printerError = null
                     try {
                         BluetoothReceiptPrinter.print(context, address, tenant.storeName, tenant.branchName,
-                            receipt.saleId, receipt.lines, receipt.subtotal, receipt.total, receipt.paid, receipt.change)
+                            receipt.saleId, receipt.lines, receipt.subtotal, receipt.total, receipt.paid, receipt.change, orderType = receipt.orderType, tableLabel = receipt.tableLabel)
                         success = "Nota berhasil dikirim ke printer."
                     } catch (cancelled: CancellationException) {
                         throw cancelled
