@@ -131,12 +131,20 @@ internal fun NativeTableManagementScreen(
                                 Text(if (table.occupiedSaleId == null) "Status: Tersedia" else "Status: Terisi • " + table.occupiedSaleId.take(8), color = if (table.occupiedSaleId == null) Color(0xFF168C83) else Color(0xFFB54708), fontSize = 11.sp)
                             }
                             if (table.occupiedSaleId != null) {
-                                TextButton(onClick = {
+                                TextButton(enabled = !busy, onClick = {
                                     scope.launch {
-                                        val cloudReleased = cloud.releaseStoreTable(tenant, table.id, table.occupiedSaleId)
-                                        check(cloudReleased) { "Meja tidak berhasil dikosongkan di server. Periksa koneksi atau muat ulang." }
-                                        val released = dao.release(tenant.storeId, tenant.branchId, table.id, table.occupiedSaleId, System.currentTimeMillis())
-                                        check(released == 1) { "Status lokal meja berubah. Muat ulang untuk menyamakan data." }
+                                        busy = true
+                                        try {
+                                            val cloudReleased = cloud.releaseStoreTable(tenant, table.id, table.occupiedSaleId)
+                                            check(cloudReleased) { "Meja tidak berhasil dikosongkan di server. Periksa koneksi atau muat ulang." }
+                                            val released = dao.release(tenant.storeId, tenant.branchId, table.id, table.occupiedSaleId, System.currentTimeMillis())
+                                            check(released == 1) { "Status lokal meja berubah. Muat ulang untuk menyamakan data." }
+                                            error = null
+                                        } catch (failure: Exception) {
+                                            error = failure.message ?: "Gagal mengosongkan meja. Muat ulang sebelum mencoba lagi."
+                                        } finally {
+                                            busy = false
+                                        }
                                     }
                                 }) { Text("Kosongkan") }
                             } else if (canManageTables) {
