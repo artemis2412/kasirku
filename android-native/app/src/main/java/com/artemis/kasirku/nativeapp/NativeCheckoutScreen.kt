@@ -307,6 +307,17 @@ internal fun NativeCheckoutScreen(
                                         saleIdOverride = saleId
                                     )
                                     cloudTableClaimed = false
+                                    if (orderType == "Dine In" && chosenTable != null) {
+                                        runCatching {
+                                            tableDao.markOccupied(
+                                                tenant.storeId,
+                                                tenant.branchId,
+                                                chosenTable.id,
+                                                saleId,
+                                                System.currentTimeMillis()
+                                            )
+                                        }
+                                    }
                                     if (!tenant.branchTimeZoneId.isNullOrBlank()) {
                                     SaleSyncWorker.enqueue(context, tenant)
                                 }
