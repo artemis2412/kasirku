@@ -23,7 +23,7 @@ interface StoreTableDao {
     @Query("UPDATE store_tables SET isActive = 0, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND isActive = 1 AND occupiedSaleId IS NULL")
     suspend fun archive(storeId: String, branchId: String, id: String, updatedAt: Long): Int
 
-    @Query("UPDATE store_tables SET occupiedSaleId = :saleId, occupiedAt = :occupiedAt, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND isActive = 1 AND occupiedSaleId IS NULL")
+    @Query("UPDATE store_tables SET occupiedSaleId = :saleId, occupiedAt = :occupiedAt, updatedAt = :occupiedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND isActive = 1 AND occupiedSaleId IS NULL")
     suspend fun markOccupied(storeId: String, branchId: String, id: String, saleId: String, occupiedAt: Long): Int
 
     @Query("UPDATE store_tables SET occupiedSaleId = NULL, occupiedAt = NULL, updatedAt = :updatedAt WHERE id = :id AND storeId = :storeId AND branchId = :branchId AND occupiedSaleId = :saleId")
