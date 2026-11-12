@@ -21,6 +21,32 @@ import kotlinx.serialization.builtins.ListSerializer
 import java.time.ZoneId
 
 @Serializable
+private data class StoreTableCloudDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    @SerialName("branch_id") val branchId: String,
+    val name: String,
+    val capacity: Int,
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("occupied_order_local_id") val occupiedOrderLocalId: String? = null,
+    @SerialName("occupied_at") val occupiedAt: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+private data class StoreTableInsertDto(
+    val id: String,
+    @SerialName("store_id") val storeId: String,
+    @SerialName("branch_id") val branchId: String,
+    val name: String,
+    val capacity: Int,
+    @SerialName("is_active") val isActive: Boolean = true
+)
+
+
+
+@Serializable
 private data class StoreMembershipDto(
     @SerialName("store_id") val storeId: String,
     val role: String,
@@ -160,6 +186,118 @@ class CloudAuthRepository {
                 put("p_items", Json.encodeToJsonElement(ListSerializer(OrderItemSyncDto.serializer()), payload.items))
             }
         )
+    }
+
+    suspend fun fetchStoreTables(tenant: VerifiedTenantContext): List<StoreTableEntity> =
+        withContext(Dispatchers.IO) {
+            require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+            client.from("store_tables").select {
+                filter {
+                    eq("store_id", tenant.storeId)
+                    eq("branch_id", tenant.branchId)
+                }
+            }.decodeList<StoreTableCloudDto>().map { row ->
+                StoreTableEntity(
+                    id = row.id,
+                    storeId = row.storeId,
+                    branchId = row.branchId,
+                    name = row.name,
+                    capacity = row.capacity,
+                    isActive = row.isActive,
+                    createdAt = java.time.Instant.parse(row.createdAt).toEpochMilli(),
+                    updatedAt = java.time.Instant.parse(row.updatedAt).toEpochMilli(),
+                    occupiedSaleId = row.occupiedOrderLocalId,
+                    occupiedAt = row.occupiedAt?.let { java.time.Instant.parse(it).toEpochMilli() }
+                )
+            }
+        }
+
+    suspend fun createStoreTable(
+        tenant: VerifiedTenantContext,
+        id: String,
+        name: String,
+        capacity: Int
+    ) = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+            "Hanya Owner, Admin, atau Supervisor yang dapat mengelola meja."
+        }
+        require(id.isNotBlank() && name.isNotBlank() && capacity in 1..999)
+        client.from("store_tables").insert(
+            StoreTableInsertDto(id, tenant.storeId, tenant.branchId, name.trim(), capacity)
+        )
+    }
+
+    suspend fun updateStoreTable(
+        tenant: VerifiedTenantContext,
+        tableId: String,
+        name: String,
+        capacity: Int
+    ): Boolean = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+            "Hanya Owner, Admin, atau Supervisor yang dapat mengelola meja."
+        }
+        require(tableId.isNotBlank() && name.isNotBlank() && capacity in 1..999)
+        client.postgrest.rpc(
+            function = "update_store_table",
+            parameters = buildJsonObject {
+                put("target_store_id", tenant.storeId)
+                put("target_branch_id", tenant.branchId)
+                put("target_table_id", tableId)
+                put("target_name", name.trim())
+                put("target_capacity", capacity)
+            }
+        ).decodeAs<Boolean>()
+    }
+
+    suspend fun archiveStoreTable(
+        tenant: VerifiedTenantContext,
+        tableId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        require(tenant.role in setOf(StoreRole.OWNER, StoreRole.ADMIN, StoreRole.SUPERVISOR)) {
+            "Hanya Owner, Admin, atau Supervisor yang dapat mengelola meja."
+        }
+        client.postgrest.rpc(
+            function = "archive_store_table",
+            parameters = buildJsonObject {
+                put("target_store_id", tenant.storeId)
+                put("target_branch_id", tenant.branchId)
+                put("target_table_id", tableId)
+            }
+        ).decodeAs<Boolean>()
+    }
+
+    suspend fun claimStoreTable(
+        tenant: VerifiedTenantContext,
+        tableId: String,
+        orderLocalId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+        client.postgrest.rpc(
+            function = "claim_store_table",
+            parameters = buildJsonObject {
+                put("target_store_id", tenant.storeId)
+                put("target_branch_id", tenant.branchId)
+                put("target_table_id", tableId)
+                put("target_order_local_id", orderLocalId)
+            }
+        ).decodeAs<Boolean>()
+    }
+
+    suspend fun releaseStoreTable(
+        tenant: VerifiedTenantContext,
+        tableId: String,
+        orderLocalId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        require(tenant.storeId.isNotBlank() && tenant.branchId.isNotBlank())
+        client.postgrest.rpc(
+            function = "release_store_table",
+            parameters = buildJsonObject {
+                put("target_store_id", tenant.storeId)
+                put("target_branch_id", tenant.branchId)
+                put("target_table_id", tableId)
+                put("target_order_local_id", orderLocalId)
+            }
+        ).decodeAs<Boolean>()
     }
 
     suspend fun setBranchTimeZone(

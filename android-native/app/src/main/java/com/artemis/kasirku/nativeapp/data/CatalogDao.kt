@@ -107,6 +107,21 @@ interface CatalogDao {
     @Query("SELECT * FROM catalog_categories WHERE storeId = :storeId AND isActive = 1 ORDER BY sortOrder, name COLLATE NOCASE")
     fun observeCategories(storeId: String): Flow<List<CategoryEntity>>
 
+    @Query("SELECT * FROM catalog_products WHERE storeId = :storeId")
+    suspend fun getProductsForCloudSync(storeId: String): List<ProductEntity>
+
+    @Query("SELECT * FROM catalog_categories WHERE storeId = :storeId")
+    suspend fun getCategoriesForCloudSync(storeId: String): List<CategoryEntity>
+
+    @Query("SELECT * FROM branch_product_prices WHERE branchId = :branchId")
+    suspend fun getBranchPricesForCloudSync(branchId: String): List<BranchProductPriceEntity>
+
+    @Query("SELECT * FROM branch_inventory WHERE branchId = :branchId")
+    suspend fun getBranchInventoryForCloudSync(branchId: String): List<BranchInventoryEntity>
+
+    @Query("SELECT * FROM product_barcodes WHERE storeId = :storeId")
+    suspend fun getBarcodesForCloudSync(storeId: String): List<ProductBarcodeEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertCategories(categories: List<CategoryEntity>)
 
@@ -142,6 +157,27 @@ interface CatalogDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBarcodes(barcodes: List<ProductBarcodeEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertBarcodes(barcodes: List<ProductBarcodeEntity>)
+
+    @Query("SELECT COUNT(*) FROM sale_sync_outbox WHERE storeId = :storeId AND branchId = :branchId AND status IN ('PENDING', 'RETRY', 'FAILED')")
+    suspend fun countUnresolvedSaleSync(storeId: String, branchId: String): Int
+
+    @Transaction
+    suspend fun applyCloudCatalogSnapshot(
+        products: List<ProductEntity>,
+        categories: List<CategoryEntity>,
+        prices: List<BranchProductPriceEntity>,
+        inventory: List<BranchInventoryEntity>,
+        barcodes: List<ProductBarcodeEntity>
+    ) {
+        if (categories.isNotEmpty()) upsertCategories(categories)
+        if (products.isNotEmpty()) upsertProducts(products)
+        if (prices.isNotEmpty()) upsertBranchPrices(prices)
+        if (inventory.isNotEmpty()) upsertInventories(inventory)
+        if (barcodes.isNotEmpty()) upsertBarcodes(barcodes)
+    }
 
     @Transaction
     suspend fun importLegacyCatalog(
@@ -207,6 +243,9 @@ interface CatalogDao {
     """)
     suspend fun deductStock(branchId: String, productId: String, quantity: Int, updatedAt: Long): Int
 
+    @Query("UPDATE store_tables SET occupiedSaleId = :saleId, occupiedAt = :occupiedAt, updatedAt = :occupiedAt WHERE id = :tableId AND storeId = :storeId AND branchId = :branchId AND name = :tableLabel AND isActive = 1 AND occupiedSaleId IS NULL")
+    suspend fun occupyTable(storeId: String, branchId: String, tableId: String, tableLabel: String, saleId: String, occupiedAt: Long): Int
+
     @Transaction
     suspend fun completeSale(sale: SaleEntity, items: List<SaleItemEntity>) {
         require(items.isNotEmpty()) { "Keranjang masih kosong." }
@@ -229,6 +268,12 @@ interface CatalogDao {
             require(sale.paid == sale.total && sale.change == 0L) {
                 "Pembayaran non-tunai harus sesuai total transaksi."
             }
+        }
+
+        if (sale.orderType == "Dine In") {
+            require(!sale.tableLocalId.isNullOrBlank() && !sale.tableLabel.isNullOrBlank()) { "Meja wajib dipilih untuk Dine In." }
+        } else {
+            require(sale.orderType == "Takeaway" && sale.tableLocalId == null && sale.tableLabel == null) { "Data meja Takeaway tidak valid." }
         }
 
         var calculatedSubtotal = 0L
@@ -260,6 +305,10 @@ interface CatalogDao {
         }
         require(calculatedSubtotal == sale.subtotal) {
             "Subtotal transaksi tidak sama dengan rincian produk."
+        }
+        if (sale.orderType == "Dine In") {
+            val occupied = occupyTable(sale.storeId, sale.branchId, sale.tableLocalId!!, sale.tableLabel!!, sale.id, sale.createdAt)
+            check(occupied == 1) { "Meja sudah digunakan atau tidak tersedia. Pilih meja lain." }
         }
         insertSale(sale)
         insertSaleItems(items)

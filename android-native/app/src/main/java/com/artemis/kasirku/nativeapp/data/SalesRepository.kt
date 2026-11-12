@@ -23,8 +23,14 @@ class SalesRepository(private val dao: CatalogDao) {
         lines: List<CheckoutLine>,
         paid: Long,
         paymentMethod: String = "CASH",
-        discount: Long = 0L
+        discount: Long = 0L,
+        orderType: String = "Takeaway",
+        tableLocalId: String? = null,
+        tableLabel: String? = null,
+        saleIdOverride: String? = null
     ): CheckoutResult {
+        require(orderType in setOf("Takeaway", "Dine In")) { "Jenis pesanan tidak valid." }
+        require(if (orderType == "Dine In") !tableLocalId.isNullOrBlank() && !tableLabel.isNullOrBlank() else tableLocalId == null && tableLabel == null) { "Pilih meja untuk pesanan Dine In." }
         require(lines.isNotEmpty()) { "Keranjang masih kosong." }
         require(lines.all { it.productId.isNotBlank() && it.productName.isNotBlank() && it.quantity > 0 && it.unitPrice > 0L }) {
             "Produk, jumlah, atau harga pada keranjang tidak valid."
@@ -33,7 +39,7 @@ class SalesRepository(private val dao: CatalogDao) {
         val payment = CheckoutPaymentRules.validate(subtotal, discount, paid, paymentMethod)
         val total = payment.total
         val normalizedMethod = payment.method
-        val saleId = UUID.randomUUID().toString()
+        val saleId = saleIdOverride?.also { require(it.isNotBlank()) } ?: UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val sale = SaleEntity(
             id = saleId,
@@ -46,7 +52,10 @@ class SalesRepository(private val dao: CatalogDao) {
             paid = paid,
             change = paid - total,
             paymentMethod = normalizedMethod,
-            createdAt = now
+            createdAt = now,
+            orderType = orderType,
+            tableLocalId = tableLocalId,
+            tableLabel = tableLabel
         )
         val items = lines.map { line ->
             SaleItemEntity(
