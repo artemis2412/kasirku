@@ -18,8 +18,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +45,7 @@ import com.artemis.kasirku.nativeapp.data.LegacyProductImporter
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import java.time.ZoneId
 
 private suspend fun <T> cancellationSafeResult(block: suspend () -> T): Result<T> =
     try {
@@ -92,9 +91,42 @@ internal fun CloudAccountScreen(
     var message by remember { mutableStateOf("Masuk menggunakan akun Cloud Kasirku.") }
     var isError by remember { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<String?>(null) }
-    var timeZoneInput by remember { mutableStateOf("") }
-    var showTimeZoneOptions by remember { mutableStateOf(false) }
+    var initializingTimeZoneFor by remember { mutableStateOf<String?>(null) }
     var sessionRestoreFinished by remember { mutableStateOf(false) }
+
+    fun initializeBranchTimeZoneFromDevice(context: VerifiedTenantContext) {
+        val canInitialize = context.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER ||
+            context.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
+        if (!context.branchTimeZoneId.isNullOrBlank() || !canInitialize ||
+            initializingTimeZoneFor == context.branchId
+        ) return
+
+        val detectedZoneId = ZoneId.systemDefault().id
+        if (detectedZoneId !in ZoneId.getAvailableZoneIds()) {
+            message = "Zona waktu perangkat tidak dikenali. Periksa pengaturan tanggal dan waktu perangkat."
+            isError = true
+            return
+        }
+
+        initializingTimeZoneFor = context.branchId
+        message = "Mendeteksi zona waktu cabang dari perangkat…"
+        scope.launch {
+            cancellationSafeResult {
+                repository.setBranchTimeZone(context.storeId, context.branchId, detectedZoneId)
+            }.onSuccess { updated ->
+                access = updated
+                val refreshed = updated.verifiedContext(context.storeId, context.branchId)
+                verifiedContext = refreshed
+                onContextChanged(refreshed)
+                message = "Zona waktu cabang terdeteksi otomatis: ${friendlyTimeZoneLabel(refreshed.branchTimeZoneId)}."
+                isError = false
+            }.onFailure {
+                message = it.message ?: "Gagal menyimpan zona waktu otomatis. Hubungi owner/admin."
+                isError = true
+            }
+            initializingTimeZoneFor = null
+        }
+    }
 
     fun applyAccess(result: CloudAccountAccess) {
         access = result
@@ -109,7 +141,6 @@ internal fun CloudAccountScreen(
         verifiedContext = if (store != null && branch != null) {
             result.verifiedContext(store.id, branch.id)
         } else null
-        timeZoneInput = verifiedContext?.branchTimeZoneId ?: java.util.TimeZone.getDefault().id
         importSummary = null
         onContextChanged(verifiedContext)
         message = if (verifiedContext != null) {
@@ -120,6 +151,7 @@ internal fun CloudAccountScreen(
             "Pilih cabang aktif untuk melanjutkan."
         }
         isError = false
+        verifiedContext?.let(::initializeBranchTimeZoneFromDevice)
     }
 
     LaunchedEffect(Unit) {
@@ -269,10 +301,10 @@ internal fun CloudAccountScreen(
                             selectedBranchId = branch.id
                             selectionPrefs.edit().putString("store_id", selectedStore.id).putString("branch_id", branch.id).apply()
                             verifiedContext = access!!.verifiedContext(selectedStore.id, branch.id)
-                            timeZoneInput = verifiedContext?.branchTimeZoneId.orEmpty()
                             onContextChanged(verifiedContext)
                             message = "Akses toko dan cabang berhasil diverifikasi."
                             isError = false
+                            verifiedContext?.let(::initializeBranchTimeZoneFromDevice)
                         }
                     )
                 }
@@ -293,68 +325,20 @@ internal fun CloudAccountScreen(
                             color = if (context.branchTimeZoneId.isNullOrBlank()) Color(0xFFB54708) else AccountMuted,
                             fontSize = 12.sp
                         )
-                        if (context.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER ||
-                            context.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
-                        ) {
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text("Pilih zona waktu cabang", color = AccountNavy, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    TextButton(
-                                        onClick = { showTimeZoneOptions = true },
-                                        enabled = !busy,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) { Text("Pilih zona waktu Indonesia  ▾") }
-                                    OutlinedTextField(
-                                        value = timeZoneInput,
-                                        onValueChange = { timeZoneInput = it },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        label = { Text("Zona waktu toko") },
-                                        placeholder = { Text("Pilih WIB, WITA, atau WIT") },
-                                        singleLine = true,
-                                        enabled = !busy
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = showTimeZoneOptions,
-                                    onDismissRequest = { showTimeZoneOptions = false }
+                        if (context.branchTimeZoneId.isNullOrBlank()) {
+                            Text(
+                                if (context.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER ||
+                                    context.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
                                 ) {
-                                    listOf(
-                                        "WIB — Waktu Indonesia Barat" to "Asia/Jakarta",
-                                        "WITA — Waktu Indonesia Tengah" to "Asia/Makassar",
-                                        "WIT — Waktu Indonesia Timur" to "Asia/Jayapura"
-                                    ).forEach { (label, zoneId) ->
-                                        DropdownMenuItem(
-                                            text = { Text(label) },
-                                            onClick = {
-                                                timeZoneInput = zoneId
-                                                showTimeZoneOptions = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                            Text("Pilih zona waktu sesuai lokasi toko. Pilihan ini digunakan untuk tanggal dan laporan transaksi.", color = AccountMuted, fontSize = 11.sp)
-                            Button(
-                                onClick = {
-                                    scope.launch {
-                                        busy = true
-                                        cancellationSafeResult {
-                                            repository.setBranchTimeZone(context.storeId, context.branchId, timeZoneInput)
-                                        }.onSuccess { updated ->
-                                            applyAccess(updated)
-                                            message = "Zona waktu cabang berhasil disimpan."
-                                            isError = false
-                                        }.onFailure {
-                                            message = it.message ?: "Gagal menyimpan zona waktu cabang."
-                                            isError = true
-                                        }
-                                        busy = false
-                                    }
+                                    if (initializingTimeZoneFor == context.branchId) "Sedang mendeteksi zona waktu perangkat…" else "Zona waktu akan dideteksi otomatis dari perangkat owner/admin."
+                                } else {
+                                    "Menunggu owner/admin mendeteksi zona waktu cabang melalui perangkat di lokasi cabang."
                                 },
-                                enabled = !busy && timeZoneInput.isNotBlank(),
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(13.dp)
-                            ) { Text(if (busy) "Menyimpan…" else "Simpan zona waktu cabang") }
+                                color = Color(0xFFB54708),
+                                fontSize = 11.sp
+                            )
+                        } else {
+                            Text("Waktu transaksi, laporan, dan penutupan kas mengikuti zona waktu cabang ini.", color = AccountMuted, fontSize = 11.sp)
                         }
                     }
                 }
