@@ -64,14 +64,6 @@ private val AccountMuted = Color(0xFF718096)
 private fun formatNominalInput(value: String): String =
     value.filter(Char::isDigit).reversed().chunked(3).joinToString(".").reversed()
 
-private fun friendlyTimeZoneLabel(zoneId: String?): String = when (zoneId) {
-    "Asia/Jakarta", "Asia/Pontianak" -> "WIB — Waktu Indonesia Barat"
-    "Asia/Makassar" -> "WITA — Waktu Indonesia Tengah"
-    "Asia/Jayapura" -> "WIT — Waktu Indonesia Timur"
-    null, "" -> "Belum diatur"
-    else -> "Zona waktu khusus"
-}
-
 @Composable
 internal fun CloudAccountScreen(
     modifier: Modifier = Modifier,
@@ -320,26 +312,7 @@ internal fun CloudAccountScreen(
                         Text(context.storeName, color = AccountNavy, fontWeight = FontWeight.Bold)
                         Text(context.branchName + " • " + context.role.name.lowercase(), color = AccountMuted, fontSize = 12.sp)
                         Text("Akses harga modal/laba: " + if (context.role.canViewCostAndProfit()) "Owner" else "Tidak diizinkan", color = AccountMuted, fontSize = 12.sp)
-                        Text(
-                            "Zona waktu cabang: " + friendlyTimeZoneLabel(context.branchTimeZoneId),
-                            color = if (context.branchTimeZoneId.isNullOrBlank()) Color(0xFFB54708) else AccountMuted,
-                            fontSize = 12.sp
-                        )
-                        if (context.branchTimeZoneId.isNullOrBlank()) {
-                            Text(
-                                if (context.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER ||
-                                    context.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
-                                ) {
-                                    if (initializingTimeZoneFor == context.branchId) "Sedang mendeteksi zona waktu perangkat…" else "Zona waktu akan dideteksi otomatis dari perangkat owner/admin."
-                                } else {
-                                    "Menunggu owner/admin mendeteksi zona waktu cabang melalui perangkat di lokasi cabang."
-                                },
-                                color = Color(0xFFB54708),
-                                fontSize = 11.sp
-                            )
-                        } else {
-                            Text("Waktu transaksi, laporan, dan penutupan kas mengikuti zona waktu cabang ini.", color = AccountMuted, fontSize = 11.sp)
-                        }
+
                     }
                 }
             }
