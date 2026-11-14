@@ -31,6 +31,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Validate Web JavaScript syntax
+        run: |
+          node --check app.js
+          node --check cloud-bridge.js
+          node --check branch-storage.js
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
