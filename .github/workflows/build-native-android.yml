@@ -5,6 +5,7 @@ on:
   pull_request:
     branches:
       - native-android-foundation
+      - feature/dine-in-table-checkout
     paths:
       - "android-native/**"
       - ".github/workflows/build-native-android.yml"
