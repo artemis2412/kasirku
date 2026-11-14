@@ -5,6 +5,7 @@ on:
   pull_request:
     branches:
       - native-android-foundation
+      - feature/dine-in-table-checkout
     paths:
       - "android-native/**"
       - ".github/workflows/build-native-android.yml"
@@ -29,6 +30,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate Web JavaScript syntax
+        run: |
+          node --check app.js
+          node --check cloud-bridge.js
+          node --check branch-storage.js
 
       - name: Set up Java
         uses: actions/setup-java@v4

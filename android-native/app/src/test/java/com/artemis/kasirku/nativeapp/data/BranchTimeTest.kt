@@ -29,4 +29,52 @@ class BranchTimeTest {
             archiveStart
         )
     }
+    @Test
+    fun legacyBranchWithoutTimezoneUsesJakartaInsteadOfKasirDeviceTimezone() {
+        val tenant = VerifiedTenantContext(
+            userId = "user-1",
+            storeId = "store-1",
+            storeName = "Toko",
+            role = StoreRole.CASHIER,
+            branchId = "branch-1",
+            branchName = "Cabang Lama",
+            branchTimeZoneId = null
+        )
+
+        assertEquals(ZoneId.of("Asia/Jakarta"), BranchTime.zoneId(tenant))
+    }
+
+    @Test
+    fun sameInstantUsesEachIndonesianBranchMidnight() {
+        val instant = Instant.parse("2026-11-14T16:30:00Z")
+
+        assertEquals(
+            Instant.parse("2026-11-13T17:00:00Z").toEpochMilli(),
+            BranchTime.startOfToday(ZoneId.of("Asia/Jakarta"), instant)
+        )
+        assertEquals(
+            Instant.parse("2026-11-14T16:00:00Z").toEpochMilli(),
+            BranchTime.startOfToday(ZoneId.of("Asia/Makassar"), instant)
+        )
+        assertEquals(
+            Instant.parse("2026-11-14T15:00:00Z").toEpochMilli(),
+            BranchTime.startOfToday(ZoneId.of("Asia/Jayapura"), instant)
+        )
+    }
+
+    @Test
+    fun configuredBranchTimezoneOverridesDeviceTimezone() {
+        val tenant = VerifiedTenantContext(
+            userId = "user-1",
+            storeId = "store-1",
+            storeName = "Toko",
+            role = StoreRole.CASHIER,
+            branchId = "branch-2",
+            branchName = "Cabang Makassar",
+            branchTimeZoneId = "Asia/Makassar"
+        )
+
+        assertEquals(ZoneId.of("Asia/Makassar"), BranchTime.zoneId(tenant))
+    }
+
 }

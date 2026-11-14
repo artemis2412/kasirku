@@ -10,7 +10,7 @@ object BranchTime {
     fun zoneId(tenant: VerifiedTenantContext): ZoneId =
         tenant.branchTimeZoneId
             ?.let { runCatching { ZoneId.of(it) }.getOrNull() }
-            ?: ZoneId.systemDefault()
+            ?: ZoneId.of("Asia/Jakarta")
 
     fun startOfToday(zoneId: ZoneId, now: Instant = Instant.now()): Long =
         now.atZone(zoneId).toLocalDate().atStartOfDay(zoneId).toInstant().toEpochMilli()

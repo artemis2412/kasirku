@@ -242,7 +242,7 @@
           const {data:storeRow,error:storeError}=await scoped.from("stores").select("id,name").eq("id",m.store_id).maybeSingle();
           if(storeError)throw storeError;
           state.store={id:m.store_id,name:storeRow?.name||"Toko terhubung",role:m.role};
-          const {data:branches,error:branchError}=await scoped.from("branches").select("id,name,is_active").eq("store_id",m.store_id).eq("is_active",true).order("created_at");
+          const {data:branches,error:branchError}=await scoped.from("branches").select("id,name,is_active,timezone_id").eq("store_id",m.store_id).eq("is_active",true).order("created_at");
           if(branchError)throw branchError;
           let allowed=branches||[];
           if(expected!=="owner"){
@@ -252,6 +252,24 @@
             allowed=allowed.filter(b=>ids.has(b.id));
           }
           state.branches=allowed;saveApprovedInitialMapping();
+           // Initialize only the currently selected mapped cloud branch, and only once.
+           // Existing branches without a saved zone retain the historical Jakarta default.
+           if(expected==="owner"||expected==="admin"){
+             try{
+               const localBranchId=localStorage.getItem("ksecurity_active_branch")||"main";
+               const mapping=(getLocalBranchMappings().mappings||[]).find(x=>String(x.localBranchId)===String(localBranchId)&&x.storeId===state.store.id);
+               const remote=mapping?allowed.find(x=>String(x.id)===String(mapping.cloudBranchId)):null;
+               if(remote&&!String(remote.timezone_id||"").trim()){
+                 const local=readLocalBranches().find(x=>String(x.id)===String(localBranchId));
+                 const detected=String(local?.timeZoneId||"Asia/Jakarta");
+                 try{new Intl.DateTimeFormat("en-US",{timeZone:detected})}catch{throw new Error("Zona waktu cabang lokal tidak valid.")}
+                 const {error:timezoneError}=await scoped.rpc("set_branch_timezone",{p_store_id:state.store.id,p_branch_id:remote.id,p_timezone_id:detected});
+                 if(timezoneError)throw timezoneError;
+                 allowed=allowed.map(x=>x.id===remote.id?{...x,timezone_id:detected}:x);
+                 state.branches=allowed;
+               }
+             }catch(timezoneError){console.warn("Inisialisasi zona waktu cabang ditunda:",timezoneError?.message||timezoneError)}
+           }
         }
       }
     }catch(error){state.error=error?.message||"Gagal memuat konteks cloud"}
