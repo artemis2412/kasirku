@@ -2,21 +2,23 @@
 
 ## Product decision
 
-KASIRKU does not expose a manual time-zone selector. A branch's time zone is detected automatically from the device's configured time zone when the branch is created, then stored as an IANA time-zone ID.
+KASIRKU does not expose a manual time-zone selector. A branch's time zone is detected automatically from the configured time zone of the device used by an Owner/Admin when the branch is first activated, then stored as an IANA time-zone ID.
 
 This follows the automatic time-zone behavior adopted for GUDANGKU.
 
 ## Source of truth
 
 - Each branch owns one time zone.
-- At branch creation, capture `ZoneId.systemDefault().id` from the device creating the branch.
+- On first activation of a new branch by an Owner/Admin, capture `ZoneId.systemDefault().id` from that device and persist it to the selected branch.
+- Never apply one device's time zone to every branch in the store.
 - Do not request GPS/location permission. Device time-zone detection is sufficient and avoids location permission prompts.
 - After creation, the saved branch time zone is authoritative. Opening that branch from a device in another time zone must not silently change it.
 - Do not show WIB/WITA/WIT or IANA IDs as a user-editable setting.
 
 ## Existing branches
 
-- Existing branches with no stored time zone are backfilled to `Asia/Jakarta` for backward compatibility.
+- Existing branches with no stored time zone are backfilled to `Asia/Jakarta` for backward compatibility by a dedicated migration.
+- A new branch with no stored time zone is initialized automatically when an Owner/Admin first activates it.
 - Never overwrite a non-empty branch time zone during normal app startup or sign-in.
 
 ## Time handling
