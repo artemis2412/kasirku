@@ -135,7 +135,6 @@ internal fun CloudAccountScreen(
         } else null
         importSummary = null
         onContextChanged(verifiedContext)
-        verifiedContext?.let(::initializeBranchTimeZoneFromDevice)
         message = if (verifiedContext != null) {
             "Sesi dan akses toko/cabang berhasil dipulihkan."
         } else if (result.stores.size > 1) {
@@ -144,6 +143,7 @@ internal fun CloudAccountScreen(
             "Pilih cabang aktif untuk melanjutkan."
         }
         isError = false
+        verifiedContext?.let(::initializeBranchTimeZoneFromDevice)
     }
 
     LaunchedEffect(Unit) {
@@ -294,11 +294,13 @@ internal fun CloudAccountScreen(
                             selectionPrefs.edit().putString("store_id", selectedStore.id).putString("branch_id", branch.id).apply()
                             verifiedContext = access!!.verifiedContext(selectedStore.id, branch.id)
                             onContextChanged(verifiedContext)
-                            verifiedContext?.let(::initializeBranchTimeZoneFromDevice)
-                            message = if (verifiedContext?.branchTimeZoneId.isNullOrBlank() &&
-                                verifiedContext?.role !in setOf(com.artemis.kasirku.nativeapp.data.StoreRole.OWNER, com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN)
-                            ) "Menunggu Owner/Admin menginisialisasi zona waktu cabang." else "Akses toko dan cabang berhasil diverifikasi."
+                            message = if (verifiedContext?.branchTimeZoneId.isNullOrBlank()) {
+                                if (verifiedContext?.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER ||
+                                    verifiedContext?.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
+                                ) "Mendeteksi zona waktu cabang dari perangkat…" else "Menunggu Owner/Admin menginisialisasi zona waktu cabang."
+                            } else "Akses toko dan cabang berhasil diverifikasi."
                             isError = false
+                            verifiedContext?.let(::initializeBranchTimeZoneFromDevice)
                         }
                     )
                 }
