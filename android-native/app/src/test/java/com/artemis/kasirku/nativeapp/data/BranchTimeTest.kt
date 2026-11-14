@@ -29,4 +29,34 @@ class BranchTimeTest {
             archiveStart
         )
     }
+    @Test
+    fun legacyBranchWithoutTimezoneUsesJakartaInsteadOfKasirDeviceTimezone() {
+        val tenant = VerifiedTenantContext(
+            userId = "user-1",
+            storeId = "store-1",
+            storeName = "Toko",
+            role = StoreRole.CASHIER,
+            branchId = "branch-1",
+            branchName = "Cabang Lama",
+            branchTimeZoneId = null
+        )
+
+        assertEquals(ZoneId.of("Asia/Jakarta"), BranchTime.zoneId(tenant))
+    }
+
+    @Test
+    fun configuredBranchTimezoneOverridesDeviceTimezone() {
+        val tenant = VerifiedTenantContext(
+            userId = "user-1",
+            storeId = "store-1",
+            storeName = "Toko",
+            role = StoreRole.CASHIER,
+            branchId = "branch-2",
+            branchName = "Cabang Makassar",
+            branchTimeZoneId = "Asia/Makassar"
+        )
+
+        assertEquals(ZoneId.of("Asia/Makassar"), BranchTime.zoneId(tenant))
+    }
+
 }
