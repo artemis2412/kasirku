@@ -125,7 +125,7 @@ function updateBranchLabel(){
  el.onclick=e=>{
   const choice=e.target.closest("[data-branch-choice]");
   if(choice){const chosen=allowed.find(x=>x.id===choice.dataset.branchChoice);if(!chosen||chosen.id===current.id)return;localStorage.setItem(ACTIVE_BRANCH_KEY,chosen.id);audit(canAdd?"Cabang dipilih":"Cabang tugas dipilih",(canAdd?"Owner memilih ":"")+((user?.name?user.name+" memilih ":""))+chosen.name);window.location.reload();return}
-  if(e.target.closest("#ks-branch-add"))branchModal("Tambah Cabang Baru","",(name,error)=>{const items=branchRead();if(items.some(x=>x.name.toLowerCase()===name.toLowerCase())){error.textContent="Nama cabang sudah digunakan.";return false}const item={id:"br-"+Date.now(),name,active:true,createdAt:new Date().toISOString()};items.push(item);localStorage.setItem(BRANCH_KEY,JSON.stringify(items));localStorage.setItem(ACTIVE_BRANCH_KEY,item.id);audit("Cabang ditambahkan","Owner menambahkan cabang "+name);window.location.reload()});
+  if(e.target.closest("#ks-branch-add"))branchModal("Tambah Cabang Baru","",(name,error)=>{const items=branchRead();if(items.some(x=>x.name.toLowerCase()===name.toLowerCase())){error.textContent="Nama cabang sudah digunakan.";return false}const detectedTimeZone=Intl.DateTimeFormat().resolvedOptions().timeZone||"Asia/Jakarta";const item={id:"br-"+Date.now(),name,active:true,timeZoneId:detectedTimeZone,createdAt:new Date().toISOString()};items.push(item);localStorage.setItem(BRANCH_KEY,JSON.stringify(items));localStorage.setItem(ACTIVE_BRANCH_KEY,item.id);audit("Cabang ditambahkan","Owner menambahkan cabang "+name);window.location.reload()});
  };
  function escBranch(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 }
