@@ -45,6 +45,7 @@ import com.artemis.kasirku.nativeapp.data.LegacyProductImporter
 import com.artemis.kasirku.nativeapp.data.VerifiedTenantContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import java.time.ZoneId
 
 private suspend fun <T> cancellationSafeResult(block: suspend () -> T): Result<T> =
     try {
@@ -82,7 +83,42 @@ internal fun CloudAccountScreen(
     var message by remember { mutableStateOf("Masuk menggunakan akun Cloud Kasirku.") }
     var isError by remember { mutableStateOf(false) }
     var importSummary by remember { mutableStateOf<String?>(null) }
+    var initializingTimeZoneFor by remember { mutableStateOf<String?>(null) }
     var sessionRestoreFinished by remember { mutableStateOf(false) }
+
+    fun initializeBranchTimeZoneFromDevice(context: VerifiedTenantContext) {
+        val canInitialize = context.role == com.artemis.kasirku.nativeapp.data.StoreRole.OWNER ||
+            context.role == com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN
+        if (!context.branchTimeZoneId.isNullOrBlank() || !canInitialize ||
+            initializingTimeZoneFor == context.branchId
+        ) return
+
+        val detectedZoneId = ZoneId.systemDefault().id
+        if (detectedZoneId !in ZoneId.getAvailableZoneIds()) {
+            message = "Zona waktu perangkat tidak dikenali. Periksa pengaturan tanggal dan waktu perangkat."
+            isError = true
+            return
+        }
+
+        initializingTimeZoneFor = context.branchId
+        message = "Mendeteksi zona waktu cabang dari perangkat…"
+        scope.launch {
+            cancellationSafeResult {
+                repository.setBranchTimeZone(context.storeId, context.branchId, detectedZoneId)
+            }.onSuccess { updated ->
+                access = updated
+                val refreshed = updated.verifiedContext(context.storeId, context.branchId)
+                verifiedContext = refreshed
+                onContextChanged(refreshed)
+                message = "Zona waktu cabang terdeteksi otomatis."
+                isError = false
+            }.onFailure {
+                message = it.message ?: "Gagal menyimpan zona waktu otomatis. Hubungi owner/admin."
+                isError = true
+            }
+            initializingTimeZoneFor = null
+        }
+    }
 
     fun applyAccess(result: CloudAccountAccess) {
         access = result
@@ -99,6 +135,7 @@ internal fun CloudAccountScreen(
         } else null
         importSummary = null
         onContextChanged(verifiedContext)
+        verifiedContext?.let(::initializeBranchTimeZoneFromDevice)
         message = if (verifiedContext != null) {
             "Sesi dan akses toko/cabang berhasil dipulihkan."
         } else if (result.stores.size > 1) {
@@ -257,7 +294,10 @@ internal fun CloudAccountScreen(
                             selectionPrefs.edit().putString("store_id", selectedStore.id).putString("branch_id", branch.id).apply()
                             verifiedContext = access!!.verifiedContext(selectedStore.id, branch.id)
                             onContextChanged(verifiedContext)
-                            message = "Akses toko dan cabang berhasil diverifikasi."
+                            verifiedContext?.let(::initializeBranchTimeZoneFromDevice)
+                            message = if (verifiedContext?.branchTimeZoneId.isNullOrBlank() &&
+                                verifiedContext?.role !in setOf(com.artemis.kasirku.nativeapp.data.StoreRole.OWNER, com.artemis.kasirku.nativeapp.data.StoreRole.ADMIN)
+                            ) "Menunggu Owner/Admin menginisialisasi zona waktu cabang." else "Akses toko dan cabang berhasil diverifikasi."
                             isError = false
                         }
                     )
