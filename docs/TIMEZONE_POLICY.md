@@ -45,5 +45,6 @@ This follows the automatic time-zone behavior adopted for GUDANGKU.
 - Web business dates are derived with `Intl.DateTimeFormat` using the active branch's IANA time-zone ID.
 - For a branch mapped to Cloud, the Cloud `branches.timezone_id` value is authoritative. Owner/Admin initializes a missing value for only the currently selected mapped branch through `set_branch_timezone`, using that local branch's saved time zone; legacy local branches without a saved value retain the Asia/Jakarta default.
 - For offline/local-only branches, use the branch record's saved `timeZoneId`; older records without one use Asia/Jakarta.
+- If a mapped Cloud branch still has no valid `timezone_id`, cashier-side order creation, payment confirmation, cash entries/closure, and archive creation are blocked until Owner/Admin initializes it.
 - The active branch zone governs transaction dates and displayed times, paid dates, daily cash operations and closure, reports, archive cutoffs, and the date shown in the application header.
 - Calendar arithmetic for report windows and archive cutoffs is performed on date-only values, not the browser device's local calendar.
