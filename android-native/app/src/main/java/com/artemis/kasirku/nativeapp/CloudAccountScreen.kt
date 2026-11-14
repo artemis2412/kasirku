@@ -110,7 +110,7 @@ internal fun CloudAccountScreen(
                 val refreshed = updated.verifiedContext(context.storeId, context.branchId)
                 verifiedContext = refreshed
                 onContextChanged(refreshed)
-                message = "Zona waktu cabang terdeteksi otomatis: ${friendlyTimeZoneLabel(refreshed.branchTimeZoneId)}."
+                message = "Zona waktu cabang terdeteksi otomatis: $detectedZoneId."
                 isError = false
             }.onFailure {
                 message = it.message ?: "Gagal menyimpan zona waktu otomatis. Hubungi owner/admin."
