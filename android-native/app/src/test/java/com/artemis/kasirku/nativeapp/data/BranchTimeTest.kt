@@ -45,6 +45,24 @@ class BranchTimeTest {
     }
 
     @Test
+    fun sameInstantUsesEachIndonesianBranchMidnight() {
+        val instant = Instant.parse("2026-11-14T16:30:00Z")
+
+        assertEquals(
+            Instant.parse("2026-11-13T17:00:00Z").toEpochMilli(),
+            BranchTime.startOfToday(ZoneId.of("Asia/Jakarta"), instant)
+        )
+        assertEquals(
+            Instant.parse("2026-11-14T16:00:00Z").toEpochMilli(),
+            BranchTime.startOfToday(ZoneId.of("Asia/Makassar"), instant)
+        )
+        assertEquals(
+            Instant.parse("2026-11-14T15:00:00Z").toEpochMilli(),
+            BranchTime.startOfToday(ZoneId.of("Asia/Jayapura"), instant)
+        )
+    }
+
+    @Test
     fun configuredBranchTimezoneOverridesDeviceTimezone() {
         val tenant = VerifiedTenantContext(
             userId = "user-1",
